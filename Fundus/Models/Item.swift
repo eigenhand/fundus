@@ -34,6 +34,11 @@ struct Item: Identifiable, Codable, Equatable, Hashable {
     /// hat es jemand in der Hand gehabt oder fotografiert.
     var lastSeenAt: Date = Date()
 
+    /// Was am Ding steht. Bleibt am Eintrag, auch wenn der Name inzwischen vom
+    /// Nutzer umgeschrieben wurde — die Nummer ist das Einzige hier, was sich
+    /// nachprüfen lässt.
+    var code: ItemCode?
+
     var embedding: [Float]?
     /// Aus welchem Modell dieser Vektor stammt. `nil` heißt: unbekannte Herkunft und
     /// damit unbrauchbar — derselbe Grund wie im Gedächtnis von Faden.
@@ -67,6 +72,7 @@ struct Item: Identifiable, Codable, Equatable, Hashable {
         createdAt      = try c.decodeIfPresent(Date.self, forKey: .createdAt) ?? Date()
         updatedAt      = try c.decodeIfPresent(Date.self, forKey: .updatedAt) ?? Date()
         lastSeenAt     = try c.decodeIfPresent(Date.self, forKey: .lastSeenAt) ?? createdAt
+        code           = try c.decodeIfPresent(ItemCode.self, forKey: .code)
         embedding      = try c.decodeIfPresent([Float].self, forKey: .embedding)
         embeddingStamp = try c.decodeIfPresent(EmbeddingStamp.self, forKey: .embeddingStamp)
     }
@@ -78,6 +84,9 @@ struct Item: Identifiable, Codable, Equatable, Hashable {
         var parts = [name]
         if !note.isEmpty { parts.append(note) }
         if !tags.isEmpty { parts.append(tags.joined(separator: ", ")) }
+        // Die Nummer mit hinein: wer „MP1584EN“ ins Suchfeld tippt, sucht genau
+        // dieses Ding und nicht etwas Ähnliches.
+        if let code, !code.value.isEmpty { parts.append(code.value) }
         return parts.joined(separator: " — ")
     }
 

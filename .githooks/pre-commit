@@ -13,10 +13,12 @@
 # Commit in diesem Moment bekommt man aus der Historie nicht mehr heraus.
 BUNDLED="Fundus/App/BundledSetup.swift"
 if git diff --cached --name-only | grep -q "^$BUNDLED$"; then
-  if git show ":$BUNDLED" | grep -qE '^    static let (apiKey|searchKey) = "..+"'; then
+  # Auf jedes Feld, dessen Name auf Key endet, statt auf eine Liste: die Liste war
+  # schon einmal veraltet, als searchAPIKey dazukam und searchKey darin stand.
+  if git show ":$BUNDLED" | grep -qE '^    static let [A-Za-z]*[Kk]ey = "..+"'; then
     echo "ABBRUCH: In $BUNDLED steht ein Schluessel." >&2
     echo "         Erst leeren, dann committen:" >&2
-    echo "         sed -i '' -E 's/(static let (apiKey|searchKey)) = .*/\\1 = \"\"/' $BUNDLED" >&2
+    echo "         sed -i '' -E 's/(static let [A-Za-z]*[Kk]ey) = .*/\\1 = \"\"/' $BUNDLED" >&2
     exit 1
   fi
 fi

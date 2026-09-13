@@ -54,14 +54,31 @@ enum IntakePrompt {
     sagt dem Nutzer, wo er selbst nachsehen muss, und es ist der Grund, warum du \
     nicht raten musst.
 
+    # Nummern, die am Ding stehen
+    Steht an einem Gegenstand eine Kennung — eine Herstellernummer auf einer \
+    Platine ("MP1584EN"), eine Typbezeichnung auf einem Motor, eine Seriennummer \
+    auf einem Typenschild, eine EAN unter einem Strichcode —, dann schreibe sie \
+    **zeichengenau** nach `code`, und nach `code_type` eines von "mpn", "serial", \
+    "ean".
+
+    Das ist die einzige Stelle, an der Raten wirklich teuer ist: die App sucht diese \
+    Nummer im Netz, und eine verwechselte Ziffer zeigt nicht auf nichts, sondern auf \
+    ein **anderes Bauteil**. Lieber kein `code` als ein ungefährer.
+      - Nur, was du Zeichen für Zeichen lesen kannst. Unscharf heißt: weglassen.
+      - Nichts ergänzen, nichts vervollständigen, keine Schreibweise korrigieren.
+      - Keine Maße und keine Mengenangaben: "M4", "4×40", "220 µF" sind \
+    Beschreibungen und gehören in `note`.
+
     # Höchstens 40 Einträge
     Sind mehr im Bild, nimm die auf, die klar erkennbar sind, und schreibe den Rest \
     nach `unreadable`.
 
     # Die Antwort
-    {"items": [{"name": "…", "quantity": 3, "unit": "", "note": "…"}],
+    {"items": [{"name": "…", "quantity": 3, "unit": "", "note": "…",
+                "code": null, "code_type": null}],
      "unreadable": ["…"]}
     `quantity` ist eine Zahl oder `null`. `unit` und `note` dürfen leer sein. \
+    `code` ist `null`, wenn keine Nummer lesbar ist — das ist der Normalfall. \
     Ist nichts Bestandsfähiges im Bild, antworte mit leeren Listen.
     """
 
@@ -76,8 +93,22 @@ enum IntakePrompt {
     ///     bestehenden Namen, schreibt es den zweiten Fund auf den ersten Eintrag,
     ///     statt einen zweiten anzulegen.
     ///   - hint: Was der Nutzer selbst dazu sagt.
-    static func message(placePath: String?, existingNames: [String], hint: String) -> String {
+    static func message(placePath: String?, existingNames: [String], hint: String,
+                        scannedCodes: [ItemCode] = []) -> String {
         var parts: [String] = []
+
+        if !scannedCodes.isEmpty {
+            // Diese Codes hat iOS aus den Balken dekodiert, nicht abgelesen. Sie sind
+            // richtig; das Modell soll sie zuordnen, nicht nachprüfen — und schon gar
+            // nicht selbst am Strichcode ablesen, was es ohnehin nur raten könnte.
+            parts.append("""
+            Das Gerät hat in diesem Bild folgende Strichcodes selbst entziffert. Sie \
+            sind zeichengenau richtig. Ordne jeden dem Gegenstand zu, an dem er \
+            steht, und übernimm ihn unverändert nach `code` mit `code_type`. Passt \
+            einer zu keinem Gegenstand, lass ihn weg:
+            \(scannedCodes.map { "- \($0.value)  (\($0.label))" }.joined(separator: "\n"))
+            """)
+        }
 
         if let placePath, !placePath.isEmpty {
             parts.append("Die Einträge kommen an diesen Ort: \(placePath).")
@@ -104,6 +135,68 @@ enum IntakePrompt {
         }
 
         parts.append("Was ist auf diesem Bild an Bestand zu sehen?")
+        return parts.joined(separator: "\n\n")
+    }
+
+    // MARK: Zweiter Durchgang — eine Kennung auflösen
+
+    /// Die Anweisung für das Destillieren aus Suchtreffern.
+    ///
+    /// Die eine Regel, auf die es ankommt, steht zweimal drin: nicht antworten, wenn
+    /// die Treffer nicht zur Nummer passen. Eine Suchmaschine liefert auf jede
+    /// Zeichenfolge irgendetwas, und ein Modell, das höflich sein will, macht daraus
+    /// einen Produktnamen. Genau der wäre hier der Schaden — er sähe verlässlicher
+    /// aus als alles andere im Bestand und wäre am wenigsten belegt.
+    static let lookupSystem = """
+    Du bekommst eine Kennung, die an einem Gegenstand steht, und ein paar \
+    Suchtreffer dazu. Du sagst, was der Gegenstand ist. Du antwortest \
+    ausschließlich mit einem JSON-Objekt, ohne Vorrede, ohne Codeblock.
+
+    # Der Titel
+    Kurz und sachlich, wie ein Eintrag in einem Lagerbestand: \
+    "MP1584EN DC-DC-Abwärtswandler 3 A", "NEMA-17-Schrittmotor 42×42", \
+    "Wago 221-413 Verbindungsklemme 3-polig". Deutsch, kein Werbetext, keine \
+    Händlerangaben, kein Preis.
+
+    # Wann du nicht antwortest
+    Steht die Kennung in keinem Treffer, oder widersprechen sich die Treffer, oder \
+    passen sie offensichtlich zu etwas anderem als dem genannten Gegenstand: dann \
+    `"title": null`. Das ist die richtige Antwort und keine Niederlage. Die Nummer \
+    kann falsch abgelesen sein — dann darf aus ihr nichts werden.
+
+    # `confident`
+    `true` nur, wenn die Kennung in mindestens einem Treffer **wörtlich** vorkommt \
+    und die Treffer sich einig sind. Sonst `false`.
+
+    # Die Antwort
+    {"title": "…" oder null,
+     "summary": "ein bis zwei Sätze, was das Ding ist und wofür",
+     "source": "die URL des Treffers, auf den du dich stützt",
+     "confident": true}
+    """
+
+    static func lookupMessage(code: ItemCode, itemName: String,
+                              hits: [SearchClient.Hit]) -> String {
+        var parts: [String] = []
+        parts.append("Kennung: \(code.value)  (\(code.label))")
+        if code.origin == .read {
+            // Der Unterschied gehört ins Modell, weil er die Messlatte verschiebt:
+            // eine dekodierte EAN ist richtig, eine abgelesene Nummer kann ein
+            // verwechseltes Zeichen enthalten.
+            parts.append("Diese Nummer wurde von einem Foto abgelesen und kann "
+                         + "Lesefehler enthalten. Passt sie zu keinem Treffer, "
+                         + "antworte mit `null` statt mit dem nächstbesten Ding.")
+        } else {
+            parts.append("Diese Nummer wurde vom Gerät aus einem Strichcode "
+                         + "dekodiert und ist zeichengenau richtig.")
+        }
+        let name = itemName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !name.isEmpty {
+            parts.append("Im Bild sah das Ding aus wie: \(name)")
+        }
+        parts.append("Suchtreffer:\n" + hits.prefix(5).map(\.forPrompt)
+            .joined(separator: "\n"))
+        parts.append("Was ist dieser Gegenstand?")
         return parts.joined(separator: "\n\n")
     }
 }

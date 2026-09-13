@@ -22,7 +22,12 @@ enum BundledSetup {
     // damit im Arbeitsverzeichnis nie einer stehenbleibt. Hier absichtlich leer.
     static let apiKey = ""
 
+    /// Derselbe Weg für den Suchdienst: ohne ihn bliebe das Nachschlagen von
+    /// Nummern im Testflug aus, und getestet würde wieder ein Einrichtungsformular.
+    static let searchAPIKey = ""
+
     static var isManaged: Bool { !apiKey.isEmpty }
+    static var hasSearch: Bool { !searchAPIKey.isEmpty }
 
     static let baseURL = "https://api.tensorx.ai"
     static let chatPath = "/v1/chat/completions"

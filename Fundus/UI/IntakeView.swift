@@ -26,6 +26,7 @@ struct IntakeView: View {
 
                 switch state.phase {
                 case .reading:  reading
+                case .looking(let done, let total): looking(done: done, total: total)
                 case .review:   review
                 case .failed(let message): failure(message)
                 }
@@ -61,6 +62,33 @@ struct IntakeView: View {
 
     private var placeLabel: String {
         state.placeID.map { model.inventory.tree.path(of: $0) } ?? "Ohne Ort"
+    }
+
+    // MARK: Nachschlagen
+
+    /// Eigener Schritt, weil er Sekunden dauert und etwas anderes tut als das Lesen.
+    ///
+    /// Mit Zähler statt Kreis: der Nutzer soll sehen, dass hier bezahlte Aufrufe
+    /// laufen, und wie viele noch kommen.
+    private func looking(done: Int, total: Int) -> some View {
+        VStack(spacing: 20) {
+            photo(maxHeight: 300)
+
+            VStack(spacing: 8) {
+                ProgressView()
+                    .tint(EH.slate)
+                Text(total == 0
+                     ? "Nummern werden nachgeschlagen."
+                     : "Nummern werden nachgeschlagen — \(done) von \(total).")
+                    .font(EH.bodySmall)
+                    .foregroundStyle(EH.slate)
+                Text("Was dabei herauskommt, ist ein Vorschlag und ersetzt nichts.")
+                    .font(EH.meta)
+                    .foregroundStyle(EH.muted)
+            }
+            Spacer()
+        }
+        .padding(.horizontal, EH.gutter)
     }
 
     // MARK: Lesen
@@ -288,6 +316,8 @@ private struct ProposalRow: View {
                         .lineLimit(2)
                 }
 
+                if let code = proposal.code { codeRow(code) }
+
                 if let existing {
                     Text(existing.quantity.map {
                         "steht schon da (\($0)\(existing.unit.isEmpty ? "" : " " + existing.unit)) — wird erhöht"
@@ -303,6 +333,60 @@ private struct ProposalRow: View {
         }
         .padding(.vertical, 10)
         .opacity(proposal.accepted ? 1 : 0.45)
+    }
+
+    /// Die Kennung und, falls nachgeschlagen, was dabei herauskam.
+    ///
+    /// Der Suchtreffer bekommt ein eigenes Häkchen und steht standardmäßig aus. Das
+    /// ist die ganze Absicherung dieser Funktion in einer Zeile Oberfläche: man kann
+    /// den Fund behalten und die Deutung verwerfen. Ein aufgelöster Produktname steht
+    /// am Ende einer Kette aus unscharfem Aufkleber, verwechselbaren Zeichen und
+    /// einer Suchmaschine, die auf alles antwortet — und sieht danach verlässlicher
+    /// aus als alles andere im Bestand. Die Nummer daneben macht das nachprüfbar.
+    @ViewBuilder
+    private func codeRow(_ code: ItemCode) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: code.origin == .scanned ? "barcode.viewfinder" : "text.viewfinder")
+                .font(.system(size: 10))
+                .foregroundStyle(EH.muted)
+            Text(code.value)
+                .font(EH.mono.weight(.medium))
+                .foregroundStyle(EH.slate)
+            Text(code.origin == .scanned ? "entziffert" : "abgelesen")
+                .font(EH.meta)
+                .foregroundStyle(EH.muted)
+        }
+
+        if let lookup = code.lookup, !lookup.title.isEmpty {
+            Button {
+                proposal.useLookupName.toggle()
+            } label: {
+                HStack(alignment: .top, spacing: 7) {
+                    Image(systemName: proposal.useLookupName ? "checkmark.square.fill" : "square")
+                        .font(.system(size: 14))
+                        .foregroundStyle(proposal.useLookupName ? EH.navy : EH.hairStrong)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(lookup.title)
+                            .font(EH.bodySmall.weight(.medium))
+                            .foregroundStyle(EH.navy)
+                            .multilineTextAlignment(.leading)
+                        Text(lookupCaption(lookup))
+                            .font(EH.meta)
+                            .foregroundStyle(lookup.confident ? EH.muted : EH.warn)
+                            .multilineTextAlignment(.leading)
+                    }
+                }
+            }
+            .buttonStyle(EHTap())
+            .padding(.top, 2)
+        }
+    }
+
+    private func lookupCaption(_ lookup: CodeLookup) -> String {
+        var parts = ["laut Websuche"]
+        if !lookup.sourceName.isEmpty { parts.append(lookup.sourceName) }
+        if !lookup.confident { parts.append("Treffer nicht eindeutig") }
+        return parts.joined(separator: " · ") + " — als Namen übernehmen?"
     }
 
     /// Menge, mit „—“ für ungezählt.

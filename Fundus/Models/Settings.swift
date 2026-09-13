@@ -56,6 +56,39 @@ struct ModelConfig: Codable, Equatable {
     }
 }
 
+/// Die Websuche, mit der Kennungen aufgelöst werden.
+///
+/// Aus, solange nichts eingetragen ist. Das ist kein Vorsichtsgestus, sondern die
+/// Prämisse dieser App: sie bringt keine Infrastruktur mit, und eine Suche, die
+/// stillschweigend über einen fremden Dienst liefe, wäre genau das.
+struct LookupConfig: Codable, Equatable {
+    var enabled: Bool = false
+    /// Voreingestellt auf Brave, weil Faden ihn schon spricht und ein Schlüssel im
+    /// Haushalt für beide reicht. Jeder Dienst, der JSON mit Titel, URL und
+    /// Beschreibung liefert, geht auch.
+    var url: String = "https://api.search.brave.com/res/v1/web/search"
+    var queryParam: String = "q"
+    var keyHeader: String = "X-Subscription-Token"
+    var keychainAccount: String = "fundus.search.key"
+
+    var isComplete: Bool {
+        enabled && URL(string: url) != nil
+            && !url.trimmingCharacters(in: .whitespaces).isEmpty
+    }
+
+    init() {}
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let d = LookupConfig()
+        enabled         = try c.decodeIfPresent(Bool.self, forKey: .enabled) ?? d.enabled
+        url             = try c.decodeIfPresent(String.self, forKey: .url) ?? d.url
+        queryParam      = try c.decodeIfPresent(String.self, forKey: .queryParam) ?? d.queryParam
+        keyHeader       = try c.decodeIfPresent(String.self, forKey: .keyHeader) ?? d.keyHeader
+        keychainAccount = try c.decodeIfPresent(String.self, forKey: .keychainAccount) ?? d.keychainAccount
+    }
+}
+
 /// Woher die Vektoren für die Suche kommen.
 struct SearchConfig: Codable, Equatable {
     enum Source: String, Codable, CaseIterable {
@@ -131,6 +164,7 @@ struct SearchConfig: Codable, Equatable {
 struct AppSettings: Codable, Equatable {
     var model = ModelConfig()
     var search = SearchConfig()
+    var lookup = LookupConfig()
     /// Ob ein bestätigter Vorschlag automatisch eingebettet wird. Aus heißt: die
     /// Suche findet das Ding über den Namen, aber nicht über die Bedeutung.
     var indexAutomatically: Bool = true
@@ -141,6 +175,7 @@ struct AppSettings: Codable, Equatable {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         model  = try c.decodeIfPresent(ModelConfig.self, forKey: .model) ?? ModelConfig()
         search = try c.decodeIfPresent(SearchConfig.self, forKey: .search) ?? SearchConfig()
+        lookup = try c.decodeIfPresent(LookupConfig.self, forKey: .lookup) ?? LookupConfig()
         indexAutomatically = try c.decodeIfPresent(Bool.self, forKey: .indexAutomatically) ?? true
     }
 }

@@ -13,18 +13,26 @@ enum ItemSearch {
     enum Kind: Int, Comparable {
         /// Der Name beginnt mit dem Suchwort.
         case namePrefix = 0
+        /// Die Kennung am Ding enthält das Suchwort.
+        ///
+        /// Direkt hinter dem Namensanfang, nicht davor: wer „Wa“ tippt, meint
+        /// „Wandler“ und nicht das Teil mit der Nummer WA12345. Wer dagegen
+        /// „MP1584EN“ tippt, meint genau dieses eine Teil — und findet es hier,
+        /// auch wenn der Eintrag „Platine“ heißt.
+        case code = 1
         /// Das Suchwort steht irgendwo im Namen.
-        case nameContains = 1
+        case nameContains = 2
         /// Es steht in Notiz oder Schlagwort.
-        case sideText = 2
+        case sideText = 3
         /// Nur die Bedeutung passt.
-        case semantic = 3
+        case semantic = 4
 
         static func < (a: Kind, b: Kind) -> Bool { a.rawValue < b.rawValue }
 
         var label: String {
             switch self {
             case .namePrefix, .nameContains: return "Name"
+            case .code:                      return "Nummer"
             case .sideText:                  return "Notiz"
             case .semantic:                  return "Bedeutung"
             }
@@ -39,7 +47,7 @@ enum ItemSearch {
         var id: UUID { item.id }
     }
 
-    /// Teilstringsuche über Name, Notiz und Schlagworte.
+    /// Teilstringsuche über Name, Kennung, Notiz und Schlagworte.
     ///
     /// Unempfindlich gegen Groß-/Kleinschreibung und Akzente, weil niemand „Lötzinn“
     /// mit dem richtigen Umlaut tippt, wenn er es schnell sucht.
@@ -52,6 +60,9 @@ enum ItemSearch {
             let name = item.normalisedName
             if name.hasPrefix(q) {
                 hits.append(Hit(item: item, kind: .namePrefix))
+            } else if let value = item.code?.value, !value.isEmpty,
+                      Item.normalise(value).contains(q) {
+                hits.append(Hit(item: item, kind: .code))
             } else if name.contains(q) {
                 hits.append(Hit(item: item, kind: .nameContains))
             } else {

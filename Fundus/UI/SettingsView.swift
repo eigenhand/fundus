@@ -7,6 +7,7 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var key = ""
+    @State private var lookupKey = ""
     @State private var shareKey = true
     @State private var probing = false
     @State private var probeResult: VisionProbe.Outcome?
@@ -23,6 +24,7 @@ struct SettingsView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     header
                     modelSection
+                    lookupSection
                     searchSection
                     indexSection
                     storageSection
@@ -205,6 +207,89 @@ struct SettingsView: View {
         probing = true
         probeResult = await VisionProbe.run(client: client)
         probing = false
+    }
+
+    // MARK: Nummern nachschlagen
+
+    /// Aus, bis jemand einen Schlüssel eintraegt.
+    ///
+    /// Dieselbe Praemisse wie beim Modell: die App bringt keine Infrastruktur mit.
+    /// Und hier waere das Stillschweigen teurer als dort — bei eingeschalteter Suche
+    /// verlaesst eine Nummer aus dem Keller des Nutzers das Geraet.
+    @ViewBuilder
+    private var lookupSection: some View {
+        SectionLabel(text: "Nummern nachschlagen")
+
+        Toggle(isOn: Binding(
+            get: { model.settings.lookup.enabled },
+            set: { model.settings.lookup.enabled = $0; model.save() })) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Kennungen im Netz aufloesen")
+                    .font(EH.bodySmall)
+                    .foregroundStyle(EH.navy)
+                Text("Steht auf einem Ding eine Herstellernummer, oder entziffert das "
+                     + "Geraet einen Strichcode, sucht die App danach und schlaegt einen "
+                     + "genauen Namen vor. Der Vorschlag ersetzt nichts: er kommt mit "
+                     + "eigenem Haekchen und der Nummer daneben.")
+                    .font(EH.meta)
+                    .foregroundStyle(EH.muted)
+                    .lineSpacing(2)
+            }
+        }
+        .tint(EH.navy)
+        .padding(.vertical, 12)
+
+        if model.settings.lookup.enabled {
+            VStack(spacing: 0) {
+                field("Adresse", text: Binding(
+                    get: { model.settings.lookup.url },
+                    set: { model.settings.lookup.url = $0; model.save() }),
+                      placeholder: "https://api.search.brave.com/res/v1/web/search",
+                      mono: true)
+                Divider().overlay(EH.hair)
+                field("Schluessel-Kopfzeile", text: Binding(
+                    get: { model.settings.lookup.keyHeader },
+                    set: { model.settings.lookup.keyHeader = $0; model.save() }),
+                      placeholder: "X-Subscription-Token", mono: true)
+                Divider().overlay(EH.hair)
+                searchKeyField
+            }
+
+            Text("Voreingestellt auf Brave Search — derselbe Schluessel, den Faden "
+                 + "benutzt. Jeder Dienst geht, der JSON mit Titel, Adresse und "
+                 + "Beschreibung liefert. Hoechstens \(IdentityLookup.maxPerIntake) "
+                 + "Nummern je Aufnahme: ein voller Werkzeugkoffer kostet sonst vierzig "
+                 + "Suchen und vierzig Modellaufrufe fuer eine Liste, die vielleicht "
+                 + "verworfen wird.")
+                .font(EH.meta)
+                .foregroundStyle(EH.muted)
+                .lineSpacing(2)
+                .padding(.top, 8)
+        }
+    }
+
+    private var searchKeyField: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            EH.label("Suchschluessel")
+            HStack(spacing: 10) {
+                SecureField(model.searchKey.isEmpty ? "BSA…" : "hinterlegt",
+                            text: $lookupKey)
+                    .font(EH.mono)
+                    .foregroundStyle(EH.navy)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                if !lookupKey.isEmpty {
+                    Button("Speichern") {
+                        model.setSearchKey(lookupKey)
+                        lookupKey = ""
+                    }
+                    .font(EH.bodySmall.weight(.medium))
+                    .foregroundStyle(EH.navy)
+                    .buttonStyle(EHTap())
+                }
+            }
+        }
+        .padding(.vertical, 12)
     }
 
     // MARK: Suche

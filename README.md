@@ -27,6 +27,31 @@ sieht, aber nicht benennen kann, kommt in eine eigene Liste — „eine graue Sc
 Aufschrift unscharf“. Das sagt dir, wo du selbst nachsehen musst, statt dir eine
 plausible Erfindung als Bestand zu verkaufen.
 
+**Nummern werden nachgeschlagen, aber nichts wird ersetzt.** Steht auf einem Bauteil
+eine Herstellernummer, oder klebt ein Strichcode darauf, kann die App im Netz danach
+suchen und einen genauen Namen vorschlagen — „MP1584EN DC-DC-Abwärtswandler 3 A“
+statt „eine Platine“. Das ist die gefährlichste Funktion dieser App, und sie ist
+entsprechend gebaut. Ein aufgelöster Produktname steht am Ende einer Kette mit drei
+fehlbaren Gliedern: ein unscharfer Aufkleber, ein Modell, das Zeichen verwechselt,
+eine Suchmaschine, die auf jede Zeichenfolge irgendetwas antwortet. Danach sieht er
+verlässlicher aus als alles andere im Bestand und ist es am wenigsten. Deshalb:
+
+- Der Suchtreffer hat ein **eigenes Häkchen** und ist **aus** voreingestellt. Man kann
+  den Fund behalten und die Deutung verwerfen.
+- Die Nummer steht daneben, wörtlich, und bleibt am Eintrag — sie ist das Einzige,
+  was sich nachprüfen lässt, ohne das Ding in die Hand zu nehmen.
+- Am Eintrag steht die Suchanfrage, die Quelle und das Datum.
+- Passen die Treffer nicht zur Nummer, ist `null` die vorgesehene Antwort des
+  Modells. Kein Vorschlag ist besser als ein plausibler.
+
+**Strichcodes liest das Gerät, nicht das Modell.** Apples Vision dekodiert EAN, UPC,
+Code 128, QR und DataMatrix aus dem Foto — mit Prüfziffer, ohne Netz, ohne Kosten, vor
+dem ersten bezahlten Aufruf. Ein Sprachmodell, dem man Balken zeigt, liest die Ziffern
+darunter ab und rät bei Unschärfe. Nennt das Modell eine EAN, die der Dekoder *nicht*
+gesehen hat, wird sie verworfen: einen Strichcode kann man nicht mit den Augen lesen.
+Herstellernummern dagegen stehen als Klartext auf dem Bauteil und dürfen abgelesen
+werden — sie bleiben als *abgelesen* markiert und damit als fehlbar.
+
 **Menge oder „—“.** `null` heißt ungezählt, nicht null Stück. Eine geschätzte Zahl ist
 schlimmer als keine, weil sie wie eine Zählung aussieht. Dosen in einer Schachtel,
 Schrauben in einer Schüttung: ungezählt.
@@ -80,8 +105,9 @@ welcher der beiden gilt, statt es erraten zu lassen.
 
 ## Was es nicht tut
 
-- **Kein Barcode als Hauptweg.** EAN funktioniert für Handelsware. Eine Kiste
-  M4-Schrauben und ein namenloses USB-C-Kabel haben keinen.
+- **Kein Barcode als Hauptweg.** EAN wird gelesen, wo eine ist, und aufgelöst, wenn
+  man es einschaltet. Aber eine Kiste M4-Schrauben und ein namenloses USB-C-Kabel
+  haben keinen, und das ist der Normalfall in einer Werkstatt.
 - **Keine Konten, kein Server, keine Synchronisierung von uns.** Dafür ist Spind da.
 - **Keine automatische Übernahme von Modellausgabe.** Siehe oben — das ist der Punkt.
 - **Keine Mengenschätzung.** Was nicht zählbar ist, bleibt ungezählt.
@@ -94,7 +120,16 @@ Modell muss Bilder lesen können — **„Bilder prüfen“** in den Einstellung
 winziges Zweifarbenbild und fragt, was darauf ist. Eine Ablehnung heißt nein, eine
 Antwort, die beide Farben nennt, heißt ja. Geraten wird nichts.
 
-Getestet mit `z-ai/glm-5.3-flash` über TensorX.
+Getestet mit `z-ai/glm-5.3-flash` über TensorX. Reasoning-Modelle brauchen den
+Token-Vorrat doppelt — erst zum Nachdenken, dann zum Schreiben —, deshalb steht das
+Limit bei 32 000 und ist in den Einstellungen verstellbar. Zu wenig davon sieht aus
+wie eine leere Antwort; die App sagt inzwischen, wenn es das war.
+
+Das Nachschlagen von Nummern ist aus, bis ein Suchschlüssel eingetragen ist.
+Voreingestellt auf Brave Search, weil Faden denselben benutzt; jeder Dienst geht, der
+JSON mit Titel, Adresse und Beschreibung liefert. Höchstens acht Nummern je Aufnahme —
+ein voller Werkzeugkoffer kostet sonst vierzig Suchen und vierzig Modellaufrufe für
+eine Liste, die vielleicht verworfen wird.
 
 ## Bauen
 
@@ -109,7 +144,7 @@ ist `dev.eigenhand.fundus.ios`; für die App Group braucht sie im Developer-Port
 Recht `com.apple.security.application-groups` mit `group.dev.eigenhand.shared`.
 
 ```bash
-./run-tests.sh            # 49 Tests auf einem Simulator
+./run-tests.sh            # 76 Tests auf einem Simulator
 ./release.sh              # Archiv, Upload zu TestFlight, Zuweisung
 git config core.hooksPath .githooks
 ```
@@ -122,11 +157,11 @@ keinem Klonen mitwandert.
 
 ```
 Fundus/
-  Models/      Item · Place · Inventory · Settings      — Werttypen, prüfbar
-  Intake/      IntakePrompt · PhotoIntake               — Foto → Vorschläge
+  Models/      Item · ItemCode · Place · Inventory · Settings   — Werttypen, prüfbar
+  Intake/      IntakePrompt · PhotoIntake · BarcodeScanner · IdentityLookup
   Search/      LocalEmbedder · Indexer · ItemSearch     — Namen, Bedeutung, Index
   Storage/     SharedContainer · Store · Keychain · PhotoStore
-  Providers/   ModelClient · VisionProbe                — der ganze Netzverkehr
+  Providers/   ModelClient · SearchClient · VisionProbe  — der ganze Netzverkehr
   UI/          InventoryView · IntakeView · ItemDetailView · PlacesView · SettingsView
   App/         AppModel · FundusApp · BundledSetup
   Design/      Theme                                    — wörtlich wie in Faden

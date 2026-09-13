@@ -76,11 +76,81 @@ struct ItemDetailView: View {
                 photos(item)
             }
 
+            if let code = item.code, !code.value.isEmpty {
+                SectionLabel(text: "Kennung")
+                codeCard(code)
+            }
+
             SectionLabel(text: "Herkunft")
             provenance(item)
         }
         .padding(.horizontal, EH.gutter)
         .padding(.bottom, 40)
+    }
+
+    /// Die Nummer am Ding, und was eine Suche daraus gemacht hat.
+    ///
+    /// Beides nebeneinander und nicht ineinander: die Nummer ist das Einzige an
+    /// einem Eintrag, das sich nachpruefen laesst, ohne das Ding in die Hand zu
+    /// nehmen. Wer spaeter vor dem Regal steht und etwas anderes findet, als hier
+    /// steht, sieht hier sofort, worauf sich die Behauptung stuetzte — die Nummer,
+    /// die Suchanfrage, die Quelle und das Datum.
+    private func codeCard(_ code: ItemCode) -> some View {
+        HairlineCard {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 8) {
+                    Image(systemName: code.origin == .scanned
+                          ? "barcode.viewfinder" : "text.viewfinder")
+                        .font(.system(size: 12))
+                        .foregroundStyle(EH.muted)
+                    Text(code.value)
+                        .font(EH.mono.weight(.medium))
+                        .foregroundStyle(EH.navy)
+                        .textSelection(.enabled)
+                    Spacer(minLength: 0)
+                    Text(code.label)
+                        .font(EH.meta)
+                        .foregroundStyle(EH.muted)
+                }
+
+                Text(code.origin == .scanned
+                     ? "Vom Geraet aus dem Strichcode entziffert — zeichengenau."
+                     : "Vom Modell aus dem Foto abgelesen. Kann Lesefehler enthalten.")
+                    .font(EH.meta)
+                    .foregroundStyle(code.origin == .scanned ? EH.muted : EH.warn)
+
+                if let lookup = code.lookup, !lookup.title.isEmpty {
+                    Divider().overlay(EH.hair)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(lookup.title)
+                            .font(EH.bodySmall.weight(.medium))
+                            .foregroundStyle(EH.navy)
+                        if !lookup.summary.isEmpty {
+                            Text(lookup.summary)
+                                .font(EH.bodySmall)
+                                .foregroundStyle(EH.slate)
+                                .lineSpacing(2)
+                        }
+                        Text(lookupTrail(lookup))
+                            .font(EH.meta)
+                            .foregroundStyle(EH.muted)
+                        if let url = URL(string: lookup.sourceURL), !lookup.sourceURL.isEmpty {
+                            Link(lookup.sourceURL, destination: url)
+                                .font(EH.meta)
+                                .foregroundStyle(EH.slate)
+                                .lineLimit(1)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func lookupTrail(_ lookup: CodeLookup) -> String {
+        var parts = ["gesucht nach \(lookup.query)"]
+        if !lookup.confident { parts.append("Treffer waren nicht eindeutig") }
+        parts.append(Ago.string(lookup.searchedAt))
+        return parts.joined(separator: " · ")
     }
 
     /// Die Sichtung, ganz oben und als Karte.

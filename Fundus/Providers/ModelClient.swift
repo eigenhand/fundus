@@ -102,6 +102,30 @@ struct ModelClient {
         return try await stream(url: url, body: body, onDelta: onDelta)
     }
 
+    // MARK: Eine Frage ohne Bild
+
+    /// Für den zweiten Durchgang: aus Suchtreffern einen Namen destillieren.
+    ///
+    /// Knapper begrenzt als das Lesen eines Fotos, weil die Antwort drei Felder hat.
+    /// Ein Reasoning-Modell darf trotzdem nachdenken — daher nicht auf ein paar
+    /// hundert Token gedeckelt, sondern auf ein Achtel des Vorrats.
+    func ask(prompt: String, system: String) async throws -> String {
+        guard let url = config.endpointURL, !config.model.isEmpty else {
+            throw ModelError.notConfigured
+        }
+        let body: [String: Any] = [
+            "model": config.model,
+            "messages": [
+                ["role": "system", "content": system],
+                ["role": "user", "content": prompt],
+            ],
+            "max_tokens": max(1_000, config.maxOutputTokens / 8),
+            "stream": true,
+            "temperature": 0.1,
+        ]
+        return try await stream(url: url, body: body, onDelta: nil)
+    }
+
     private func stream(url: URL, body: [String: Any],
                         onDelta: (@Sendable (String) -> Void)?) async throws -> String {
         var request = URLRequest(url: url)

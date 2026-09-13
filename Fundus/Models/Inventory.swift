@@ -88,7 +88,10 @@ struct Inventory: Codable, Equatable {
     @discardableResult
     mutating func absorb(_ proposal: Proposal, at placeID: UUID?, photoID: String?,
                          model: String?) -> Outcome {
-        let clean = proposal.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        // `effectiveName`, nicht `name`: hat der Nutzer den Fund aus der Websuche
+        // angehakt, ist dessen Titel der Name — sonst der, den das Modell im Bild
+        // gelesen hat.
+        let clean = proposal.effectiveName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !clean.isEmpty else { return .skipped }
 
         if var found = existing(named: clean, at: placeID) {
@@ -99,6 +102,10 @@ struct Inventory: Codable, Equatable {
                 found.note = found.note.isEmpty ? proposal.note : found.note + "; " + proposal.note
             }
             if let photoID, !found.photoIDs.contains(photoID) { found.photoIDs.append(photoID) }
+            // Eine Kennung am bestehenden Eintrag wird nicht überschrieben: die erste
+            // stand da, als jemand sie bestätigt hat. Eine fehlende wird ergänzt —
+            // das zweite Foto zeigt das Typenschild vielleicht schärfer.
+            if found.code == nil { found.code = proposal.code }
             found.lastSeenAt = Date()
             update(found)
             return .increased(found.id)
@@ -108,6 +115,7 @@ struct Inventory: Codable, Equatable {
                         note: proposal.note, placeID: placeID,
                         provenance: Provenance(origin: .photo, photoID: photoID, model: model))
         if let photoID { item.photoIDs = [photoID] }
+        item.code = proposal.code
         add(item)
         return .added(item.id)
     }
@@ -163,6 +171,21 @@ struct Proposal: Identifiable, Equatable, Hashable {
     var quantity: Int?
     var unit: String = ""
     var note: String = ""
+    /// Eine Nummer, die am Ding steht — dekodiert oder abgelesen, siehe `ItemCode`.
+    var code: ItemCode?
     /// Vom Nutzer im Prüfschritt abgewählt.
     var accepted: Bool = true
+    /// Ob der Nutzer den Namen aus der Websuche übernehmen will.
+    ///
+    /// Getrennt vom Häkchen für den Eintrag selbst, und das ist der Kern der
+    /// Absicherung: man kann den Fund behalten und die Deutung verwerfen. Startet
+    /// aus, anders als `accepted` — eine Kette aus drei fehlbaren Gliedern bekommt
+    /// nicht dieselbe Vorleistung wie das, was das Modell mit eigenen Augen sah.
+    var useLookupName: Bool = false
+
+    /// Der Name, der beim Annehmen wirklich gespeichert wird.
+    var effectiveName: String {
+        if useLookupName, let title = code?.lookup?.title, !title.isEmpty { return title }
+        return name
+    }
 }

@@ -73,6 +73,7 @@ final class AppModel {
             settings.model.model = BundledSetup.chatModel
             settings.model.maxOutputTokens = BundledSetup.maxOutputTokens
             settings.model.keychainAccount = BundledSetup.keychainAccount
+            adoptBundledSearchKey()
             save()
             return
         }
@@ -83,6 +84,18 @@ final class AppModel {
         settings.model.keychainAccount = shared.keychainAccount
         save()
         banner = Banner(text: "Endpoint von \(shared.writtenBy) übernommen.")
+    }
+
+    /// Der Suchschlüssel aus dem Build, und mit ihm das Nachschlagen an.
+    ///
+    /// Eingeschaltet und nicht nur hinterlegt: ein Testflug, bei dem die Funktion
+    /// erst gesucht werden muss, testet sie nicht. Wer sie nicht will, schaltet sie
+    /// in den Einstellungen aus — dort steht auch, was dabei das Gerät verlässt.
+    private func adoptBundledSearchKey() {
+        guard BundledSetup.hasSearch, searchKey.isEmpty else { return }
+        Keychain.set(BundledSetup.searchAPIKey, account: settings.lookup.keychainAccount,
+                     shared: false)
+        settings.lookup.enabled = true
     }
 
     /// Speichert verzögert. Zwanzig Tastendrücke in einem Namensfeld sollen nicht
@@ -350,10 +363,25 @@ final class AppModel {
                     })
                 guard let self, self.intake === state else { return }
                 state.result = result
-                state.phase = .review
                 if result.isEmpty {
                     state.phase = .failed("Auf dem Bild war nichts Bestandsfähiges zu erkennen.")
+                    return
                 }
+
+                // Kennungen nachschlagen, falls eingerichtet und welche da sind. Die
+                // Aufnahme ist an dieser Stelle schon bezahlt und gültig — ein
+                // Fehlschlag beim Nachschlagen darf sie deshalb nicht kosten, und
+                // `resolve` schlägt einzeln fehl statt im Ganzen.
+                if let lookup = self.lookupClient,
+                   result.proposals.contains(where: { $0.code?.isSearchable == true }) {
+                    state.phase = .looking(done: 0, total: 0)
+                    let resolved = await lookup.resolve(result.proposals) { done, total in
+                        Task { @MainActor in state.phase = .looking(done: done, total: total) }
+                    }
+                    guard self.intake === state else { return }
+                    state.result.proposals = resolved
+                }
+                state.phase = .review
             } catch {
                 guard let self, self.intake === state else { return }
                 state.phase = .failed(error.localizedDescription)
@@ -397,6 +425,23 @@ final class AppModel {
 
     // MARK: Einstellungen
 
+    var searchKey: String {
+        Keychain.get(account: settings.lookup.keychainAccount, shared: false) ?? ""
+    }
+
+    /// Der Nachschlagedienst, sofern eingerichtet.
+    var lookupClient: IdentityLookup? {
+        guard settings.lookup.isComplete, let client else { return nil }
+        return IdentityLookup(
+            model: client,
+            search: SearchClient(config: settings.lookup, apiKey: searchKey))
+    }
+
+    func setSearchKey(_ key: String) {
+        Keychain.set(key, account: settings.lookup.keychainAccount, shared: false)
+        banner = Banner(text: key.isEmpty ? "Suchschlüssel gelöscht." : "Suchschlüssel gespeichert.")
+    }
+
     func setKey(_ key: String, shared: Bool) {
         let account = shared ? Keychain.sharedAccount : "fundus.model.key"
         Keychain.set(key, account: account, shared: shared)
@@ -431,6 +476,9 @@ final class AppModel {
 final class IntakeState {
     enum Phase: Equatable {
         case reading
+        /// Kennungen werden im Netz nachgeschlagen. Eigene Phase, weil der Schritt
+        /// Sekunden dauert und der Nutzer sonst vor einer halb fertigen Liste steht.
+        case looking(done: Int, total: Int)
         case review
         case failed(String)
     }
