@@ -6,6 +6,10 @@ enum ModelError: LocalizedError {
     case http(status: Int, body: String)
     case transport(String)
     case emptyAnswer
+    /// Das Modell lief in die Token-Grenze, bevor Text kam.
+    case truncated(limit: Int, reasoningChars: Int)
+    /// Das Modell hat nur nachgedacht und nichts geschrieben.
+    case reasoningOnly(chars: Int)
     case notJSON(String)
 
     var errorDescription: String? {
@@ -16,6 +20,16 @@ enum ModelError: LocalizedError {
             return "HTTP \(s)\n\(Self.readable(b))"
         case .transport(let m): return "Verbindungsfehler: \(m)"
         case .emptyAnswer:   return "Das Modell hat keinen Text geliefert."
+        case .truncated(let limit, let thinking):
+            var m = "Die Antwort wurde bei \(limit) Token abgeschnitten, bevor Text kam."
+            if thinking > 0 {
+                m += " Das Modell hat vorher \(thinking) Zeichen nachgedacht — "
+                m += "Reasoning-Modelle brauchen die Token doppelt."
+            }
+            return m + " In den Einstellungen mehr Ausgabetoken erlauben."
+        case .reasoningOnly(let chars):
+            return "Das Modell hat nur nachgedacht (\(chars) Zeichen) und keine Antwort "
+                + "geschrieben. Meist hilft ein höheres Token-Limit."
         case .notJSON(let m): return "Die Antwort war nicht das erwartete JSON: \(m)"
         }
     }
@@ -112,6 +126,12 @@ struct ModelClient {
         }
 
         var text = ""
+        // Mitgezaehlt, nicht gesammelt: der Gedankengang gehoert nicht in den Bestand,
+        // aber ohne ihn ist "keine Antwort" nicht von "nur nachgedacht" zu trennen —
+        // und genau diese beiden Faelle brauchen entgegengesetzte Abhilfe.
+        var thinkingChars = 0
+        var finishReason: String?
+
         for try await line in bytes.lines {
             guard line.hasPrefix("data:") else { continue }
             let payload = line.dropFirst(5).trimmingCharacters(in: .whitespaces)
@@ -122,17 +142,31 @@ struct ModelClient {
             if let error = obj["error"] as? [String: Any] {
                 throw ModelError.transport(error["message"] as? String ?? "Unbekannter Fehler.")
             }
-            guard let choice = (obj["choices"] as? [[String: Any]])?.first,
-                  let delta = choice["delta"] as? [String: Any],
-                  let piece = delta["content"] as? String, !piece.isEmpty
-            else { continue }
+            guard let choice = (obj["choices"] as? [[String: Any]])?.first else { continue }
+            if let reason = choice["finish_reason"] as? String { finishReason = reason }
+            guard let delta = choice["delta"] as? [String: Any] else { continue }
+
+            // Anbieter benennen den Gedankengang unterschiedlich; beide Schreibweisen
+            // sind im Umlauf.
+            for key in ["reasoning_content", "reasoning"] {
+                if let t = delta[key] as? String { thinkingChars += t.count }
+            }
+            guard let piece = delta["content"] as? String, !piece.isEmpty else { continue }
             text += piece
             onDelta?(piece)
         }
 
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { throw ModelError.emptyAnswer }
-        return trimmed
+        guard trimmed.isEmpty else { return trimmed }
+
+        // Ohne Text: sagen, warum. "Das Modell hat nichts geliefert" schickt den
+        // Nutzer sonst auf die Suche nach einem Fehler, den es nicht gibt.
+        if finishReason == "length" {
+            throw ModelError.truncated(limit: config.maxOutputTokens,
+                                       reasoningChars: thinkingChars)
+        }
+        if thinkingChars > 0 { throw ModelError.reasoningOnly(chars: thinkingChars) }
+        throw ModelError.emptyAnswer
     }
 
     // MARK: Vektoren über den Endpoint

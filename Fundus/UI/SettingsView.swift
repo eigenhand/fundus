@@ -98,6 +98,8 @@ struct SettingsView: View {
                       placeholder: "anbieter/modellname", mono: true)
                 Divider().overlay(EH.hair)
                 keyField
+                Divider().overlay(EH.hair)
+                tokenField
             }
             .onDisappear { model.endpointChanged() }
 
@@ -118,6 +120,33 @@ struct SettingsView: View {
         }
 
         probeRow
+    }
+
+    /// Sichtbar und verstellbar, weil die richtige Zahl vom Modell abhaengt.
+    ///
+    /// Ein Reasoning-Modell verbraucht den Vorrat zweimal: erst zum Nachdenken, dann
+    /// zum Schreiben. Wer in die Grenze laeuft, soll das hier aendern koennen und
+    /// nicht auf einen neuen Build warten muessen.
+    private var tokenField: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            EH.label("Ausgabetoken, hoechstens")
+            HStack(spacing: 10) {
+                TextField("32000", value: Binding(
+                    get: { model.settings.model.maxOutputTokens },
+                    set: { model.settings.model.maxOutputTokens = max(256, min(200_000, $0)) }),
+                          format: .number.grouping(.never))
+                    .font(EH.mono)
+                    .foregroundStyle(EH.navy)
+                    .keyboardType(.numberPad)
+                Spacer(minLength: 0)
+            }
+            Text("Reasoning-Modelle brauchen den Vorrat doppelt — erst zum Nachdenken, "
+                 + "dann zum Schreiben. Zu wenig sieht aus wie eine leere Antwort.")
+                .font(EH.meta)
+                .foregroundStyle(EH.muted)
+                .padding(.top, 2)
+        }
+        .padding(.vertical, 12)
     }
 
     private var keyField: some View {

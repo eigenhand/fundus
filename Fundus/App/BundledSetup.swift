@@ -33,7 +33,7 @@ enum BundledSetup {
     /// derselben Frage. Für eine Aufnahme, die hinter einer Kamera hängt, ist das
     /// der Unterschied zwischen langsam und kaputt.
     static let chatModel = "z-ai/glm-5.3-flash"
-    static let maxOutputTokens = 4_000
+    static let maxOutputTokens = 32_000
 
     static let keychainAccount = "fundus.bundled.key"
 }

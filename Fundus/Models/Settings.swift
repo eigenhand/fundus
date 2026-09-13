@@ -14,7 +14,15 @@ struct ModelConfig: Codable, Equatable {
     var model: String = ""
     /// Nur der Verweis. Der Schlüssel selbst liegt im Schlüsselbund.
     var keychainAccount: String = "fundus.model.key"
-    var maxOutputTokens: Int = 4000
+    /// Grosszuegig, und das ist eine Lehre aus dem ersten Testflug.
+    ///
+    /// 4 000 waren zu wenig: ein Reasoning-Modell wie `glm-5.3-flash` denkt ueber ein
+    /// Foto mit vierzig Teilen laenger nach, als es danach zu schreiben hat, und lief
+    /// in die Grenze, bevor das erste JSON-Zeichen kam. Herausgekommen ist eine leere
+    /// Antwort — teuer bezahlt und nicht als Grenze erkennbar. Ausgabetoken werden
+    /// nur berechnet, wenn sie anfallen; ein hohes Limit kostet nichts, ein zu
+    /// niedriges kostet die ganze Aufnahme.
+    var maxOutputTokens: Int = 32_000
     /// Zusätzliche Kopfzeilen, etwa `HTTP-Referer` für OpenRouter.
     var extraHeaders: [String: String] = [:]
 
@@ -38,7 +46,12 @@ struct ModelConfig: Codable, Equatable {
         path            = try c.decodeIfPresent(String.self, forKey: .path) ?? d.path
         model           = try c.decodeIfPresent(String.self, forKey: .model) ?? ""
         keychainAccount = try c.decodeIfPresent(String.self, forKey: .keychainAccount) ?? d.keychainAccount
-        maxOutputTokens = try c.decodeIfPresent(Int.self, forKey: .maxOutputTokens) ?? d.maxOutputTokens
+        // Gespeicherte 4 000 stammen aus der ersten Fassung und waren nie eine Wahl,
+        // sondern eine zu knappe Voreinstellung. Wer sie noch liegen hat, bekaeme
+        // sonst denselben Fehlschlag nach jedem Update wieder.
+        let storedTokens = try c.decodeIfPresent(Int.self, forKey: .maxOutputTokens)
+        maxOutputTokens = (storedTokens == nil || storedTokens == 4000)
+            ? d.maxOutputTokens : storedTokens!
         extraHeaders    = try c.decodeIfPresent([String: String].self, forKey: .extraHeaders) ?? [:]
     }
 }
