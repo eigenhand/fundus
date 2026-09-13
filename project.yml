@@ -1,0 +1,67 @@
+name: Fundus
+options:
+  bundleIdPrefix: dev.eigenhand
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    DEVELOPMENT_TEAM: YHLVKSU86M
+    CODE_SIGN_STYLE: Automatic
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+targets:
+  Fundus:
+    type: application
+    platform: iOS
+    sources:
+      - path: Fundus
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.eigenhand.fundus.ios
+        PRODUCT_NAME: Fundus
+        INFOPLIST_FILE: Fundus/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+        SWIFT_STRICT_CONCURRENCY: minimal
+        TARGETED_DEVICE_FAMILY: "1"
+        GENERATE_INFOPLIST_FILE: NO
+        CODE_SIGN_ENTITLEMENTS: Fundus/Fundus.entitlements
+      # Wie bei Faden: nur das Archiv signiert von Hand, weil auf diesem Rechner kein
+      # Apple-Konto in Xcode hinterlegt ist und die automatische Signierung deshalb
+      # kein Profil erneuern kann, solange die App Group in den Berechtigungen steht.
+      # Debug bleibt automatisch, damit Simulator und Tests unberuehrt laufen.
+      configs:
+        Release:
+          CODE_SIGN_STYLE: Manual
+          CODE_SIGN_IDENTITY: "Apple Distribution"
+          PROVISIONING_PROFILE_SPECIFIER: "Fundus App Store (API)"
+  FundusTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: FundusTests
+    dependencies:
+      - target: Fundus
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.eigenhand.fundus.ios.tests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Fundus.app/Fundus"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+        SWIFT_STRICT_CONCURRENCY: minimal
+schemes:
+  Fundus:
+    build:
+      targets:
+        Fundus: all
+        FundusTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - FundusTests
+    archive:
+      config: Release

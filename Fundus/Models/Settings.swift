@@ -1,0 +1,133 @@
+import Foundation
+
+/// Alles, was Fundus braucht, um mit einem Modell zu sprechen.
+///
+/// Dieselbe Prämisse wie bei Faden: die App bringt keine Infrastruktur mit. Endpoint,
+/// Schlüssel und Modellname kommen vom Nutzer. Anders als Faden braucht Fundus davon
+/// nur einen Bruchteil — ein Bild hin, JSON zurück — deshalb steht hier kein
+/// Wire-Format zur Wahl. Das OpenAI-kompatible Format spricht praktisch jeder
+/// Anbieter, und für den einen Aufruf, den diese App macht, wäre eine zweite
+/// Übersetzung Aufwand ohne Gegenwert.
+struct ModelConfig: Codable, Equatable {
+    var baseURL: String = ""
+    var path: String = "/v1/chat/completions"
+    var model: String = ""
+    /// Nur der Verweis. Der Schlüssel selbst liegt im Schlüsselbund.
+    var keychainAccount: String = "fundus.model.key"
+    var maxOutputTokens: Int = 4000
+    /// Zusätzliche Kopfzeilen, etwa `HTTP-Referer` für OpenRouter.
+    var extraHeaders: [String: String] = [:]
+
+    var endpointURL: URL? {
+        let base = baseURL.trimmingCharacters(in: .whitespaces)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        guard !base.isEmpty else { return nil }
+        return URL(string: base + path)
+    }
+
+    var isComplete: Bool {
+        endpointURL != nil && !model.trimmingCharacters(in: .whitespaces).isEmpty
+    }
+
+    init() {}
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let d = ModelConfig()
+        baseURL         = try c.decodeIfPresent(String.self, forKey: .baseURL) ?? ""
+        path            = try c.decodeIfPresent(String.self, forKey: .path) ?? d.path
+        model           = try c.decodeIfPresent(String.self, forKey: .model) ?? ""
+        keychainAccount = try c.decodeIfPresent(String.self, forKey: .keychainAccount) ?? d.keychainAccount
+        maxOutputTokens = try c.decodeIfPresent(Int.self, forKey: .maxOutputTokens) ?? d.maxOutputTokens
+        extraHeaders    = try c.decodeIfPresent([String: String].self, forKey: .extraHeaders) ?? [:]
+    }
+}
+
+/// Woher die Vektoren für die Suche kommen.
+struct SearchConfig: Codable, Equatable {
+    enum Source: String, Codable, CaseIterable {
+        /// Apples Modell auf dem Gerät. Die Voreinstellung hier — anders als bei
+        /// Faden, und mit Grund: ein Bestand wird im Keller durchsucht, und ein
+        /// Suchfeld, das ohne Empfang nichts findet, ist in genau dem Moment kaputt,
+        /// in dem man es braucht. Die 108 MB sind der Preis dafür.
+        case onDevice
+        /// Über den Endpoint des Nutzers. Genauer, kostet aber eine Leitung.
+        case endpoint
+    }
+    var source: Source = .onDevice
+
+    var embeddingPath: String = "/v1/embeddings"
+    var embeddingModel: String = ""
+    /// Leer heißt: derselbe Endpoint und Schlüssel wie fürs Lesen der Fotos.
+    var embeddingBaseURL: String = ""
+
+    /// Ab welcher Ähnlichkeit ein Treffer überhaupt gezeigt wird.
+    ///
+    /// 0,18 nach dem Zentrieren. Vor dem Zentrieren liegen beim lokalen Modell alle
+    /// Werte über 0,95 und ein Schwellwert filtert nichts; nach dem Abzug des
+    /// Mittelvektors verteilen sie sich wieder über den Bereich, in dem eine Grenze
+    /// etwas bedeutet.
+    var minimumSimilarity: Double = 0.18
+    /// Wie viele Ähnlichkeitstreffer höchstens unter die Namenstreffer kommen.
+    var maxSemanticHits: Int = 12
+
+    /// Der Name, der als Herkunft an jedem Vektor steht.
+    ///
+    /// Nicht `embeddingModel`: auf dem Gerät gibt es kein Feld, in das jemand einen
+    /// Namen tippt, und der Stempel braucht trotzdem einen — sonst ließen sich die
+    /// beiden Quellen nicht auseinanderhalten, und genau dafür ist er da.
+    var effectiveModel: String {
+        switch source {
+        case .onDevice: return LocalEmbedder.modelIdentifier
+        case .endpoint: return embeddingModel
+        }
+    }
+
+    /// Ob die Ähnlichkeiten vor dem Vergleich zentriert werden müssen.
+    ///
+    /// Beim lokalen Modell liegen alle Kosinuswerte über 0,95 — gemessen in Faden:
+    /// Hund zu „Welches Haustier habe ich?“ 0,979, Auto zur selben Frage 0,970. Die
+    /// Rangfolge stimmt noch, aber ein Schwellwert filtert nichts mehr. Den
+    /// Mittelvektor des Bestands abzuziehen ist das übliche Mittel dagegen und
+    /// stellt die Bedeutung der Grenze wieder her.
+    var needsCentering: Bool { source == .onDevice }
+
+    func embeddingURL(fallbackBase: String) -> URL? {
+        let raw = embeddingBaseURL.trimmingCharacters(in: .whitespaces).isEmpty
+            ? fallbackBase : embeddingBaseURL
+        let base = raw.trimmingCharacters(in: .whitespaces)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        guard !base.isEmpty else { return nil }
+        return URL(string: base + embeddingPath)
+    }
+
+    init() {}
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let d = SearchConfig()
+        source            = try c.decodeIfPresent(Source.self, forKey: .source) ?? d.source
+        embeddingPath     = try c.decodeIfPresent(String.self, forKey: .embeddingPath) ?? d.embeddingPath
+        embeddingModel    = try c.decodeIfPresent(String.self, forKey: .embeddingModel) ?? ""
+        embeddingBaseURL  = try c.decodeIfPresent(String.self, forKey: .embeddingBaseURL) ?? ""
+        minimumSimilarity = try c.decodeIfPresent(Double.self, forKey: .minimumSimilarity) ?? d.minimumSimilarity
+        maxSemanticHits   = try c.decodeIfPresent(Int.self, forKey: .maxSemanticHits) ?? d.maxSemanticHits
+    }
+}
+
+struct AppSettings: Codable, Equatable {
+    var model = ModelConfig()
+    var search = SearchConfig()
+    /// Ob ein bestätigter Vorschlag automatisch eingebettet wird. Aus heißt: die
+    /// Suche findet das Ding über den Namen, aber nicht über die Bedeutung.
+    var indexAutomatically: Bool = true
+
+    init() {}
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        model  = try c.decodeIfPresent(ModelConfig.self, forKey: .model) ?? ModelConfig()
+        search = try c.decodeIfPresent(SearchConfig.self, forKey: .search) ?? SearchConfig()
+        indexAutomatically = try c.decodeIfPresent(Bool.self, forKey: .indexAutomatically) ?? true
+    }
+}

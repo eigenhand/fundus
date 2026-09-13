@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- Der gemeinsame Container der eigenhand-Apps: Spind, Faden, Fundus.
+       Neutral benannt, nicht nach einer der Apps — sonst waere der Name schon
+       falsch, wenn die vierte dazukommt. -->
+  <key>com.apple.security.application-groups</key>
+  <array>
+    <string>group.dev.eigenhand.shared</string>
+  </array>
+  <!-- Additiv, nicht ersetzend: die eigene Gruppe bleibt stehen, damit ein Schluessel,
+       den nur diese App kennt, auch nur hier liegt. Die gemeinsame Gruppe ist der Ort,
+       an dem sich die drei Apps einen Endpoint teilen koennen. -->
+  <key>keychain-access-groups</key>
+  <array>
+    <string>$(AppIdentifierPrefix)dev.eigenhand.fundus.ios</string>
+    <string>$(AppIdentifierPrefix)dev.eigenhand.shared</string>
+  </array>
+</dict>
+</plist>
