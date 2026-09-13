@@ -43,7 +43,25 @@ import json,sys
 for g in json.load(sys.stdin).get('data',[]):
     if g['attributes'].get('isInternalGroup'): print(g['id']); break
 ")
-[ -n "$GROUP" ] || { echo "    Keine interne Gruppe gefunden."; exit 1; }
+
+# Beim allerersten Release einer App gibt es noch keine Gruppe — vorher abzubrechen
+# hiesse, den Build hochzuladen und ihn dann fuer niemanden sichtbar liegen zu
+# lassen. Also anlegen statt melden.
+if [ -z "$GROUP" ]; then
+  echo "    Keine interne Gruppe — lege \"Intern\" an."
+  T=$(token)
+  GROUP=$(curl -s -X POST -H "Authorization: Bearer $T" -H "Content-Type: application/json" \
+    "https://api.appstoreconnect.apple.com/v1/betaGroups" \
+    -d "{\"data\":{\"type\":\"betaGroups\",\"attributes\":{\"name\":\"Intern\",\"isInternalGroup\":true},\"relationships\":{\"app\":{\"data\":{\"type\":\"apps\",\"id\":\"$APP_ID\"}}}}}" \
+    | python3 -c "
+import json,sys
+d=json.load(sys.stdin)
+if 'errors' in d:
+    for e in d['errors']: print('', e.get('detail') or e.get('title'), file=sys.stderr)
+else: print(d['data']['id'])
+")
+fi
+[ -n "$GROUP" ] || { echo "    Keine interne Gruppe, und anlegen ging nicht."; exit 1; }
 
 CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
   -H "Authorization: Bearer $T" -H "Content-Type: application/json" \
