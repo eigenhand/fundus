@@ -174,6 +174,18 @@ Bruchteil benutzt. Gestreamt wird trotzdem: ein getesteter Anbieter beantwortete
 gestreamte Aufrufe in Sekunden, während nicht-gestreamte derselben Größe überhaupt
 nicht zurückkamen.
 
+## Das Icon
+
+Ein Sortierkasten von oben, navy auf hell wie der Rest der Familie. Erzeugt, nicht
+gemalt — `python3 Tools/make-icon.py` schreibt die drei Fassungen (hell, dunkel,
+getönt) neu und kommt dabei auf dieselben Bytes.
+
+Drei Anläufe, und die Korrekturen stehen im Skript: Rechtecke in Zellen lesen sich
+als Wireframe, nicht als Kasten. Was den Unterschied macht, ist die dicke Außenwand
+gegen dünne Stege — ein Diagramm hat überall dieselbe Strichstärke — und Inhalt mit
+Form statt gefüllter Kacheln. Kein Dashboard hat runde Kacheln; drei Kreise sagen
+„Schrauben".
+
 ## Lizenz
 
 GPL-3.0. Siehe [LICENSE](LICENSE).
