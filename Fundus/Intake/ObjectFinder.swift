@@ -121,6 +121,145 @@ enum ObjectFinder {
                       height: CGFloat(maxY - minY + 1) / CGFloat(h))
     }
 
+    /// Stellt einen Gegenstand frei: Umriss behalten, alles andere weiss.
+    ///
+    /// Der Grund ist derselbe wie beim Zuschneiden überhaupt, nur eine Stufe weiter.
+    /// Ein Ausschnitt liest sich besser als ein Regal; ein freigestellter Gegenstand
+    /// liest sich besser als ein Ausschnitt, in dem noch das halbe Bett liegt. Was
+    /// weiss ist, lenkt nicht ab und wird nicht mitbeschrieben.
+    ///
+    /// Der Rand von zwei Prozent ist kein Sicherheitsabstand, sondern Inhalt: eine
+    /// Maske sitzt auf der Kante, und genau auf der Kante steht oft, worauf es
+    /// ankommt — der Rand des Gehäuses, der Schatten, der ein Ding vom Untergrund
+    /// trennt. Geschnitten wird deshalb am **erweiterten** Umriss.
+    static func cutOut(_ image: UIImage, object: SegmentedObject,
+                       margin: CGFloat = 0.02) -> UIImage? {
+        let base = image.scaledDown(maxEdge: 1_400)
+        guard let cg = base.cgImage, object.side > 0,
+              object.bits.count == object.side * object.side else { return nil }
+        let width = cg.width, height = cg.height
+        guard width > 0, height > 0 else { return nil }
+
+        // Gleich weit in alle Richtungen, gemessen an der laengeren Kante — sonst
+        // bekaeme ein flaches Ding waagerecht viel mehr Rand als senkrecht.
+        let reach = margin * max(object.box.width, object.box.height)
+        // Aufgerundet, und ohne Rand wirklich null. Die Maske hat 256 Pixel
+        // Kantenlaenge: zwei Prozent eines mittelgrossen Gegenstands sind darin
+        // anderthalb Pixel, und abgerundet waere der Rand genau dann verschwunden,
+        // wenn er verlangt wurde.
+        let radius = margin > 0
+            ? max(1, Int((reach * CGFloat(object.side)).rounded(.up)))
+            : 0
+        let grown = dilate(object.bits, side: object.side, radius: radius)
+        guard let area = bounds(of: grown, side: object.side) else { return nil }
+
+        let rect = CGRect(x: (area.minX * CGFloat(width)).rounded(.down),
+                          y: (area.minY * CGFloat(height)).rounded(.down),
+                          width: (area.width * CGFloat(width)).rounded(),
+                          height: (area.height * CGFloat(height)).rounded())
+            .intersection(CGRect(x: 0, y: 0, width: width, height: height))
+        guard rect.width >= 64, rect.height >= 64 else { return nil }
+
+        var source = [UInt8](repeating: 0, count: width * height * 4)
+        source.withUnsafeMutableBytes { raw in
+            guard let addr = raw.baseAddress,
+                  let context = CGContext(data: addr, width: width, height: height,
+                                          bitsPerComponent: 8, bytesPerRow: width * 4,
+                                          space: CGColorSpaceCreateDeviceRGB(),
+                                          bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+            else { return }
+            context.draw(cg, in: CGRect(x: 0, y: 0, width: width, height: height))
+        }
+
+        let outWidth = Int(rect.width), outHeight = Int(rect.height)
+        let left = Int(rect.minX), top = Int(rect.minY)
+        var out = [UInt8](repeating: 255, count: outWidth * outHeight * 4)
+
+        for y in 0 ..< outHeight {
+            let sourceY = top + y
+            // Die Maske ist quadratisch und steht fuer das ganze Bild — dieselbe
+            // lineare Umrechnung wie beim Kasten.
+            let maskY = min(object.side - 1, (sourceY * object.side) / height)
+            for x in 0 ..< outWidth {
+                let sourceX = left + x
+                let maskX = min(object.side - 1, (sourceX * object.side) / width)
+                let target = (y * outWidth + x) * 4
+                guard grown[maskY * object.side + maskX] > 0 else {
+                    out[target + 3] = 255      // weiss, undurchsichtig
+                    continue
+                }
+                let from = (sourceY * width + sourceX) * 4
+                out[target + 0] = source[from + 0]
+                out[target + 1] = source[from + 1]
+                out[target + 2] = source[from + 2]
+                out[target + 3] = 255
+            }
+        }
+
+        guard let provider = CGDataProvider(data: Data(out) as CFData),
+              let piece = CGImage(width: outWidth, height: outHeight, bitsPerComponent: 8,
+                                  bitsPerPixel: 32, bytesPerRow: outWidth * 4,
+                                  space: CGColorSpaceCreateDeviceRGB(),
+                                  bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue),
+                                  provider: provider, decode: nil, shouldInterpolate: true,
+                                  intent: .defaultIntent)
+        else { return nil }
+        return UIImage(cgImage: piece)
+    }
+
+    /// Den Umriss nach aussen wachsen lassen.
+    ///
+    /// In zwei Durchgaengen statt einem Quadrat je Punkt: waagerecht, dann senkrecht.
+    /// Das Ergebnis ist dasselbe und die Arbeit waechst mit dem Radius statt mit
+    /// seinem Quadrat.
+    static func dilate(_ bits: [UInt8], side: Int, radius: Int) -> [UInt8] {
+        guard radius > 0, side > 0, bits.count == side * side else { return bits }
+        var wide = [UInt8](repeating: 0, count: bits.count)
+        for y in 0 ..< side {
+            let row = y * side
+            for x in 0 ..< side {
+                var on: UInt8 = 0
+                for dx in max(0, x - radius) ... min(side - 1, x + radius) where bits[row + dx] > 0 {
+                    on = 255
+                    break
+                }
+                wide[row + x] = on
+            }
+        }
+        var out = [UInt8](repeating: 0, count: bits.count)
+        for x in 0 ..< side {
+            for y in 0 ..< side {
+                var on: UInt8 = 0
+                for dy in max(0, y - radius) ... min(side - 1, y + radius)
+                where wide[dy * side + x] > 0 {
+                    on = 255
+                    break
+                }
+                out[y * side + x] = on
+            }
+        }
+        return out
+    }
+
+    /// Der umschliessende Kasten einer Rohmaske, in 0…1 mit Ursprung oben links.
+    static func bounds(of bits: [UInt8], side: Int) -> CGRect? {
+        guard side > 0, bits.count == side * side else { return nil }
+        var minX = side, minY = side, maxX = -1, maxY = -1
+        for y in 0 ..< side {
+            let row = y * side
+            for x in 0 ..< side where bits[row + x] > 0 {
+                if x < minX { minX = x }
+                if x > maxX { maxX = x }
+                if y < minY { minY = y }
+                if y > maxY { maxY = y }
+            }
+        }
+        guard maxX >= minX, maxY >= minY else { return nil }
+        return CGRect(x: CGFloat(minX) / CGFloat(side), y: CGFloat(minY) / CGFloat(side),
+                      width: CGFloat(maxX - minX + 1) / CGFloat(side),
+                      height: CGFloat(maxY - minY + 1) / CGFloat(side))
+    }
+
     /// Schneidet einen Gegenstand aus dem Foto.
     ///
     /// Mit Rand, und der ist nicht Kosmetik: was das Modell braucht, um ein Bauteil zu

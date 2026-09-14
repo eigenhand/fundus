@@ -168,6 +168,153 @@ final class ObjectFinderTests: XCTestCase {
                                           in: .zero), .zero)
     }
 
+    // MARK: Freistellen
+
+    /// Eine quadratische Maske mit einem Fleck an bekannter Stelle.
+    private func bits(side: Int, rows: Range<Int>, cols: Range<Int>) -> [UInt8] {
+        var out = [UInt8](repeating: 0, count: side * side)
+        for y in rows { for x in cols { out[y * side + x] = 255 } }
+        return out
+    }
+
+    /// Ein runder Umriss — der Fall, in dem der Kasten Ecken hat, die nicht dazugehoeren.
+    private func disc(side: Int, centre: Int, radius: Int) -> [UInt8] {
+        var out = [UInt8](repeating: 0, count: side * side)
+        for y in 0 ..< side {
+            for x in 0 ..< side {
+                let dx = x - centre, dy = y - centre
+                if dx * dx + dy * dy <= radius * radius { out[y * side + x] = 255 }
+            }
+        }
+        return out
+    }
+
+    func testDilationGrowsInEveryDirection() {
+        let side = 32
+        let dot = bits(side: side, rows: 15 ..< 17, cols: 15 ..< 17)
+        let grown = ObjectFinder.dilate(dot, side: side, radius: 3)
+
+        let before = try? XCTUnwrap(ObjectFinder.bounds(of: dot, side: side))
+        let after = try? XCTUnwrap(ObjectFinder.bounds(of: grown, side: side))
+        guard let before, let after else { return XCTFail("kein Kasten") }
+
+        XCTAssertLessThan(after.minX, before.minX)
+        XCTAssertLessThan(after.minY, before.minY)
+        XCTAssertGreaterThan(after.maxX, before.maxX)
+        XCTAssertGreaterThan(after.maxY, before.maxY)
+        // Drei Punkte auf jeder Seite, an beiden Achsen dieselben.
+        XCTAssertEqual(after.width * CGFloat(side), 8, accuracy: 0.01)
+        XCTAssertEqual(after.height * CGFloat(side), 8, accuracy: 0.01)
+    }
+
+    func testDilationStopsAtTheEdge() {
+        let side = 16
+        let corner = ObjectFinder.dilate(bits(side: side, rows: 0 ..< 2, cols: 0 ..< 2),
+                                         side: side, radius: 5)
+        let box = ObjectFinder.bounds(of: corner, side: side)
+        XCTAssertEqual(box?.minX, 0)
+        XCTAssertEqual(box?.minY, 0)
+    }
+
+    func testDilationWithoutRadiusChangesNothing() {
+        let side = 16
+        let dot = bits(side: side, rows: 4 ..< 6, cols: 4 ..< 6)
+        XCTAssertEqual(ObjectFinder.dilate(dot, side: side, radius: 0), dot)
+    }
+
+    func testEmptyMaskHasNoBounds() {
+        XCTAssertNil(ObjectFinder.bounds(of: [UInt8](repeating: 0, count: 64), side: 8))
+    }
+
+    /// Der Kern: was nicht zum Gegenstand gehoert, wird weiss — und der Gegenstand
+    /// bleibt, wie er war.
+    func testEverythingOutsideTheObjectTurnsWhite() throws {
+        let size = 400
+        let format = UIGraphicsImageRendererFormat.default()
+        format.scale = 1; format.opaque = true
+        // Roter Grund, in der Mitte ein blaues Quadrat von 0,4 bis 0,6.
+        let source = UIGraphicsImageRenderer(size: CGSize(width: size, height: size),
+                                             format: format).image { ctx in
+            UIColor.red.setFill();  ctx.fill(CGRect(x: 0, y: 0, width: size, height: size))
+            UIColor.blue.setFill(); ctx.fill(CGRect(x: 160, y: 160, width: 80, height: 80))
+        }
+
+        // Ein **runder** Umriss, und das ist der Punkt: bei einem rechteckigen ist der
+        // Ausschnitt genau die Maske, und es bliebe nichts weiss zu faerben. Erst die
+        // Ecken eines Kastens um einen Kreis zeigen, ob freigestellt wurde.
+        let side = 100
+        let object = SegmentedObject(
+            id: UUID(),
+            box: CGRect(x: 0.4, y: 0.4, width: 0.2, height: 0.2),
+            mask: nil,
+            bits: disc(side: side, centre: 50, radius: 10),
+            side: side)
+
+        let piece = try XCTUnwrap(ObjectFinder.cutOut(source, object: object, margin: 0.02))
+        let pixels = try XCTUnwrap(rgba(of: piece))
+
+        // In der Mitte des Ausschnitts steht der Gegenstand: blau, nicht weiss.
+        let middle = pixels.colour(atFraction: CGPoint(x: 0.5, y: 0.5))
+        XCTAssertLessThan(middle.r, 60, "Die Mitte ist blau geblieben.")
+        XCTAssertGreaterThan(middle.b, 190)
+
+        // In der Ecke des Ausschnitts stand rot — sie gehoert nicht zum Kreis. Jetzt
+        // steht dort weiss.
+        let corner = pixels.colour(atFraction: CGPoint(x: 0.02, y: 0.02))
+        XCTAssertGreaterThan(corner.r, 240, "Die Ecke ist weiss.")
+        XCTAssertGreaterThan(corner.g, 240)
+        XCTAssertGreaterThan(corner.b, 240)
+    }
+
+    /// Der Rand ist kein Sicherheitsabstand, sondern Inhalt — er muss messbar da sein.
+    func testTheCutOutCarriesTheTwoPercentMargin() throws {
+        let size = 400
+        let format = UIGraphicsImageRendererFormat.default()
+        format.scale = 1; format.opaque = true
+        let source = UIGraphicsImageRenderer(size: CGSize(width: size, height: size),
+                                             format: format).image { _ in }
+
+        let side = 256
+        let object = SegmentedObject(
+            id: UUID(), box: CGRect(x: 0.3, y: 0.3, width: 0.4, height: 0.4), mask: nil,
+            bits: bits(side: side, rows: 77 ..< 179, cols: 77 ..< 179), side: side)
+
+        let tight = try XCTUnwrap(ObjectFinder.cutOut(source, object: object, margin: 0))
+        let padded = try XCTUnwrap(ObjectFinder.cutOut(source, object: object, margin: 0.02))
+        XCTAssertGreaterThan(padded.size.width, tight.size.width,
+                             "Zwei Prozent mehr sind zwei Prozent mehr.")
+        XCTAssertLessThan(padded.size.width, tight.size.width * 1.3,
+                          "Aber kein halbes Bild dazu.")
+    }
+
+    /// Pixel eines Bildes, zum Nachsehen.
+    private struct Pixels {
+        let data: [UInt8]
+        let width: Int
+        let height: Int
+        func colour(atFraction p: CGPoint) -> (r: Int, g: Int, b: Int) {
+            let x = min(width - 1, max(0, Int(p.x * CGFloat(width))))
+            let y = min(height - 1, max(0, Int(p.y * CGFloat(height))))
+            let o = (y * width + x) * 4
+            return (Int(data[o]), Int(data[o + 1]), Int(data[o + 2]))
+        }
+    }
+
+    private func rgba(of image: UIImage) -> Pixels? {
+        guard let cg = image.cgImage else { return nil }
+        let w = cg.width, h = cg.height
+        var data = [UInt8](repeating: 0, count: w * h * 4)
+        data.withUnsafeMutableBytes { raw in
+            guard let addr = raw.baseAddress,
+                  let ctx = CGContext(data: addr, width: w, height: h, bitsPerComponent: 8,
+                                      bytesPerRow: w * 4, space: CGColorSpaceCreateDeviceRGB(),
+                                      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+            else { return }
+            ctx.draw(cg, in: CGRect(x: 0, y: 0, width: w, height: h))
+        }
+        return Pixels(data: data, width: w, height: h)
+    }
+
     // MARK: Der Ausschnitt
 
     private func image(_ width: Int, _ height: Int) -> UIImage {

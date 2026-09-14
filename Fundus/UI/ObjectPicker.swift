@@ -312,9 +312,13 @@ struct ObjectPicker: View {
     }
 
     private func take() {
-        let boxes = usingSam ? picked.map(\.box)
-                             : offered.filter { chosenOffers.contains($0.id) }.map(\.box)
-        let pieces = boxes.compactMap { ObjectFinder.crop(image, to: $0) }
+        // Mit SAM wird freigestellt, nicht nur geschnitten: der Gegenstand bleibt, der
+        // Rest wird weiss. Ohne SAM gibt es keinen Umriss, nur einen Kasten — dort
+        // bleibt es beim Ausschnitt.
+        let pieces = usingSam
+            ? picked.compactMap { ObjectFinder.cutOut(image, object: $0) }
+            : offered.filter { chosenOffers.contains($0.id) }
+                     .compactMap { ObjectFinder.crop(image, to: $0.box) }
 
         // Nichts angetippt, oder kein Ausschnitt brauchbar: dann eben das ganze Bild.
         // Mit leeren Händen aus diesem Bildschirm zu gehen wäre der falsche Ausgang —

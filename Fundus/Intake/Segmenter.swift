@@ -8,8 +8,17 @@ struct SegmentedObject: Identifiable, Equatable, Sendable {
     let id: UUID
     /// In Bildkoordinaten, 0…1, Ursprung oben links.
     let box: CGRect
-    /// Der Umriss zum Anzeigen. Nicht zum Zuschneiden — geschnitten wird am Kasten.
+    /// Der Umriss zum Anzeigen.
     let mask: UIImage?
+    /// Derselbe Umriss als Rohdaten, quadratisch mit `side` Kantenlänge: 0 heisst
+    /// aussen, 255 heisst dazu.
+    ///
+    /// Getrennt vom Bild, weil daraus etwas anderes wird als eine Anzeige — der
+    /// Ausschnitt, der ans Modell geht, wird daran freigestellt. Aus einem `UIImage`
+    /// die Bits zurückzulesen ginge auch und wäre ein Umweg über zwei Umrechnungen,
+    /// bei dem man Interpolation und Alphakanal wieder auseinandersortieren müsste.
+    let bits: [UInt8]
+    let side: Int
 }
 
 /// Segment Anything 2.1 auf dem Gerät.
@@ -227,7 +236,8 @@ actor Segmenter {
                          width: CGFloat(maxX - minX + 1) / CGFloat(width),
                          height: CGFloat(maxY - minY + 1) / CGFloat(height))
         return SegmentedObject(id: UUID(), box: box,
-                               mask: image(from: inside, width: width, height: height))
+                               mask: image(from: inside, width: width, height: height),
+                               bits: inside, side: width)
     }
 
     /// Der Umriss als Bild mit Alphakanal, zum Darueberlegen.
