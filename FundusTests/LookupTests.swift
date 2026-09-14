@@ -191,6 +191,20 @@ final class LookupTests: XCTestCase {
         XCTAssertEqual(hits.last?.kind, .code)
     }
 
+    /// Der Nebenaufruf bekommt dasselbe Budget wie das Lesen des Fotos.
+    ///
+    /// Ein Achtel davon — 4 000 Token — reicht einem Modell, das erst nachdenkt,
+    /// nicht bis zum ersten Satz Antwort: `finish_reason: length`, und das
+    /// Nachschlagen schlug fehl, ohne dass man den Grund sah. Gespart wurde dabei
+    /// nichts, die Token werden so oder so abgerechnet.
+    func testSideCallGetsTheFullBudget() {
+        XCTAssertEqual(ModelClient.sideCallBudget(32_000), 32_000)
+        XCTAssertNotEqual(ModelClient.sideCallBudget(32_000), 4_000,
+                          "Ein Achtel reicht für den Gedankengang nicht.")
+        XCTAssertEqual(ModelClient.sideCallBudget(0), 1_000,
+                       "Eine Untergrenze bleibt, damit eine kaputte Einstellung nicht null ergibt.")
+    }
+
     // MARK: Antwortformen der Suchdienste
 
     func testBraveShape() {

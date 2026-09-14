@@ -109,6 +109,19 @@ struct ModelClient {
     /// Knapper begrenzt als das Lesen eines Fotos, weil die Antwort drei Felder hat.
     /// Ein Reasoning-Modell darf trotzdem nachdenken — daher nicht auf ein paar
     /// hundert Token gedeckelt, sondern auf ein Achtel des Vorrats.
+    /// Das Ausgabebudget für einen Nebenaufruf wie das Nachschlagen einer Kennung.
+    ///
+    /// Hier stand `maxOutputTokens / 8` — eine Sparmaßnahme für einen Aufruf, dessen
+    /// Antwort kurz ist. Sie hat das Nachschlagen zuverlässig zerstört, und zwar so,
+    /// dass man es nicht sah: ein Modell, das erst nachdenkt, verbraucht die 4 000
+    /// Token im Gedankengang und kommt nie zum Text. Gemessen an einer echten
+    /// Aufnahme: 70 Sekunden, 277 kB Denkspur, `finish_reason: length`, null Inhalt.
+    ///
+    /// Gespart hat das nichts. Die Token werden abgerechnet, ob am Ende ein Satz
+    /// steht oder nicht — ein gedeckelter Aufruf kostet dasselbe und liefert nur
+    /// kein Ergebnis. Das Budget ist deshalb dasselbe wie beim Lesen des Fotos.
+    static func sideCallBudget(_ configured: Int) -> Int { max(1_000, configured) }
+
     func ask(prompt: String, system: String) async throws -> String {
         guard let url = config.endpointURL, !config.model.isEmpty else {
             throw ModelError.notConfigured
@@ -119,7 +132,7 @@ struct ModelClient {
                 ["role": "system", "content": system],
                 ["role": "user", "content": prompt],
             ],
-            "max_tokens": max(1_000, config.maxOutputTokens / 8),
+            "max_tokens": Self.sideCallBudget(config.maxOutputTokens),
             "stream": true,
             "temperature": 0.1,
         ]
