@@ -15,37 +15,48 @@ import Vision
 enum BarcodeScanner {
 
     /// Alle im Bild dekodierbaren Codes, doppelte entfernt.
+    ///
+    /// Ohne Abschlussblock und ohne Continuation, und das ist eine Korrektur, kein
+    /// Geschmack. `VNImageRequestHandler.perform` arbeitet ohnehin synchron: wenn es
+    /// zurückkommt, stehen die Ergebnisse an der Anfrage. Die frühere Fassung nahm
+    /// trotzdem den Abschlussblock **und** fing daneben den Fehler von `perform` ab —
+    /// und Vision ruft den Block auch dann, wenn es danach wirft. Beide Wege lösten
+    /// dieselbe Continuation aus:
+    ///
+    ///     Fatal error: SWIFT TASK CONTINUATION MISUSE:
+    ///     scan(_:) tried to resume its continuation more than once
+    ///
+    /// Kein Fehlerpfad, sondern ein Absturz, und zwar vor dem bezahlten Aufruf: die
+    /// Aufnahme war weg, bevor sie begonnen hatte. Ausgelöst hat es im Simulator ein
+    /// „Could not create inference context“; auf einem Gerät genügt Speicherdruck.
     static func scan(_ image: UIImage) async -> [ItemCode] {
         guard let cg = image.cgImage else { return [] }
 
-        return await withCheckedContinuation { continuation in
-            let request = VNDetectBarcodesRequest { request, _ in
-                let found = (request.results as? [VNBarcodeObservation] ?? [])
-                    .compactMap { observation -> ItemCode? in
-                        guard let payload = observation.payloadStringValue?
-                            .trimmingCharacters(in: .whitespacesAndNewlines),
-                              !payload.isEmpty
-                        else { return nil }
-                        return ItemCode(value: payload,
-                                        kind: kind(for: observation.symbology),
-                                        origin: .scanned)
-                    }
-
-                // Derselbe Code kann mehrfach im Bild stehen — etwa auf Schachtel und
-                // Beipackzettel. Einmal reicht.
-                var seen = Set<String>()
-                continuation.resume(returning: found.filter { seen.insert($0.value).inserted })
-            }
-
-            let handler = VNImageRequestHandler(cgImage: cg, orientation: orientation(image))
-            do {
-                try handler.perform([request])
-            } catch {
-                // Ein Bild ohne lesbaren Code ist der Normalfall, kein Fehler. Die
-                // Aufnahme läuft ohne Codes weiter.
-                continuation.resume(returning: [])
-            }
+        let request = VNDetectBarcodesRequest()
+        let handler = VNImageRequestHandler(cgImage: cg, orientation: orientation(image))
+        do {
+            try handler.perform([request])
+        } catch {
+            // Ein Bild ohne lesbaren Code ist der Normalfall, kein Fehler — und wenn
+            // Vision gar nicht erst anläuft, läuft die Aufnahme eben ohne Codes weiter.
+            return []
         }
+
+        let found = (request.results ?? [])
+            .compactMap { observation -> ItemCode? in
+                guard let payload = observation.payloadStringValue?
+                    .trimmingCharacters(in: .whitespacesAndNewlines),
+                      !payload.isEmpty
+                else { return nil }
+                return ItemCode(value: payload,
+                                kind: kind(for: observation.symbology),
+                                origin: .scanned)
+            }
+
+        // Derselbe Code kann mehrfach im Bild stehen — etwa auf Schachtel und
+        // Beipackzettel. Einmal reicht.
+        var seen = Set<String>()
+        return found.filter { seen.insert($0.value).inserted }
     }
 
     private static func kind(for symbology: VNBarcodeSymbology) -> ItemCode.Kind {
