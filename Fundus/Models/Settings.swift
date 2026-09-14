@@ -169,6 +169,18 @@ struct AppSettings: Codable, Equatable {
     /// Suche findet das Ding über den Namen, aber nicht über die Bedeutung.
     var indexAutomatically: Bool = true
 
+    /// Wie viele Fotos gleichzeitig gelesen werden.
+    ///
+    /// Einstellbar und nicht fest, weil die richtige Zahl nicht von der App abhängt,
+    /// sondern vom Anbieter: der eine nimmt sechs Aufrufe nebeneinander an, der
+    /// nächste drosselt ab zwei und schickt 429 zurück. Wer nach einem Regalgang
+    /// zwanzig Fotos einreiht, merkt den Unterschied zwischen „in zwei Minuten fertig“
+    /// und „in zwanzig“ — und wer in eine Drosselung läuft, merkt ihn auch.
+    ///
+    /// Zwei als Vorgabe: spürbar schneller als nacheinander, und noch weit unter dem,
+    /// was ein Anbieter als Schwarm auffasst.
+    var intakeConcurrency: Int = 2
+
     init() {}
 
     init(from decoder: Decoder) throws {
@@ -177,5 +189,9 @@ struct AppSettings: Codable, Equatable {
         search = try c.decodeIfPresent(SearchConfig.self, forKey: .search) ?? SearchConfig()
         lookup = try c.decodeIfPresent(LookupConfig.self, forKey: .lookup) ?? LookupConfig()
         indexAutomatically = try c.decodeIfPresent(Bool.self, forKey: .indexAutomatically) ?? true
+        // Begrenzt statt übernommen: eine Zahl von der Platte kann aus einer älteren
+        // oder kaputten Ablage kommen, und 0 hieße „nie wieder ein Foto lesen“.
+        intakeConcurrency = (try c.decodeIfPresent(Int.self, forKey: .intakeConcurrency) ?? 2)
+            .clamped(to: IntakeSchedule.concurrencyRange)
     }
 }

@@ -12,7 +12,7 @@ import SwiftUI
 /// Normalfall, Streichen die Ausnahme. Eine Liste, in der man vierzig Häkchen selbst
 /// setzen muss, benutzt man einmal.
 struct IntakeView: View {
-    @Bindable var state: IntakeState
+    @Bindable var job: IntakeJob
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
 
@@ -24,10 +24,12 @@ struct IntakeView: View {
             VStack(spacing: 0) {
                 header
 
-                switch state.phase {
+                switch job.phase {
+                case .waiting:  waiting
                 case .reading:  reading
                 case .looking(let done, let total): looking(done: done, total: total)
                 case .review:   review
+                case .empty:    nothingOnIt
                 case .failed(let message): failure(message)
                 }
             }
@@ -47,10 +49,11 @@ struct IntakeView: View {
                     .foregroundStyle(EH.muted)
             }
             Spacer()
-            Button("Abbrechen") {
-                model.cancelIntake()
-                dismiss()
-            }
+            // „Später" und nicht „Abbrechen": der Auftrag bleibt in der Reihe und
+            // lässt sich weiter hinten wieder antippen. Wer ihn wirklich loswerden
+            // will, hält das Symbol in der Reihe gedrückt — das ist der seltenere
+            // Fall und darf den längeren Weg haben.
+            Button("Später") { dismiss() }
             .font(.eh(15, .callout))
             .foregroundStyle(EH.slate)
             .buttonStyle(EHTap())
@@ -61,7 +64,7 @@ struct IntakeView: View {
     }
 
     private var placeLabel: String {
-        state.placeID.map { model.inventory.tree.path(of: $0) } ?? "Ohne Ort"
+        job.placeID.map { model.inventory.tree.path(of: $0) } ?? "Ohne Ort"
     }
 
     // MARK: Nachschlagen
@@ -91,6 +94,35 @@ struct IntakeView: View {
         .padding(.horizontal, EH.gutter)
     }
 
+    // MARK: Warten
+
+    /// Eingereiht, aber noch kein Arbeiter frei.
+    ///
+    /// Eine eigene Ansicht und nicht derselbe Kreis wie beim Lesen: „wartet“ und
+    /// „läuft“ verlangen verschiedene Geduld, und ein Kreis, der sich dreht, ohne dass
+    /// etwas passiert, ist eine Lüge über den Zustand.
+    private var waiting: some View {
+        VStack(spacing: 20) {
+            photo(maxHeight: 300)
+
+            VStack(spacing: 8) {
+                Image(systemName: "hourglass")
+                    .font(.system(size: 20))
+                    .foregroundStyle(EH.muted)
+                Text("Steht in der Reihe.")
+                    .font(EH.bodySmall)
+                    .foregroundStyle(EH.slate)
+                Text("Es werden \(model.settings.intakeConcurrency) Fotos gleichzeitig "
+                     + "gelesen. In den Einstellungen änderbar.")
+                    .font(EH.meta)
+                    .foregroundStyle(EH.muted)
+                    .multilineTextAlignment(.center)
+            }
+            Spacer()
+        }
+        .padding(.horizontal, EH.gutter)
+    }
+
     // MARK: Lesen
 
     private var reading: some View {
@@ -100,14 +132,55 @@ struct IntakeView: View {
             VStack(spacing: 8) {
                 ProgressView()
                     .tint(EH.slate)
-                Text(state.received == 0
+                Text(job.received == 0
                      ? "Das Modell sieht sich das Bild an."
-                     : "Es schreibt — \(state.received) Zeichen.")
+                     : "Es schreibt — \(job.received) Zeichen.")
                     .font(EH.bodySmall)
                     .foregroundStyle(EH.slate)
                 Text("Bei einem vollen Regal dauert das eine halbe Minute.")
                     .font(EH.meta)
                     .foregroundStyle(EH.muted)
+            }
+            Spacer()
+        }
+        .padding(.horizontal, EH.gutter)
+    }
+
+    // MARK: Nichts drauf
+
+    /// Gelesen, und es war kein Bestand darauf.
+    ///
+    /// Kein Fehlschlag, und deshalb auch nicht in dessen Karte: das Modell hat
+    /// geantwortet, die Antwort war „hier ist nichts". Ein Kellerfenster, ein Foto,
+    /// das schiefgegangen ist, eine Wand. Der zweite Versuch steht trotzdem da —
+    /// manchmal war nur der Ausschnitt falsch.
+    private var nothingOnIt: some View {
+        VStack(spacing: 18) {
+            photo(maxHeight: 220)
+
+            HairlineCard(fill: EH.surfaceSunk) {
+                VStack(alignment: .leading, spacing: 8) {
+                    EH.label("Kein Bestand")
+                    Text("Das Modell hat das Foto gelesen und nichts darauf gefunden, "
+                         + "was in einen Bestand gehört.")
+                        .font(EH.bodySmall)
+                        .foregroundStyle(EH.slate)
+                        .lineSpacing(3)
+                }
+            }
+
+            HStack(spacing: 10) {
+                Button("Verwerfen") {
+                    model.discard(job)
+                    dismiss()
+                }
+                .buttonStyle(EHButtonStyle(prominent: true))
+
+                Button("Nochmal versuchen") {
+                    model.retry(job)
+                    dismiss()
+                }
+                .buttonStyle(EHButtonStyle())
             }
             Spacer()
         }
@@ -130,20 +203,17 @@ struct IntakeView: View {
                 }
             }
 
-            // Das Bild ist schon gespeichert, bevor der Aufruf lief. Deshalb ist ein
-            // zweiter Versuch hier billig — niemand muss nochmal in den Keller.
+            // Das Foto liegt noch im Auftrag. Deshalb ist ein zweiter Versuch hier
+            // billig — niemand muss nochmal in den Keller.
             HStack(spacing: 10) {
                 Button("Nochmal versuchen") {
-                    let image = state.image
-                    let place = state.placeID
-                    let hint = state.hint
-                    model.cancelIntake()
-                    model.startIntake(image: image, placeID: place, hint: hint)
+                    model.retry(job)
+                    dismiss()
                 }
                 .buttonStyle(EHButtonStyle(prominent: true))
 
-                Button("Schließen") {
-                    model.cancelIntake()
+                Button("Verwerfen") {
+                    model.discard(job)
                     dismiss()
                 }
                 .buttonStyle(EHButtonStyle())
@@ -162,14 +232,14 @@ struct IntakeView: View {
                     photo(maxHeight: 170)
                         .padding(.bottom, 6)
 
-                    SectionLabel(text: "\(state.result.proposals.count) gefunden")
+                    SectionLabel(text: "\(job.result.proposals.count) gefunden")
 
-                    ForEach($state.result.proposals) { $proposal in
+                    ForEach($job.result.proposals) { $proposal in
                         ProposalRow(proposal: $proposal, existing: existing(for: proposal))
                         Divider().overlay(EH.hair)
                     }
 
-                    if !state.result.unreadable.isEmpty {
+                    if !job.result.unreadable.isEmpty {
                         unreadable
                     }
 
@@ -187,7 +257,7 @@ struct IntakeView: View {
     /// angelegt. Steht an der Zeile, damit der Nutzer es *vorher* weiß und nicht
     /// hinterher eine Menge findet, die er nicht erwartet hat.
     private func existing(for proposal: Proposal) -> Item? {
-        model.inventory.existing(named: proposal.name, at: state.placeID)
+        model.inventory.existing(named: proposal.name, at: job.placeID)
     }
 
     /// Was das Modell gesehen, aber nicht bestimmt hat.
@@ -203,7 +273,7 @@ struct IntakeView: View {
                 .font(EH.meta)
                 .foregroundStyle(EH.muted)
                 .padding(.bottom, 2)
-            ForEach(state.result.unreadable, id: \.self) { line in
+            ForEach(job.result.unreadable, id: \.self) { line in
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Circle()
                         .fill(EH.hairStrong)
@@ -223,7 +293,7 @@ struct IntakeView: View {
                 .fill(EH.hair)
                 .frame(height: EH.hairWidth)
                 .padding(.vertical, 16)
-            Text("Gelesen von \(state.result.model). Was du übernimmst, behält das "
+            Text("Gelesen von \(job.result.model). Was du übernimmst, behält das "
                  + "als Herkunft und dieses Foto als Beleg.")
                 .font(EH.meta)
                 .foregroundStyle(EH.muted)
@@ -233,9 +303,9 @@ struct IntakeView: View {
 
     private var commitBar: some View {
         HStack(spacing: 12) {
-            let n = state.acceptedCount
+            let n = job.acceptedCount
             Button {
-                model.commitIntake()
+                model.commit(job)
                 dismiss()
             } label: {
                 Text(n == 0 ? "Nichts übernehmen" : "\(n) übernehmen")
@@ -247,8 +317,8 @@ struct IntakeView: View {
 
             Button(allAccepted ? "Alle abwählen" : "Alle wählen") {
                 let target = !allAccepted
-                for i in state.result.proposals.indices {
-                    state.result.proposals[i].accepted = target
+                for i in job.result.proposals.indices {
+                    job.result.proposals[i].accepted = target
                 }
             }
             .font(.eh(14, .footnote))
@@ -263,13 +333,13 @@ struct IntakeView: View {
     }
 
     private var allAccepted: Bool {
-        !state.result.proposals.isEmpty && state.result.proposals.allSatisfy(\.accepted)
+        !job.result.proposals.isEmpty && job.result.proposals.allSatisfy(\.accepted)
     }
 
     // MARK: Das Bild
 
     private func photo(maxHeight: CGFloat) -> some View {
-        Image(uiImage: state.image)
+        Image(uiImage: job.image)
             .resizable()
             .aspectRatio(contentMode: .fit)
             .frame(maxWidth: .infinity)

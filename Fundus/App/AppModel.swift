@@ -26,7 +26,11 @@ final class AppModel {
     // MARK: Aufnahme
 
     /// Läuft eine Aufnahme, steht hier ihr Zustand. `nil` heißt: keine.
-    var intake: IntakeState?
+    /// Die Reihe der Aufnahmen — wartend, laufend und fertig zum Prüfen.
+    ///
+    /// Eine Liste statt einer Optionalen: hier stand `intake: IntakeState?`, und damit
+    /// war ein zweites Foto erst möglich, wenn das erste durch war.
+    var jobs: [IntakeJob] = []
 
     // MARK: Index
 
@@ -334,37 +338,74 @@ final class AppModel {
 
     // MARK: Aufnahme
 
-    /// Schickt ein Foto zum Lesen und öffnet den Prüfschritt.
+    /// Reiht Fotos ein und lässt die Arbeiter los.
     ///
-    /// Das Bild wird *vor* dem Aufruf gespeichert, nicht nach der Bestätigung. Es
+    /// Reihen statt starten, und das ist der ganze Unterschied zu vorher: wer vor
+    /// einem Regal steht, macht nicht ein Foto, sondern zwölf. Vorher belegte jedes
+    /// den Bildschirm, bis das Modell fertig gelesen hatte. Jetzt kommt es in die
+    /// Reihe, die Ansicht bleibt stehen, und das nächste Foto ist einen Tipp entfernt.
+    ///
+    /// Das Bild wird *vor* dem Aufruf behalten, nicht erst nach der Bestätigung. Es
     /// ist der Beleg zur Aufnahme, und es soll auch dann noch da sein, wenn der
     /// Aufruf fehlschlägt — dann kann man es nochmal versuchen, ohne noch einmal in
     /// den Keller zu gehen.
-    func startIntake(image: UIImage, placeID: UUID?, hint: String) {
-        guard let client else {
+    func enqueue(_ images: [UIImage], placeID: UUID?, hint: String = "") {
+        guard client != nil else {
             banner = Banner(text: "Kein Modell eingerichtet — ohne Endpoint kann niemand das Foto lesen.",
                             tone: .bad)
             return
         }
-        let state = IntakeState(image: image, placeID: placeID, hint: hint)
-        intake = state
+        var rejected = 0
+        for image in images {
+            guard jobs.count < IntakeSchedule.maxQueued else { rejected += 1; continue }
+            jobs.append(IntakeJob(image: image, placeID: placeID, hint: hint))
+        }
+        if rejected > 0 {
+            banner = Banner(text: "\(rejected) Foto\(rejected == 1 ? "" : "s") nicht eingereiht — "
+                            + "die Reihe fasst \(IntakeSchedule.maxQueued).", tone: .bad)
+        }
+        pump()
+    }
 
-        let placePath = placeID.map { inventory.tree.path(of: $0) }
-        let existing = placeID.map { inventory.items(at: $0, includingBelow: false).map(\.name) }
+    /// Startet so viele wartende Aufträge, wie Arbeiter frei sind.
+    ///
+    /// Wird nach jedem Einreihen und nach jedem fertigen Auftrag gerufen. Ein Auftrag
+    /// im Prüfschritt hält keinen Arbeiter — sonst würde ein Foto, das jemand liegen
+    /// lässt, die ganze Reihe blockieren.
+    private func pump() {
+        for index in IntakeSchedule.startable(jobs.map(\.phase),
+                                              concurrency: settings.intakeConcurrency) {
+            start(jobs[index])
+        }
+    }
+
+    private func start(_ job: IntakeJob) {
+        guard let client else { return }
+        job.phase = .reading
+        job.received = 0
+
+        let placePath = job.placeID.map { inventory.tree.path(of: $0) }
+        let existing = job.placeID.map { inventory.items(at: $0, includingBelow: false).map(\.name) }
             ?? inventory.unplaced.map(\.name)
+        let image = job.image
+        let hint = job.hint
 
-        Task { [weak self] in
+        // Der Rumpf läuft auf dem Hauptakteur, weil `start` es tut — deshalb genügt
+        // hier ein `defer` und kein zweiter Sprung dorthin.
+        job.task = Task { [weak self, weak job] in
+            defer { self?.pump() }
             do {
                 let result = try await PhotoIntake(client: client).read(
                     image: image, placePath: placePath, existingNames: existing,
                     hint: hint,
                     onDelta: { piece in
-                        Task { @MainActor in state.received += piece.count }
+                        Task { @MainActor in job?.received += piece.count }
                     })
-                guard let self, self.intake === state else { return }
-                state.result = result
+                guard let self, let job, self.jobs.contains(where: { $0 === job }) else { return }
+                job.result = result
                 if result.isEmpty {
-                    state.phase = .failed("Auf dem Bild war nichts Bestandsfähiges zu erkennen.")
+                    job.phase = .empty
+                    self.announce(job)
                     return
                 }
 
@@ -374,18 +415,40 @@ final class AppModel {
                 // `resolve` schlägt einzeln fehl statt im Ganzen.
                 if let lookup = self.lookupClient,
                    result.proposals.contains(where: { $0.code?.isSearchable == true }) {
-                    state.phase = .looking(done: 0, total: 0)
+                    job.phase = .looking(done: 0, total: 0)
                     let resolved = await lookup.resolve(result.proposals) { done, total in
-                        Task { @MainActor in state.phase = .looking(done: done, total: total) }
+                        Task { @MainActor in job.phase = .looking(done: done, total: total) }
                     }
-                    guard self.intake === state else { return }
-                    state.result.proposals = resolved
+                    guard self.jobs.contains(where: { $0 === job }) else { return }
+                    job.result.proposals = resolved
                 }
-                state.phase = .review
+                job.phase = .review
+                self.announce(job)
             } catch {
-                guard let self, self.intake === state else { return }
-                state.phase = .failed(error.localizedDescription)
+                guard let self, let job, self.jobs.contains(where: { $0 === job }) else { return }
+                job.phase = .failed(error.localizedDescription)
+                self.announce(job)
             }
+        }
+    }
+
+    /// Sagt Bescheid, dass ein Auftrag fertig ist.
+    ///
+    /// Nötig geworden mit der Reihe: vorher sprang der Prüfschritt von selbst auf, und
+    /// dass etwas fertig war, konnte man nicht übersehen. Wer jetzt weiterfotografiert,
+    /// würde es übersehen — das Symbol in der Reihe allein reicht nicht, wenn man
+    /// gerade auf den Auslöser schaut.
+    private func announce(_ job: IntakeJob) {
+        switch job.phase {
+        case .review:
+            let n = job.result.proposals.count
+            banner = Banner(text: "Aufnahme gelesen — \(n) Vorschlag\(n == 1 ? "" : "e") zum Prüfen.")
+        case .empty:
+            banner = Banner(text: "Aufnahme gelesen — auf dem Foto war kein Bestand.")
+        case .failed(let message):
+            banner = Banner(text: message, tone: .bad)
+        default:
+            break
         }
     }
 
@@ -394,20 +457,19 @@ final class AppModel {
     /// Erst hier entsteht ein Eintrag. Alles davor waren Vorschläge, und der
     /// Unterschied ist der Grund, warum man diesem Bestand glauben kann.
     @discardableResult
-    func commitIntake() -> (added: Int, increased: Int) {
-        guard let state = intake else { return (0, 0) }
-        let photoID = PhotoStore.save(state.image)
+    func commit(_ job: IntakeJob) -> (added: Int, increased: Int) {
+        let photoID = PhotoStore.save(job.image)
 
         var added = 0, increased = 0
-        for proposal in state.result.proposals where proposal.accepted {
-            switch inventory.absorb(proposal, at: state.placeID, photoID: photoID,
-                                    model: state.result.model) {
+        for proposal in job.result.proposals where proposal.accepted {
+            switch inventory.absorb(proposal, at: job.placeID, photoID: photoID,
+                                    model: job.result.model) {
             case .added:     added += 1
             case .increased: increased += 1
             case .skipped:   break
             }
         }
-        intake = nil
+        remove(job)
         save()
         refreshIndexStatus()
         if settings.indexAutomatically { Task { await indexPending() } }
@@ -421,7 +483,28 @@ final class AppModel {
         return (added, increased)
     }
 
-    func cancelIntake() { intake = nil }
+    /// Wirft einen Auftrag weg — auch einen, der gerade läuft.
+    func discard(_ job: IntakeJob) {
+        job.task?.cancel()
+        remove(job)
+        pump()
+    }
+
+    /// Noch einmal, von vorn. Für einen Auftrag, dessen Aufruf gescheitert ist: das
+    /// Foto ist noch da, und ein zweiter Versuch kostet keinen Gang in den Keller.
+    func retry(_ job: IntakeJob) {
+        switch job.phase {
+        case .failed, .empty: break
+        default: return
+        }
+        job.result = IntakeResult()
+        job.phase = .waiting
+        pump()
+    }
+
+    private func remove(_ job: IntakeJob) {
+        jobs.removeAll { $0 === job }
+    }
 
     // MARK: Einstellungen
 
@@ -465,39 +548,4 @@ final class AppModel {
         save()
         refreshIndexStatus()
     }
-}
-
-/// Der Zustand einer laufenden Aufnahme.
-///
-/// Eigener Typ, weil eine Aufnahme vier Phasen hat und jede etwas anderes anzeigt.
-/// Als vier Bools in `AppModel` wären davon sechzehn Zustände darstellbar, von denen
-/// zwölf Unsinn sind.
-@Observable @MainActor
-final class IntakeState {
-    enum Phase: Equatable {
-        case reading
-        /// Kennungen werden im Netz nachgeschlagen. Eigene Phase, weil der Schritt
-        /// Sekunden dauert und der Nutzer sonst vor einer halb fertigen Liste steht.
-        case looking(done: Int, total: Int)
-        case review
-        case failed(String)
-    }
-
-    var phase: Phase = .reading
-    var image: UIImage
-    var placeID: UUID?
-    var hint: String
-    var result = IntakeResult()
-    /// Was schon vom Modell angekommen ist — nur, damit sichtbar ist, dass etwas
-    /// passiert. Das rohe JSON zu zeigen wäre schlechter als ein Kreis; gezeigt wird
-    /// die Anzahl der Zeichen.
-    var received = 0
-
-    init(image: UIImage, placeID: UUID?, hint: String) {
-        self.image = image
-        self.placeID = placeID
-        self.hint = hint
-    }
-
-    var acceptedCount: Int { result.proposals.filter(\.accepted).count }
 }

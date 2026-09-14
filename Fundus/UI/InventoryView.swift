@@ -18,6 +18,8 @@ struct InventoryView: View {
     @State private var showManual = false
     @State private var pendingPlace: UUID?
     @State private var onlyStale = false
+    /// Der Auftrag, den der Nutzer aus der Reihe angetippt hat.
+    @State private var openJob: IntakeJob?
 
     var body: some View {
         NavigationStack {
@@ -28,6 +30,7 @@ struct InventoryView: View {
                 VStack(spacing: 0) {
                     header
                     content
+                    IntakeQueueStrip(open: $openJob)
                     actionBar
                 }
             }
@@ -44,20 +47,24 @@ struct InventoryView: View {
         }
         .fullScreenCover(isPresented: $showCamera) {
             CameraPicker { image in
-                model.startIntake(image: image, placeID: pendingPlace, hint: "")
+                model.enqueue([image], placeID: pendingPlace)
             }
             .ignoresSafeArea()
         }
         .sheet(isPresented: $showLibrary) {
-            LibraryPicker { image in
-                model.startIntake(image: image, placeID: pendingPlace, hint: "")
+            LibraryPicker { images in
+                model.enqueue(images, placeID: pendingPlace)
             }
         }
-        // Die Aufnahme ist kein Blatt über der Liste, sondern der ganze Bildschirm:
-        // im Prüfschritt lenkt alles dahinter von der einzigen Frage ab, die zählt —
-        // stimmt, was das Modell gelesen hat.
-        .fullScreenCover(item: intakeBinding) { state in
-            IntakeView(state: state)
+        // Der Prüfschritt ist kein Blatt über der Liste, sondern der ganze Bildschirm:
+        // dort lenkt alles dahinter von der einzigen Frage ab, die zählt — stimmt,
+        // was das Modell gelesen hat.
+        //
+        // Er springt aber nicht mehr von selbst auf. Wer gerade das nächste Regal
+        // fotografiert, will nicht von einer fertigen Aufnahme unterbrochen werden;
+        // die meldet sich über die Zeile oben und wartet als Symbol in der Reihe.
+        .fullScreenCover(item: $openJob) { job in
+            IntakeView(job: job)
         }
     }
 
@@ -66,9 +73,6 @@ struct InventoryView: View {
     // `header`. Ausgeschrieben ist es zwei Zeilen länger und an jeder Stelle gültig.
     private var queryBinding: Binding<String> {
         Binding(get: { model.query }, set: { model.query = $0 })
-    }
-    private var intakeBinding: Binding<IntakeState?> {
-        Binding(get: { model.intake }, set: { model.intake = $0 })
     }
 
     // MARK: Kopf
@@ -333,8 +337,3 @@ extension View {
     }
 }
 
-/// `fullScreenCover(item:)` braucht `Identifiable`. Eine Aufnahme ist identisch mit
-/// sich selbst — die Kennung ist das Objekt.
-extension IntakeState: Identifiable {
-    nonisolated var id: ObjectIdentifier { ObjectIdentifier(self) }
-}

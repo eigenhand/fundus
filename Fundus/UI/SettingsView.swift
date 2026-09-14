@@ -24,6 +24,7 @@ struct SettingsView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     header
                     modelSection
+                    intakeSection
                     lookupSection
                     searchSection
                     indexSection
@@ -216,6 +217,44 @@ struct SettingsView: View {
     /// Dieselbe Praemisse wie beim Modell: die App bringt keine Infrastruktur mit.
     /// Und hier waere das Stillschweigen teurer als dort — bei eingeschalteter Suche
     /// verlaesst eine Nummer aus dem Keller des Nutzers das Geraet.
+    /// Wie viele Fotos gleichzeitig gelesen werden.
+    ///
+    /// Eine Einstellung und keine Konstante, weil die richtige Zahl nicht von der App
+    /// abhaengt, sondern vom Anbieter: der eine nimmt sechs Aufrufe nebeneinander an,
+    /// der naechste drosselt ab zwei und antwortet mit 429. Beides kann die App nicht
+    /// wissen, und beides merkt der Nutzer sofort.
+    @ViewBuilder
+    private var intakeSection: some View {
+        SectionLabel(text: "Aufnahme")
+
+        VStack(alignment: .leading, spacing: 10) {
+            Stepper(value: Binding(
+                get: { model.settings.intakeConcurrency },
+                set: { model.settings.intakeConcurrency = $0; model.save() }),
+                    in: IntakeSchedule.concurrencyRange) {
+                HStack(spacing: 8) {
+                    Text("Gleichzeitig lesen")
+                        .font(EH.bodySmall)
+                        .foregroundStyle(EH.navy)
+                    Text("\(model.settings.intakeConcurrency)")
+                        .font(EH.mono.weight(.medium))
+                        .foregroundStyle(EH.navy)
+                        .monospacedDigit()
+                }
+            }
+            .tint(EH.navy)
+
+            Text("Fotos kommen in eine Reihe und werden nebeneinander gelesen. Mehr "
+                 + "gleichzeitig heisst frueher fertig \u{2014} bis der Anbieter drosselt. "
+                 + "Wer 429 oder Zeitablaeufe sieht, stellt es herunter. Die Reihe "
+                 + "fasst \(IntakeSchedule.maxQueued) Aufnahmen.")
+                .font(EH.meta)
+                .foregroundStyle(EH.muted)
+                .lineSpacing(2)
+        }
+        .padding(.vertical, 12)
+    }
+
     @ViewBuilder
     private var lookupSection: some View {
         SectionLabel(text: "Nummern nachschlagen")
@@ -228,9 +267,9 @@ struct SettingsView: View {
                     .font(EH.bodySmall)
                     .foregroundStyle(EH.navy)
                 Text("Steht auf einem Ding eine Herstellernummer, oder entziffert das "
-                     + "Geraet einen Strichcode, sucht die App danach und schlaegt einen "
-                     + "genauen Namen vor. Der Vorschlag ersetzt nichts: er kommt mit "
-                     + "eigenem Haekchen und der Nummer daneben.")
+                     + "Geraet einen Strichcode, sucht die App danach und legt bis zu "
+                     + "drei Moeglichkeiten vor. Ausgewaehlt ist keine: du tippst die "
+                     + "richtige an, oder keine. Die Nummer steht daneben.")
                     .font(EH.meta)
                     .foregroundStyle(EH.muted)
                     .lineSpacing(2)
