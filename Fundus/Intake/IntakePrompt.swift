@@ -142,37 +142,68 @@ enum IntakePrompt {
 
     /// Die Anweisung für das Destillieren aus Suchtreffern.
     ///
-    /// Die eine Regel, auf die es ankommt, steht zweimal drin: nicht antworten, wenn
-    /// die Treffer nicht zur Nummer passen. Eine Suchmaschine liefert auf jede
-    /// Zeichenfolge irgendetwas, und ein Modell, das höflich sein will, macht daraus
-    /// einen Produktnamen. Genau der wäre hier der Schaden — er sähe verlässlicher
-    /// aus als alles andere im Bestand und wäre am wenigsten belegt.
+    /// Dieser Text stand einmal andersherum: „antworte nicht, wenn die Treffer nicht
+    /// zur Nummer passen“, zweimal gesagt, damit es sitzt. Die Absicht war richtig und
+    /// die Wirkung falsch. Bei einer abgelesenen Nummer passen die Treffer fast nie
+    /// wörtlich — ein Zeichen daneben genügt —, und das Modell hat dann pflichtgemäß
+    /// geschwiegen, während in denselben Treffern das richtige Bauteil stand.
+    ///
+    /// Die Strenge bleibt, sie sitzt nur an der richtigen Stelle: das Modell darf
+    /// vorlegen, aber nicht behaupten. Es sagt zu jedem Vorschlag, wie weit er von der
+    /// gelesenen Nummer entfernt ist, und der Nutzer entscheidet — er hat das Ding in
+    /// der Hand, das Modell hat ein unscharfes Foto.
     static let lookupSystem = """
     Du bekommst eine Kennung, die an einem Gegenstand steht, und ein paar \
-    Suchtreffer dazu. Du sagst, was der Gegenstand ist. Du antwortest \
-    ausschließlich mit einem JSON-Objekt, ohne Vorrede, ohne Codeblock.
+    Suchtreffer dazu. Du sagst **nicht**, was der Gegenstand ist. Du legst bis zu \
+    drei Möglichkeiten vor, und der Nutzer wählt aus. Du antwortest ausschließlich \
+    mit einem JSON-Objekt, ohne Vorrede, ohne Codeblock.
 
-    # Der Titel
-    Kurz und sachlich, wie ein Eintrag in einem Lagerbestand: \
-    "MP1584EN DC-DC-Abwärtswandler 3 A", "NEMA-17-Schrittmotor 42×42", \
-    "Wago 221-413 Verbindungsklemme 3-polig". Deutsch, kein Werbetext, keine \
-    Händlerangaben, kein Preis.
+    # Warum eine Auswahl und kein Urteil
+    Die Kennung wurde meistens von einem Foto abgelesen und ist oft ein Zeichen \
+    daneben: eine 0 als O gelesen, eine 8 als 9, ein Bindestrich zu viel. Die Suche \
+    findet das richtige Bauteil dann trotzdem — nur eben nicht unter genau dieser \
+    Schreibweise. Ob es dasselbe Ding ist, sieht ein Mensch in einer Sekunde: er \
+    hält es in der Hand und vergleicht den Aufdruck. Du kannst das nicht. Also \
+    entscheidest du nicht, sondern legst vor.
 
-    # Wann du nicht antwortest
-    Steht die Kennung in keinem Treffer, oder widersprechen sich die Treffer, oder \
-    passen sie offensichtlich zu etwas anderem als dem genannten Gegenstand: dann \
-    `"title": null`. Das ist die richtige Antwort und keine Niederlage. Die Nummer \
-    kann falsch abgelesen sein — dann darf aus ihr nichts werden.
+    # Die Vorschläge
+    Der wahrscheinlichste zuerst. Jeder Titel kurz und sachlich, wie ein Eintrag in \
+    einem Lagerbestand: "MP1584EN DC-DC-Abwärtswandler 3 A", \
+    "NEMA-17-Schrittmotor 42×42, Welle 5 mm", "Wago 221-413 Verbindungsklemme \
+    3-polig". Deutsch, kein Werbetext, keine Händlerangaben, kein Preis.
 
-    # `confident`
-    `true` nur, wenn die Kennung in mindestens einem Treffer **wörtlich** vorkommt \
-    und die Treffer sich einig sind. Sonst `false`.
+    Unterscheidbar müssen sie sein. Dreimal derselbe Motor von drei Händlern ist \
+    **ein** Vorschlag, nicht drei — nimm dann den aussagekräftigsten Treffer. Drei \
+    Vorschläge lohnen sich nur, wenn sie wirklich verschiedene Dinge sind.
+
+    # `match` — wie weit ist der Vorschlag von der Kennung entfernt
+    "exact"  Die Kennung steht wörtlich so in einem Treffer.
+    "near"   Ein, zwei Zeichen anders. Dann gehört nach `code_seen`, wie die Nummer \
+    im Treffer wirklich lautet — das ist die Zeile, an der der Nutzer sein Teil \
+    wiedererkennt.
+    "family" Dieselbe Baureihe, andere Ausführung. Auch das ist ein brauchbarer \
+    Vorschlag: wer einen 42BYGH-Motor in der Hand hat, erkennt die richtige Länge \
+    selbst.
+
+    Stufe nichts hoch. "exact" nur, wenn du die Zeichenfolge im Treffer wirklich \
+    siehst; im Zweifel "near".
+
+    # Wann die Liste kurz oder leer bleibt
+    Höchstens drei, und lieber einer als drei. Du füllst nicht auf.
+
+    Handeln die Treffer offensichtlich von etwas ganz anderem — Katzenfutter, ein \
+    Forenbeitrag ohne Bauteil, eine Begriffsklärung —, dann `"candidates": []`. Das \
+    ist die richtige Antwort und keine Niederlage. Drei erfundene Möglichkeiten sind \
+    schlechter als keine: der Nutzer prüft sie einzeln und wirft sie einzeln weg.
 
     # Die Antwort
-    {"title": "…" oder null,
-     "summary": "ein bis zwei Sätze, was das Ding ist und wofür",
-     "source": "die URL des Treffers, auf den du dich stützt",
-     "confident": true}
+    {"candidates": [
+       {"title": "…",
+        "summary": "ein bis zwei Sätze, was das Ding ist und wofür",
+        "source": "die URL des Treffers, auf den du dich stützt",
+        "match": "exact" | "near" | "family",
+        "code_seen": "die Nummer, wie sie im Treffer steht, oder null"}
+    ]}
     """
 
     static func lookupMessage(code: ItemCode, itemName: String,
@@ -180,15 +211,17 @@ enum IntakePrompt {
         var parts: [String] = []
         parts.append("Kennung: \(code.value)  (\(code.label))")
         if code.origin == .read {
-            // Der Unterschied gehört ins Modell, weil er die Messlatte verschiebt:
-            // eine dekodierte EAN ist richtig, eine abgelesene Nummer kann ein
-            // verwechseltes Zeichen enthalten.
+            // Der Unterschied gehört ins Modell, weil er festlegt, wie eng der
+            // Vergleich sein muss: eine dekodierte EAN ist richtig, eine abgelesene
+            // Nummer kann ein verwechseltes Zeichen enthalten.
             parts.append("Diese Nummer wurde von einem Foto abgelesen und kann "
-                         + "Lesefehler enthalten. Passt sie zu keinem Treffer, "
-                         + "antworte mit `null` statt mit dem nächstbesten Ding.")
+                         + "Lesefehler enthalten. Ein Treffer, der fast so heißt, "
+                         + "ist deshalb ausdrücklich ein Vorschlag wert — sag über "
+                         + "`match` und `code_seen`, wie weit er abweicht.")
         } else {
             parts.append("Diese Nummer wurde vom Gerät aus einem Strichcode "
-                         + "dekodiert und ist zeichengenau richtig.")
+                         + "dekodiert und ist zeichengenau richtig. Ein Treffer mit "
+                         + "einer anderen Nummer ist hier ein anderes Produkt.")
         }
         let name = itemName.trimmingCharacters(in: .whitespacesAndNewlines)
         if !name.isEmpty {
@@ -196,7 +229,7 @@ enum IntakePrompt {
         }
         parts.append("Suchtreffer:\n" + hits.prefix(5).map(\.forPrompt)
             .joined(separator: "\n"))
-        parts.append("Was ist dieser Gegenstand?")
+        parts.append("Was kommt in Frage?")
         return parts.joined(separator: "\n\n")
     }
 }

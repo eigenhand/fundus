@@ -335,14 +335,19 @@ private struct ProposalRow: View {
         .opacity(proposal.accepted ? 1 : 0.45)
     }
 
-    /// Die Kennung und, falls nachgeschlagen, was dabei herauskam.
+    /// Die Kennung und, falls nachgeschlagen, die Auswahl dazu.
     ///
-    /// Der Suchtreffer bekommt ein eigenes Häkchen und steht standardmäßig aus. Das
-    /// ist die ganze Absicherung dieser Funktion in einer Zeile Oberfläche: man kann
-    /// den Fund behalten und die Deutung verwerfen. Ein aufgelöster Produktname steht
-    /// am Ende einer Kette aus unscharfem Aufkleber, verwechselbaren Zeichen und
-    /// einer Suchmaschine, die auf alles antwortet — und sieht danach verlässlicher
-    /// aus als alles andere im Bestand. Die Nummer daneben macht das nachprüfbar.
+    /// Hier stand ein einzelner Vorschlag mit einem Häkchen. Jetzt stehen bis zu drei
+    /// mit einem Punkt davor, und genau einer lässt sich antippen — oder keiner. Das
+    /// ist die ganze Änderung, und sie verschiebt die Frage: nicht mehr „ist diese
+    /// Deutung richtig?“, was niemand hier entscheiden kann, sondern „welches davon
+    /// ist es?“, was jeder entscheiden kann, der das Ding in der Hand hält.
+    ///
+    /// Ausgewählt ist nichts. Ein aufgelöster Produktname steht am Ende einer Kette
+    /// aus unscharfem Aufkleber, verwechselbaren Zeichen und einer Suchmaschine, die
+    /// auf alles antwortet — und sieht danach verlässlicher aus als alles andere im
+    /// Bestand. Die Nummer darüber und die abweichende Nummer daneben machen ihn
+    /// nachprüfbar.
     @ViewBuilder
     private func codeRow(_ code: ItemCode) -> some View {
         HStack(spacing: 6) {
@@ -357,36 +362,75 @@ private struct ProposalRow: View {
                 .foregroundStyle(EH.muted)
         }
 
-        if let lookup = code.lookup, !lookup.title.isEmpty {
-            Button {
-                proposal.useLookupName.toggle()
-            } label: {
-                HStack(alignment: .top, spacing: 7) {
-                    Image(systemName: proposal.useLookupName ? "checkmark.square.fill" : "square")
-                        .font(.system(size: 14))
-                        .foregroundStyle(proposal.useLookupName ? EH.navy : EH.hairStrong)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(lookup.title)
-                            .font(EH.bodySmall.weight(.medium))
-                            .foregroundStyle(EH.navy)
-                            .multilineTextAlignment(.leading)
-                        Text(lookupCaption(lookup))
-                            .font(EH.meta)
-                            .foregroundStyle(lookup.confident ? EH.muted : EH.warn)
-                            .multilineTextAlignment(.leading)
+        if let lookup = code.lookup {
+            if let reason = lookup.emptyReason {
+                // Auch das gehört hin. Eine leere Stelle unter der Nummer sieht aus,
+                // als hätte niemand gesucht — und lässt den Nutzer nicht wissen, ob
+                // er es noch einmal versuchen soll.
+                Text("Nachgeschlagen — \(reason).")
+                    .font(EH.meta)
+                    .foregroundStyle(lookup.failed ? EH.warn : EH.muted)
+                    .padding(.top, 3)
+            } else {
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(lookup.candidates.count == 1 ? "Ist es das?" : "Welches ist es?")
+                        .font(EH.meta)
+                        .foregroundStyle(EH.muted)
+
+                    ForEach(Array(lookup.candidates.enumerated()), id: \.offset) { index, candidate in
+                        candidateRow(index: index, candidate: candidate)
                     }
                 }
+                .padding(.top, 4)
             }
-            .buttonStyle(EHTap())
-            .padding(.top, 2)
         }
     }
 
-    private func lookupCaption(_ lookup: CodeLookup) -> String {
-        var parts = ["laut Websuche"]
-        if !lookup.sourceName.isEmpty { parts.append(lookup.sourceName) }
-        if !lookup.confident { parts.append("Treffer nicht eindeutig") }
-        return parts.joined(separator: " · ") + " — als Namen übernehmen?"
+    /// Ein Vorschlag. Runder Punkt statt Kästchen, weil höchstens einer gilt — und
+    /// ein zweites Antippen nimmt ihn wieder zurück, ohne dass es dafür eine Zeile
+    /// „keiner davon“ braucht.
+    private func candidateRow(index: Int, candidate: CodeCandidate) -> some View {
+        let picked = proposal.chosenCandidate == index
+        return Button {
+            proposal.chosenCandidate = picked ? nil : index
+        } label: {
+            HStack(alignment: .top, spacing: 7) {
+                Image(systemName: picked ? "largecircle.fill.circle" : "circle")
+                    .font(.system(size: 14))
+                    .foregroundStyle(picked ? EH.navy : EH.hairStrong)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(candidate.title)
+                        .font(EH.bodySmall.weight(picked ? .semibold : .medium))
+                        .foregroundStyle(EH.navy)
+                        .multilineTextAlignment(.leading)
+                    Text(candidateCaption(candidate))
+                        .font(EH.meta)
+                        .foregroundStyle(candidate.match == .exact ? EH.muted : EH.warn)
+                        .multilineTextAlignment(.leading)
+                }
+            }
+        }
+        .buttonStyle(EHTap())
+        .accessibilityLabel((picked ? "Gewählt: " : "Vorschlag: ") + candidate.title)
+        .accessibilityHint(candidateCaption(candidate))
+    }
+
+    /// Wie weit der Vorschlag von der gelesenen Nummer entfernt ist, und woher er
+    /// kommt.
+    ///
+    /// Bei `near` steht die abweichende Nummer statt der Einstufung: „dort:
+    /// 42BYGH3701-B-80S80“ sagt mehr als „fast dieselbe Nummer“, weil man es mit dem
+    /// Aufdruck in der Hand vergleichen kann. Bei `family` ist die Nummer im Treffer
+    /// meist nur ein Stamm — da ist die Einstufung die ehrlichere Auskunft.
+    private func candidateCaption(_ candidate: CodeCandidate) -> String {
+        var parts: [String] = []
+        if candidate.match == .near, !candidate.codeSeen.isEmpty {
+            parts.append("dort: \(candidate.codeSeen)")
+        } else {
+            parts.append(candidate.match.label)
+        }
+        if !candidate.sourceName.isEmpty { parts.append(candidate.sourceName) }
+        return parts.joined(separator: " · ")
     }
 
     /// Menge, mit „—“ für ungezählt.

@@ -88,9 +88,9 @@ struct Inventory: Codable, Equatable {
     @discardableResult
     mutating func absorb(_ proposal: Proposal, at placeID: UUID?, photoID: String?,
                          model: String?) -> Outcome {
-        // `effectiveName`, nicht `name`: hat der Nutzer den Fund aus der Websuche
-        // angehakt, ist dessen Titel der Name — sonst der, den das Modell im Bild
-        // gelesen hat.
+        // `effectiveName`, nicht `name`: hat der Nutzer einen Vorschlag aus der
+        // Websuche angetippt, ist dessen Titel der Name — sonst der, den das Modell
+        // im Bild gelesen hat.
         let clean = proposal.effectiveName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !clean.isEmpty else { return .skipped }
 
@@ -105,7 +105,7 @@ struct Inventory: Codable, Equatable {
             // Eine Kennung am bestehenden Eintrag wird nicht überschrieben: die erste
             // stand da, als jemand sie bestätigt hat. Eine fehlende wird ergänzt —
             // das zweite Foto zeigt das Typenschild vielleicht schärfer.
-            if found.code == nil { found.code = proposal.code }
+            if found.code == nil { found.code = proposal.resolvedCode }
             found.lastSeenAt = Date()
             update(found)
             return .increased(found.id)
@@ -115,7 +115,7 @@ struct Inventory: Codable, Equatable {
                         note: proposal.note, placeID: placeID,
                         provenance: Provenance(origin: .photo, photoID: photoID, model: model))
         if let photoID { item.photoIDs = [photoID] }
-        item.code = proposal.code
+        item.code = proposal.resolvedCode
         add(item)
         return .added(item.id)
     }
@@ -175,17 +175,36 @@ struct Proposal: Identifiable, Equatable, Hashable {
     var code: ItemCode?
     /// Vom Nutzer im Prüfschritt abgewählt.
     var accepted: Bool = true
-    /// Ob der Nutzer den Namen aus der Websuche übernehmen will.
+    /// Welchen Vorschlag aus der Websuche der Nutzer angetippt hat.
     ///
-    /// Getrennt vom Häkchen für den Eintrag selbst, und das ist der Kern der
-    /// Absicherung: man kann den Fund behalten und die Deutung verwerfen. Startet
-    /// aus, anders als `accepted` — eine Kette aus drei fehlbaren Gliedern bekommt
-    /// nicht dieselbe Vorleistung wie das, was das Modell mit eigenen Augen sah.
-    var useLookupName: Bool = false
+    /// Getrennt von `accepted`, und das ist der Kern der Absicherung: man kann den
+    /// Fund behalten und die Deutung verwerfen. Startet auf `nil` — keiner —, anders
+    /// als `accepted`. Eine Kette aus drei fehlbaren Gliedern bekommt nicht dieselbe
+    /// Vorleistung wie das, was das Modell mit eigenen Augen im Bild gesehen hat.
+    ///
+    /// `nil` ist hier nicht „noch nicht entschieden“, sondern eine gültige Antwort:
+    /// keiner der Vorschläge ist es. Dann bleibt der Name stehen, den das Modell
+    /// gelesen hat.
+    var chosenCandidate: Int?
 
     /// Der Name, der beim Annehmen wirklich gespeichert wird.
     var effectiveName: String {
-        if useLookupName, let title = code?.lookup?.title, !title.isEmpty { return title }
+        if let i = chosenCandidate, let list = code?.lookup?.candidates,
+           list.indices.contains(i), !list[i].title.isEmpty {
+            return list[i].title
+        }
         return name
+    }
+
+    /// Die Kennung, wie sie an den Eintrag geht: mit der getroffenen Wahl darin.
+    ///
+    /// Die Wahl gehört an den Bestand und nicht nur an diesen Prüfschritt. Wer in
+    /// einem halben Jahr vor dem Regal steht, sieht dann nicht nur, was die Suche
+    /// vorgeschlagen hat, sondern auch, welchen davon jemand bestätigt hat — und ob
+    /// überhaupt einer.
+    var resolvedCode: ItemCode? {
+        guard var c = code else { return nil }
+        c.lookup?.chosen = chosenCandidate
+        return c
     }
 }

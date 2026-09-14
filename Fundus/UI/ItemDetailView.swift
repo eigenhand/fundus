@@ -119,23 +119,29 @@ struct ItemDetailView: View {
                     .font(EH.meta)
                     .foregroundStyle(code.origin == .scanned ? EH.muted : EH.warn)
 
-                if let lookup = code.lookup, !lookup.title.isEmpty {
+                if let lookup = code.lookup, let reason = lookup.emptyReason {
+                    Divider().overlay(EH.hair)
+                    Text("Nachgeschlagen nach \(lookup.query) — \(reason). "
+                         + Ago.string(lookup.searchedAt))
+                        .font(EH.meta)
+                        .foregroundStyle(lookup.failed ? EH.warn : EH.muted)
+                } else if let lookup = code.lookup, let best = lookup.best, !best.title.isEmpty {
                     Divider().overlay(EH.hair)
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(lookup.title)
+                        Text(best.title)
                             .font(EH.bodySmall.weight(.medium))
                             .foregroundStyle(EH.navy)
-                        if !lookup.summary.isEmpty {
-                            Text(lookup.summary)
+                        if !best.summary.isEmpty {
+                            Text(best.summary)
                                 .font(EH.bodySmall)
                                 .foregroundStyle(EH.slate)
                                 .lineSpacing(2)
                         }
-                        Text(lookupTrail(lookup))
+                        Text(lookupTrail(lookup, best: best))
                             .font(EH.meta)
-                            .foregroundStyle(EH.muted)
-                        if let url = URL(string: lookup.sourceURL), !lookup.sourceURL.isEmpty {
-                            Link(lookup.sourceURL, destination: url)
+                            .foregroundStyle(lookup.chosen == nil ? EH.warn : EH.muted)
+                        if let url = URL(string: best.sourceURL), !best.sourceURL.isEmpty {
+                            Link(best.sourceURL, destination: url)
                                 .font(EH.meta)
                                 .foregroundStyle(EH.slate)
                                 .lineLimit(1)
@@ -146,9 +152,24 @@ struct ItemDetailView: View {
         }
     }
 
-    private func lookupTrail(_ lookup: CodeLookup) -> String {
+    /// Die Kette in einer Zeile: wonach gesucht wurde, wie nah der Treffer lag, ob
+    /// jemand ihn bestätigt hat, und wann das war.
+    ///
+    /// „Nicht übernommen“ steht ausdrücklich da und in Warnfarbe. Ein Vorschlag, den
+    /// niemand angetippt hat, sieht sonst genauso aus wie einer, den jemand geprüft
+    /// hat — und der Unterschied ist das Einzige, was diese Zeile wert macht.
+    private func lookupTrail(_ lookup: CodeLookup, best: CodeCandidate) -> String {
         var parts = ["gesucht nach \(lookup.query)"]
-        if !lookup.confident { parts.append("Treffer waren nicht eindeutig") }
+        if !best.codeSeen.isEmpty {
+            parts.append("gefunden als \(best.codeSeen)")
+        } else if best.match != .exact {
+            parts.append(best.match.label)
+        }
+        if lookup.chosen == nil {
+            parts.append(lookup.candidates.count > 1
+                         ? "einer von \(lookup.candidates.count), nicht übernommen"
+                         : "nicht übernommen")
+        }
         parts.append(Ago.string(lookup.searchedAt))
         return parts.joined(separator: " · ")
     }
