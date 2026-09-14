@@ -172,20 +172,25 @@ enum CaptureMode: String, Codable, CaseIterable, Identifiable, Sendable {
     case single
     /// Der Sucher bleibt offen, jedes Bild geht sofort in die Reihe.
     case doku
+    /// Nach dem Auslösen zeigt das Gerät, was es als einzelne Gegenstände erkennt;
+    /// der Nutzer tippt an, was er davon will.
+    case objects
 
     var id: String { rawValue }
 
     var label: String {
         switch self {
-        case .single: return "Einzelfoto"
-        case .doku:   return "Doku"
+        case .single:  return "Einzelfoto"
+        case .doku:    return "Doku"
+        case .objects: return "Objekte"
         }
     }
 
     var hint: String {
         switch self {
-        case .single: return "Ein Bild, dann zurück."
-        case .doku:   return "Der Sucher bleibt offen — durchfotografieren."
+        case .single:  return "Ein Bild, dann zurück."
+        case .doku:    return "Der Sucher bleibt offen — durchfotografieren."
+        case .objects: return "Nach dem Auslösen antippen, was aufgenommen wird."
         }
     }
 }

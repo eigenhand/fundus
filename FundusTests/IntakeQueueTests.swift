@@ -174,12 +174,15 @@ final class IntakeQueueTests: XCTestCase {
                        "Ein unbekannter Modus darf nicht die übrigen Einstellungen kosten.")
     }
 
-    func testBothModesAreOffered() {
-        XCTAssertEqual(CaptureMode.allCases.count, 2)
+    func testEveryModeIsLabelledAndExplained() {
+        XCTAssertEqual(CaptureMode.allCases.count, 3)
         for mode in CaptureMode.allCases {
             XCTAssertFalse(mode.label.isEmpty)
-            XCTAssertFalse(mode.hint.isEmpty, "„Doku\u{201C} allein sagt niemandem, was passiert.")
+            XCTAssertFalse(mode.hint.isEmpty,
+                           "Ein Wort wie Doku oder Objekte sagt niemandem, was passiert.")
         }
+        XCTAssertEqual(Set(CaptureMode.allCases.map(\.label)).count, 3,
+                       "Zwei gleich beschriftete Knöpfe waeren keine Auswahl.")
     }
 
     // MARK: Die Einstellung

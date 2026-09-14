@@ -28,6 +28,8 @@ struct CameraScreen: View {
     /// Was in diesem Durchgang aufgenommen wurde — nur als Beleg, dass es geklappt hat.
     @State private var taken: [UIImage] = []
     @State private var shutterGlow = false
+    /// Das stehende Bild im Objekte-Modus, solange der Nutzer auswählt.
+    @State private var pendingShot: UIImage?
 
     var body: some View {
         ZStack {
@@ -42,12 +44,26 @@ struct CameraScreen: View {
                 Color.white.ignoresSafeArea().transition(.opacity)
             }
 
-            VStack(spacing: 0) {
-                topBar
-                Spacer(minLength: 0)
-                if let failure { trouble(failure) }
-                Spacer(minLength: 0)
-                bottomBar
+            if let shot = pendingShot {
+                // Der Sucher bleibt darunter stehen und läuft weiter: wer verwirft,
+                // soll sofort wieder auslösen können, ohne dass sich die Kamera erst
+                // wieder einschaltet.
+                ObjectPicker(image: shot, placeID: placeID,
+                             onDiscard: { pendingShot = nil },
+                             onTaken: {
+                                 pendingShot = nil
+                                 taken.append(shot)
+                             })
+                    .background(.black)
+                    .transition(.opacity)
+            } else {
+                VStack(spacing: 0) {
+                    topBar
+                    Spacer(minLength: 0)
+                    if let failure { trouble(failure) }
+                    Spacer(minLength: 0)
+                    bottomBar
+                }
             }
         }
         .preferredColorScheme(.dark)
@@ -144,7 +160,7 @@ struct CameraScreen: View {
                 }
             }
             .pickerStyle(.segmented)
-            .frame(maxWidth: 260)
+            .frame(maxWidth: 320)
 
             Text(mode.hint)
                 .font(EH.meta)
@@ -198,9 +214,15 @@ struct CameraScreen: View {
         }
     }
 
+    /// Ob der Sucher nach einer Aufnahme offen bleibt.
+    ///
+    /// Im Objekte-Modus bleibt er es auch: wer einmal Gegenstände antippt, tut es
+    /// meistens noch einmal am nächsten Brett.
+    private var staysOpen: Bool { mode != .single }
+
     @ViewBuilder
     private var done: some View {
-        if mode == .doku {
+        if staysOpen {
             Button("Fertig") { dismiss() }
                 .font(.eh(16, .callout, weight: .medium))
                 .foregroundStyle(.white)
@@ -229,6 +251,12 @@ struct CameraScreen: View {
 
         camera.capture { image in
             Task { @MainActor in
+                // Im Objekte-Modus wird nicht sofort eingereiht: erst sagt der Nutzer,
+                // was auf dem Bild er meint.
+                if mode == .objects {
+                    withAnimation(.easeOut(duration: 0.15)) { pendingShot = image }
+                    return
+                }
                 model.enqueue([image], placeID: placeID)
                 taken.append(image)
                 if mode == .single { dismiss() }
