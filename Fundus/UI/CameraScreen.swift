@@ -254,7 +254,12 @@ struct CameraScreen: View {
                 // Im Objekte-Modus wird nicht sofort eingereiht: erst sagt der Nutzer,
                 // was auf dem Bild er meint.
                 if mode == .objects {
-                    withAnimation(.easeOut(duration: 0.15)) { pendingShot = image }
+                    // Hier, einmal: die Drehung des Sensors in die Pixel zeichnen.
+                    // Alles danach — Anzeige, Fingertipp, Maske, Ausschnitt — rechnet
+                    // dann im selben Rahmen. Vorher lagen Anzeige und Modell um
+                    // neunzig Grad auseinander.
+                    let upright = image.scaledDown(maxEdge: 1_400)
+                    withAnimation(.easeOut(duration: 0.15)) { pendingShot = upright }
                     return
                 }
                 model.enqueue([image], placeID: placeID)

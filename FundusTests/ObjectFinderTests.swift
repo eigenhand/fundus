@@ -70,6 +70,58 @@ final class ObjectFinderTests: XCTestCase {
         XCTAssertLessThan(middle.distanceFromCentre, corner.distanceFromCentre)
     }
 
+    // MARK: Die Drehung
+
+    /// Der Fehler, den man nur auf einem Gerät sieht.
+    ///
+    /// Ein Kamerafoto steht aufrecht, weil ein Merker danebensteht, nicht weil die
+    /// Pixel so liegen. `UIImage.size` und jede Anzeige lesen den Merker; `cgImage`
+    /// liest ihn nicht und gibt die Sensordaten quer zurück. Wer beides mischt,
+    /// rechnet in zwei Rahmen, die neunzig Grad auseinanderliegen — und die Maske
+    /// liegt dann als grosser Block irgendwo im Bild statt auf dem Gegenstand.
+    ///
+    /// `scaledDown` zeichnet die Drehung in die Pixel. Daran haengt jetzt alles:
+    /// Anzeige, Fingertipp, Kasten und Ausschnitt.
+    func testScalingDownBakesTheOrientationIntoThePixels() throws {
+        let format = UIGraphicsImageRendererFormat.default()
+        format.scale = 1; format.opaque = true
+        // Quer, links rot, rechts blau.
+        let landscape = UIGraphicsImageRenderer(size: CGSize(width: 200, height: 100),
+                                                format: format).image { ctx in
+            UIColor.red.setFill();  ctx.fill(CGRect(x: 0, y: 0, width: 100, height: 100))
+            UIColor.blue.setFill(); ctx.fill(CGRect(x: 100, y: 0, width: 100, height: 100))
+        }
+        let sideways = UIImage(cgImage: try XCTUnwrap(landscape.cgImage),
+                               scale: 1, orientation: .right)
+
+        XCTAssertEqual(sideways.size, CGSize(width: 100, height: 200),
+                       "Mit Merker gelesen ist es hochkant …")
+        XCTAssertEqual(try XCTUnwrap(sideways.cgImage).width, 200,
+                       "… ohne Merker liegt es quer. Genau diese Luecke war der Fehler.")
+
+        let upright = sideways.scaledDown(maxEdge: 1_400)
+        XCTAssertEqual(upright.imageOrientation, .up)
+        XCTAssertEqual(upright.size, CGSize(width: 100, height: 200))
+        XCTAssertEqual(try XCTUnwrap(upright.cgImage).width, 100,
+                       "Jetzt stimmen Pixel und Merker ueberein.")
+        XCTAssertEqual(try XCTUnwrap(upright.cgImage).height, 200)
+    }
+
+    /// Auch ein Bild, das klein genug ist, muss durch die Drehung gehen — sonst haengt
+    /// die Richtigkeit an der Groesse des Fotos.
+    func testASmallImageIsStraightenedToo() throws {
+        let format = UIGraphicsImageRendererFormat.default()
+        format.scale = 1; format.opaque = true
+        let small = UIGraphicsImageRenderer(size: CGSize(width: 60, height: 30),
+                                            format: format).image { ctx in
+            UIColor.gray.setFill(); ctx.fill(CGRect(x: 0, y: 0, width: 60, height: 30))
+        }
+        let sideways = UIImage(cgImage: try XCTUnwrap(small.cgImage), scale: 1, orientation: .left)
+        let upright = sideways.scaledDown(maxEdge: 1_400)
+        XCTAssertEqual(upright.imageOrientation, .up)
+        XCTAssertEqual(try XCTUnwrap(upright.cgImage).width, 30)
+    }
+
     // MARK: Die Rahmen im Bild
 
     /// `aspectRatio(.fit)` laesst einen Rand, den die umgebende Geometrie nicht kennt.

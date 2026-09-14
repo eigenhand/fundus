@@ -21,6 +21,17 @@ import SwiftUI
 struct ObjectPicker: View {
     @Environment(AppModel.self) private var model
 
+    /// Das Foto — **mit eingezeichneter Drehung**, siehe `CameraScreen.shoot`.
+    ///
+    /// Ein Kamerafoto steht aufrecht, weil ein Merker danebensteht, nicht weil die
+    /// Pixel so liegen. Wer es anzeigt, sieht den Merker; wer `cgImage` nimmt, sieht
+    /// ihn nicht. Anzeige, Fingertipp, Kasten und Ausschnitt müssen denselben Rahmen
+    /// meinen, sonst zeigt die Maske woandershin als der Finger — und genau so sah es
+    /// auf dem Gerät aus.
+    ///
+    /// Gedreht wird deshalb einmal an der Quelle und nicht hier: eine Ansicht wird bei
+    /// jeder Änderung neu gebaut, und ein Bild bei jedem Neubau neu zu zeichnen wäre
+    /// eine Korrektur, die man am Ruckeln merkt.
     let image: UIImage
     let placeID: UUID?
     /// Zurück zum Sucher, ohne etwas einzureihen.

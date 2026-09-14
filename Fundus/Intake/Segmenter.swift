@@ -82,9 +82,18 @@ actor Segmenter {
     // MARK: Ein Foto vorbereiten
 
     /// Der teure Schritt, einmal je Foto.
+    ///
+    /// `scaledDown` zuerst, und das ist keine Sparmassnahme, sondern die Korrektur
+    /// eines Fehlers, den man nur auf einem Geraet sieht: ein Kamerafoto traegt seine
+    /// Drehung als Merker neben den Pixeln, und `cgImage` gibt die **ungedrehten**
+    /// Sensordaten zurueck. SwiftUI zeigt das Bild aufrecht, das Modell bekam es quer
+    /// — Maske und Anzeige lagen in zwei verschiedenen Rahmen, und die Maske sah aus
+    /// wie ein grosser Block irgendwo im Bild. `scaledDown` zeichnet die Drehung ein.
     func encode(_ image: UIImage) throws {
         try load()
-        guard let encoder, let cg = image.cgImage else { throw Failure.broken("Kein Bild.") }
+        guard let encoder, let cg = image.scaledDown(maxEdge: 1_400).cgImage else {
+            throw Failure.broken("Kein Bild.")
+        }
         guard let constraint = encoder.modelDescription
             .inputDescriptionsByName["image"]?.imageConstraint else {
             throw Failure.broken("Der Bildkodierer nennt keine Bildgroesse.")
