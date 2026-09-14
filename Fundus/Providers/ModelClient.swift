@@ -16,6 +16,13 @@ enum ModelError: LocalizedError {
         switch self {
         case .notConfigured: return "Kein Modell eingerichtet. Endpoint, Schlüssel und Modellname fehlen."
         case .missingKey:    return "Kein Schlüssel im Schlüsselbund hinterlegt."
+        case .http(let s, _) where ModelClient.isBusy(s):
+            // Nach drei Versuchen mit Wartepausen. „HTTP 429" plus JSON waere hier
+            // richtig und nutzlos: der Leser kann nichts damit anfangen, ausser dem,
+            // was in diesem Satz steht.
+            return "Der Anbieter drosselt gerade (HTTP \(s)) — auch nach zwei "
+                + "Wartepausen noch. Kurz warten hilft. Kommt es oft vor, in den "
+                + "Einstellungen unter „Aufnahme“ weniger Fotos gleichzeitig lesen lassen."
         case .http(let s, let b):
             return "HTTP \(s)\n\(Self.readable(b))"
         case .transport(let m): return "Verbindungsfehler: \(m)"
@@ -139,8 +146,37 @@ struct ModelClient {
         return try await stream(url: url, body: body, onDelta: nil)
     }
 
+    // MARK: Warten, wenn der Anbieter drosselt
+
+    /// Zustaende, bei denen ein zweiter Versuch etwas bringt.
+    ///
+    /// 429 heisst „zu viele Anfragen", 503 und 529 heissen „gerade ueberlastet".
+    /// Das sind Wartezeiten, keine Defekte — und der Unterschied ist hier neu wichtig
+    /// geworden: seit die Aufnahme eine Reihe ist, laufen mehrere Aufrufe
+    /// nebeneinander, und wer die Gleichzeitigkeit hochstellt, laeuft schneller in
+    /// eine Drosselung. Vorher ging dabei die Aufnahme verloren.
+    static func isBusy(_ status: Int) -> Bool { status == 429 || status == 503 || status == 529 }
+
+    /// Hoechstens zwei Wartepausen, dann gilt es als Fehlschlag. Drei Versuche und
+    /// sechs Sekunden sind die Grenze dessen, was man stillschweigend aussitzen darf.
+    static let maxWaits = 2
+
+    /// Wie lange gewartet wird.
+    ///
+    /// `Retry-After` zuerst, weil der Anbieter es besser weiss als jede Formel —
+    /// gedeckelt, damit ein Kopf mit „3600" nicht die App fuer eine Stunde anhaelt.
+    /// Sonst 2, dann 4 Sekunden.
+    static func pause(retryAfter header: String?, attempt: Int) -> Double {
+        if let header, let seconds = Double(header.trimmingCharacters(in: .whitespaces)),
+           seconds > 0 {
+            return Swift.min(seconds, 30)
+        }
+        return Double(1 << (attempt + 1))
+    }
+
     private func stream(url: URL, body: [String: Any],
-                        onDelta: (@Sendable (String) -> Void)?) async throws -> String {
+                        onDelta: (@Sendable (String) -> Void)?,
+                        attempt: Int = 0) async throws -> String {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.timeoutInterval = 180
@@ -158,6 +194,15 @@ struct ModelClient {
             for try await line in bytes.lines {
                 errorBody += line
                 if errorBody.count > 2_000 { break }
+            }
+            // Drosselung: warten und noch einmal — mit demselben Modell. Auf ein
+            // anderes auszuweichen waere die falsche Antwort auf eine Wartezeit.
+            if Self.isBusy(http.statusCode), attempt < Self.maxWaits {
+                let seconds = Self.pause(
+                    retryAfter: http.value(forHTTPHeaderField: "Retry-After"), attempt: attempt)
+                try await Task.sleep(for: .seconds(seconds))
+                return try await stream(url: url, body: body, onDelta: onDelta,
+                                        attempt: attempt + 1)
             }
             throw ModelError.http(status: http.statusCode, body: errorBody)
         }
