@@ -506,6 +506,45 @@ final class AppModel {
         jobs.removeAll { $0 === job }
     }
 
+    // MARK: Das Erkennungsmodell
+
+    /// Wie weit der Download ist. `nil` heisst: laeuft gerade keiner.
+    var segmentDownload: RemoteModel.Progress?
+
+    var segmenterInstalled: Bool { SegmentAssets.looksInstalled }
+    var segmenterBytes: Int64 { SegmentAssets.model.bytesOnDisk }
+
+    /// Laedt das Modell fuer den Fingertipp im Objekte-Modus.
+    ///
+    /// Im Hintergrund und nicht im Blatt: die Einstellungen lassen sich zumachen,
+    /// waehrend geladen wird, und achtzig Megabyte sind nichts, wovor man sitzen
+    /// bleiben sollte.
+    func downloadSegmenter() {
+        guard segmentDownload == nil else { return }
+        segmentDownload = .downloading(done: 0, total: SegmentAssets.model.approximateBytes)
+        Task { [weak self] in
+            await SegmentAssets.model.download { step in
+                Task { @MainActor in self?.segmentDownload = step }
+            }
+            guard let self else { return }
+            switch self.segmentDownload {
+            case .finished:
+                self.banner = Banner(text: "Erkennungsmodell ist da.")
+            case .failed(let why):
+                self.banner = Banner(text: why, tone: .bad)
+            default:
+                break
+            }
+            self.segmentDownload = nil
+        }
+    }
+
+    func removeSegmenter() {
+        SegmentAssets.model.remove()
+        segmentDownload = nil
+        banner = Banner(text: "Erkennungsmodell entfernt.")
+    }
+
     // MARK: Einstellungen
 
     var searchKey: String {

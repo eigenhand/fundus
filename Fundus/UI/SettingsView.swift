@@ -244,6 +244,8 @@ struct SettingsView: View {
             }
             .tint(EH.navy)
 
+            segmenterRow
+
             Text("Fotos kommen in eine Reihe und werden nebeneinander gelesen. Mehr "
                  + "gleichzeitig heisst frueher fertig \u{2014} bis der Anbieter drosselt. "
                  + "Wer 429 oder Zeitablaeufe sieht, stellt es herunter. Die Reihe "
@@ -253,6 +255,60 @@ struct SettingsView: View {
                 .lineSpacing(2)
         }
         .padding(.vertical, 12)
+    }
+
+    /// Das Modell fuer den Fingertipp im Objekte-Modus.
+    ///
+    /// Achtzig Megabyte, und deshalb steht hier, was sie bringen und was ohne sie
+    /// passiert — ein Knopf mit einer Zahl dahinter, ohne Begruendung, wird entweder
+    /// nie oder blind gedrueckt.
+    @ViewBuilder
+    private var segmenterRow: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Text("Gegenstaende erkennen")
+                    .font(EH.bodySmall)
+                    .foregroundStyle(EH.navy)
+                Spacer(minLength: 0)
+
+                switch model.segmentDownload {
+                case .downloading(let done, let total):
+                    Text(total > 0 ? "\(done * 100 / total) %" : "laedt …")
+                        .font(EH.meta)
+                        .foregroundStyle(EH.slate)
+                        .monospacedDigit()
+                case .failed, .finished, .none:
+                    if model.segmenterInstalled {
+                        Button("Entfernen") { model.removeSegmenter() }
+                            .font(.eh(14, .footnote))
+                            .foregroundStyle(EH.slate)
+                            .buttonStyle(EHTap())
+                    } else {
+                        Button("Laden (80 MB)") { model.downloadSegmenter() }
+                            .font(.eh(14, .footnote, weight: .medium))
+                            .foregroundStyle(EH.navy)
+                            .buttonStyle(EHTap())
+                    }
+                }
+            }
+
+            if case .downloading(let done, let total) = model.segmentDownload, total > 0 {
+                ProgressView(value: Double(done), total: Double(total))
+                    .tint(EH.navy)
+            }
+
+            Text(model.segmenterInstalled
+                 ? "Im Objekte-Modus tippst du auf ein Ding, und das Geraet sagt, wo es "
+                 + "aufhoert. Liegt auf dem Geraet (\(ByteCountFormatter.string(fromByteCount: model.segmenterBytes, countStyle: .file)))."
+                 : "Ohne dieses Modell sucht sich das Geraet im Objekte-Modus selbst aus, "
+                 + "was ein Gegenstand ist — das ist fuer Portraits gebaut und liegt an "
+                 + "einer Werkbank oft daneben. Mit ihm entscheidet dein Finger. "
+                 + "Segment Anything 2.1 von Apple, Apache-2.0, laeuft auf dem Geraet.")
+                .font(EH.meta)
+                .foregroundStyle(EH.muted)
+                .lineSpacing(2)
+        }
+        .padding(.bottom, 6)
     }
 
     @ViewBuilder

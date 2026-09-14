@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Das stehende Bild mit den erkannten Gegenständen, zum Antippen.
+/// Das stehende Bild, auf dem der Nutzer antippt, was er meint.
 ///
 /// Der Grund, warum das mehr ist als Bequemlichkeit: ein Ausschnitt liest sich besser
 /// als ein Regal. Schickt man dem Modell ein breites Brett mit zwölf Dingen, zählt es
@@ -8,9 +8,16 @@ import SwiftUI
 /// Aufdruck. Wer hier drei Gegenstände antippt, bekommt drei Aufnahmen statt einer —
 /// und drei brauchbare Einträge statt einer Sammelzeile.
 ///
-/// Vorgewählt ist der Gegenstand in der Mitte. Das ist der häufigste Fall: man hält
-/// etwas in der Hand und zielt darauf. Wer etwas anderes meint, tippt es an; wer
-/// mehrere meint, tippt mehrere an.
+/// Wie die Kante gefunden wird, hängt davon ab, was auf dem Gerät liegt:
+///
+///  - **Mit SAM 2.1**: der Fingertipp *ist* die Frage. Das Modell antwortet, wo das
+///    Ding aufhört, auf das gezeigt wurde. Keine Vorauswahl, kein Raten.
+///  - **Ohne**: Apples Instanzmaske sucht sich selbst aus, was ein Gegenstand ist.
+///    Bei einem Portrait trifft sie; bei einer Werkbank liegt sie daneben, und das
+///    ist kein Zufall — sie ist für Motive gebaut, nicht für Bauteile.
+///
+/// Vorgewählt ist beide Male die Mitte. Das ist der häufigste Fall: man hält etwas in
+/// der Hand und zielt darauf.
 struct ObjectPicker: View {
     @Environment(AppModel.self) private var model
 
@@ -21,22 +28,57 @@ struct ObjectPicker: View {
     /// Eingereiht. Der Sucher macht danach weiter.
     let onTaken: () -> Void
 
-    @State private var objects: [FoundObject] = []
-    @State private var chosen: Set<Int> = []
-    @State private var searching = true
+    /// Was der Nutzer angetippt hat — mit SAM als Maske, sonst als Kasten.
+    @State private var picked: [SegmentedObject] = []
+    /// Der Rückfall ohne SAM: was Apple von sich aus findet.
+    @State private var offered: [FoundObject] = []
+    @State private var chosenOffers: Set<Int> = []
+
+    @State private var segmenter: Segmenter?
+    @State private var preparing = true
+    @State private var working = false
+    @State private var trouble: String?
+
+    private var usingSam: Bool { segmenter != nil }
 
     var body: some View {
         VStack(spacing: 0) {
             picture
             bar
         }
-        .task {
-            objects = await ObjectFinder.find(in: image)
-            // Die Mitte vorwählen, nicht alles: wer zielt, meint eins.
-            if let middle = objects.min(by: { $0.distanceFromCentre < $1.distanceFromCentre }) {
-                chosen = [middle.id]
+        .task { await prepare() }
+    }
+
+    // MARK: Vorbereiten
+
+    private func prepare() async {
+        if SegmentAssets.looksInstalled {
+            let engine = Segmenter()
+            do {
+                try await engine.encode(image)
+                segmenter = engine
+                // Die Mitte vorwählen: wer zielt, meint eins.
+                if let middle = try await engine.object(at: CGPoint(x: 0.5, y: 0.5)) {
+                    picked = [middle]
+                }
+                preparing = false
+                return
+            } catch {
+                // Kein Grund, hier stehen zu bleiben — der Rückfall tut es auch.
+                trouble = (error as? Segmenter.Failure).map(Self.reason) ?? error.localizedDescription
             }
-            searching = false
+        }
+        offered = await ObjectFinder.find(in: image)
+        if let middle = offered.min(by: { $0.distanceFromCentre < $1.distanceFromCentre }) {
+            chosenOffers = [middle.id]
+        }
+        preparing = false
+    }
+
+    private static func reason(_ failure: Segmenter.Failure) -> String {
+        switch failure {
+        case .notInstalled: return "Das Erkennungsmodell liegt nicht auf dem Gerät."
+        case .broken(let why): return why
         }
     }
 
@@ -50,37 +92,69 @@ struct ObjectPicker: View {
                     .aspectRatio(contentMode: .fit)
                     .frame(width: geo.size.width, height: geo.size.height)
 
-                ForEach(objects) { object in
+                // Mit SAM: die Umrisse liegen über dem ganzen Bild, jeder in seiner
+                // eigenen Ebene. Der Kasten daneben zeigt, was geschnitten wird.
+                ForEach(picked) { object in
+                    let rect = frame(for: CGRect(x: 0, y: 0, width: 1, height: 1), in: geo.size)
+                    if let mask = object.mask {
+                        Image(uiImage: mask)
+                            .resizable()
+                            .frame(width: rect.width, height: rect.height)
+                            .position(x: rect.midX, y: rect.midY)
+                            .allowsHitTesting(false)
+                    }
+                    let box = frame(for: object.box, in: geo.size)
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .strokeBorder(.white, lineWidth: 2.5)
+                        .frame(width: box.width, height: box.height)
+                        .position(x: box.midX, y: box.midY)
+                        .allowsHitTesting(false)
+                }
+
+                // Ohne SAM: die Vorschläge als antippbare Rahmen.
+                ForEach(offered) { object in
                     let rect = frame(for: object.box, in: geo.size)
-                    outline(object)
+                    offerOutline(object)
                         .frame(width: rect.width, height: rect.height)
                         .position(x: rect.midX, y: rect.midY)
                 }
 
-                if searching {
+                if preparing || working {
                     VStack(spacing: 10) {
                         ProgressView().tint(.white)
-                        Text("Gegenstände suchen …")
+                        Text(preparing ? "Das Bild wird vorbereitet." : "Kante suchen …")
                             .font(EH.meta)
                             .foregroundStyle(.white.opacity(0.9))
                     }
                     .padding(16)
                     .background(RoundedRectangle(cornerRadius: 12).fill(.black.opacity(0.5)))
+                    .allowsHitTesting(false)
                 }
+            }
+            .contentShape(Rectangle())
+            // Der Fingertipp ist die Frage. Nur mit SAM — ohne es gibt es nichts zu
+            // fragen, da stehen die Antworten schon als Rahmen da.
+            .onTapGesture { location in
+                guard usingSam, !preparing, !working else { return }
+                let rect = frame(for: CGRect(x: 0, y: 0, width: 1, height: 1), in: geo.size)
+                guard rect.contains(location) else { return }
+                let point = CGPoint(x: (location.x - rect.minX) / rect.width,
+                                    y: (location.y - rect.minY) / rect.height)
+                Task { await tap(point) }
             }
         }
     }
 
-    private func outline(_ object: FoundObject) -> some View {
-        let picked = chosen.contains(object.id)
+    private func offerOutline(_ object: FoundObject) -> some View {
+        let isPicked = chosenOffers.contains(object.id)
         return RoundedRectangle(cornerRadius: 10, style: .continuous)
-            .fill(picked ? Color.white.opacity(0.16) : Color.clear)
+            .fill(isPicked ? Color.white.opacity(0.16) : Color.clear)
             .overlay(
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .strokeBorder(picked ? .white : .white.opacity(0.65),
-                                  lineWidth: picked ? 3 : 1.5))
+                    .strokeBorder(isPicked ? .white : .white.opacity(0.65),
+                                  lineWidth: isPicked ? 3 : 1.5))
             .overlay(alignment: .topTrailing) {
-                if picked {
+                if isPicked {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 19))
                         .foregroundStyle(.white, EH.navy)
@@ -89,10 +163,45 @@ struct ObjectPicker: View {
             }
             .contentShape(Rectangle())
             .onTapGesture {
-                if picked { chosen.remove(object.id) } else { chosen.insert(object.id) }
+                if isPicked { chosenOffers.remove(object.id) } else { chosenOffers.insert(object.id) }
             }
             .accessibilityAddTraits(.isButton)
-            .accessibilityLabel(picked ? "Gewählt" : "Gegenstand")
+            .accessibilityLabel(isPicked ? "Gewählt" : "Gegenstand")
+    }
+
+    /// Ein Tipp: entweder ein schon gewähltes Ding wieder abwählen, oder ein neues
+    /// dazunehmen.
+    private func tap(_ point: CGPoint) async {
+        if let hit = picked.first(where: { $0.box.contains(point) }) {
+            picked.removeAll { $0.id == hit.id }
+            trouble = nil
+            return
+        }
+        guard let segmenter else { return }
+        working = true
+        trouble = nil
+        defer { working = false }
+        do {
+            guard let object = try await segmenter.object(at: point) else {
+                // Stillschweigen waere hier das Schlechteste: der Nutzer hat getippt
+                // und nichts ist passiert, und er weiss nicht, ob die App ihn gehoert
+                // hat oder das Modell nichts gefunden hat.
+                trouble = "Da war keine Kante zu finden. Tippe mitten auf das Ding."
+                return
+            }
+            // Zweimal auf dasselbe zu tippen soll es nicht verdoppeln.
+            guard !picked.contains(where: { overlaps($0.box, object.box) }) else { return }
+            picked.append(object)
+        } catch {
+            trouble = error.localizedDescription
+        }
+    }
+
+    private func overlaps(_ a: CGRect, _ b: CGRect) -> Bool {
+        let cut = a.intersection(b)
+        guard !cut.isNull else { return false }
+        let shared = cut.width * cut.height
+        return shared > 0.6 * min(a.width * a.height, b.width * b.height)
     }
 
     private func frame(for box: CGRect, in size: CGSize) -> CGRect {
@@ -104,7 +213,7 @@ struct ObjectPicker: View {
     /// Von Hand gerechnet und nicht von SwiftUI abgefragt: `aspectRatio(.fit)` lässt
     /// oben und unten — oder links und rechts — einen Rand, den die Geometrie der
     /// umgebenden Ansicht nicht kennt. Ohne diese Rechnung liegen alle Rahmen um
-    /// denselben Betrag daneben, und zwar gleichmässig genug, dass es aussieht, als
+    /// denselben Betrag daneben, und zwar gleichmäßig genug, dass es aussieht, als
     /// stimme die Erkennung nicht statt die Rechnung.
     ///
     /// Statisch, damit sie prüfbar ist: ein Screenshot zeigt, dass Rahmen irgendwo
@@ -131,6 +240,7 @@ struct ObjectPicker: View {
                 .font(EH.meta)
                 .foregroundStyle(.white.opacity(0.7))
                 .multilineTextAlignment(.center)
+                .lineSpacing(2)
 
             HStack(spacing: 12) {
                 Button("Verwerfen", action: onDiscard)
@@ -149,7 +259,7 @@ struct ObjectPicker: View {
                         .background(Capsule().fill(.white))
                 }
                 .buttonStyle(EHTap())
-                .disabled(searching)
+                .disabled(preparing)
             }
         }
         .padding(.horizontal, EH.gutter)
@@ -158,33 +268,42 @@ struct ObjectPicker: View {
         .background(.black.opacity(0.4))
     }
 
+    private var count: Int { usingSam ? picked.count : chosenOffers.count }
+
     private var takeLabel: String {
-        switch chosen.count {
+        switch count {
         case 0: return "Ganzes Bild"
         case 1: return "1 Ausschnitt"
         case let n: return "\(n) Ausschnitte"
         }
     }
 
-    /// Was der Knopf kostet, bevor er gedrückt wird.
+    /// Was der Knopf kostet, bevor er gedrückt wird, und woran die Kante gefunden wird.
     ///
     /// Jeder Ausschnitt ist eine eigene Aufnahme und damit ein eigener bezahlter
     /// Aufruf. Das gehört sichtbar daneben und nicht in eine Abrechnung hinterher.
     private var note: String {
-        if searching { return "Das Gerät sieht sich das Bild an." }
-        if objects.isEmpty {
-            return "Keine einzelnen Gegenstände erkannt — das ganze Bild geht als eine Aufnahme."
+        if preparing { return "Das Gerät sieht sich das Bild an." }
+        if let trouble { return trouble }
+        if usingSam {
+            if picked.isEmpty { return "Tippe an, was du meinst — oder nimm das ganze Bild." }
+            return picked.count == 1
+                ? "Ein Ausschnitt, eine Aufnahme. Weitere antippen geht."
+                : "\(picked.count) Ausschnitte, \(picked.count) Aufnahmen."
         }
-        if chosen.isEmpty { return "Nichts angetippt: das ganze Bild geht als eine Aufnahme." }
-        return chosen.count == 1
-            ? "Ein Ausschnitt, eine Aufnahme."
-            : "\(chosen.count) Ausschnitte, \(chosen.count) Aufnahmen."
+        if offered.isEmpty {
+            return "Keine einzelnen Gegenstände erkannt — das ganze Bild geht als eine "
+                 + "Aufnahme. Mit dem Erkennungsmodell aus den Einstellungen ginge das besser."
+        }
+        return chosenOffers.isEmpty
+            ? "Nichts angetippt: das ganze Bild geht als eine Aufnahme."
+            : "\(chosenOffers.count) Ausschnitt\(chosenOffers.count == 1 ? "" : "e") — so viele Aufnahmen."
     }
 
     private func take() {
-        let pieces = objects
-            .filter { chosen.contains($0.id) }
-            .compactMap { ObjectFinder.crop(image, to: $0.box) }
+        let boxes = usingSam ? picked.map(\.box)
+                             : offered.filter { chosenOffers.contains($0.id) }.map(\.box)
+        let pieces = boxes.compactMap { ObjectFinder.crop(image, to: $0) }
 
         // Nichts angetippt, oder kein Ausschnitt brauchbar: dann eben das ganze Bild.
         // Mit leeren Händen aus diesem Bildschirm zu gehen wäre der falsche Ausgang —
