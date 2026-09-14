@@ -28,6 +28,10 @@ struct CameraScreen: View {
     /// Was in diesem Durchgang aufgenommen wurde — nur als Beleg, dass es geklappt hat.
     @State private var taken: [UIImage] = []
     @State private var shutterGlow = false
+    @State private var zoom = CameraSession.Zoom()
+    /// Der Stand beim Ansetzen der zwei Finger. Ohne ihn waere jede Bewegung
+    /// absolut statt relativ, und der Sucher spraenge beim Anfassen.
+    @State private var pinchStart: CGFloat?
     /// Das stehende Bild im Objekte-Modus, solange der Nutzer auswählt.
     @State private var pendingShot: UIImage?
 
@@ -38,6 +42,16 @@ struct CameraScreen: View {
             if failure == nil {
                 CameraPreview(session: camera.session)
                     .ignoresSafeArea()
+                    // Zwei Finger, wie in jeder Kamera. Ohne Glaetten: die Geste soll
+                    // den Fingern folgen und nicht hinterherlaufen.
+                    .gesture(
+                        MagnifyGesture()
+                            .onChanged { value in
+                                let start = pinchStart ?? zoom.current
+                                if pinchStart == nil { pinchStart = start }
+                                apply(start * value.magnification, smooth: false)
+                            }
+                            .onEnded { _ in pinchStart = nil })
             }
 
             if shutterGlow {
@@ -70,6 +84,7 @@ struct CameraScreen: View {
         .task {
             mode = model.settings.captureMode
             failure = await camera.start()
+            zoom = camera.zoom
             starting = false
         }
         .onDisappear { camera.stop() }
@@ -129,6 +144,7 @@ struct CameraScreen: View {
 
     private var bottomBar: some View {
         VStack(spacing: 14) {
+            zoomPicker
             modePicker
 
             HStack(alignment: .center) {
@@ -143,6 +159,49 @@ struct CameraScreen: View {
         .padding(.top, 14)
         .padding(.bottom, 18)
         .background(.black.opacity(0.35))
+    }
+
+    /// Die Linsen als Knöpfe, wie in der Kamera des Systems.
+    ///
+    /// Die Stellen kommen vom Gerät und nicht aus einer Liste: welche Linsen verbaut
+    /// sind, weiß nur das Telefon. Auf einem ohne Ultraweitwinkel steht hier nur
+    /// „1×", und dann bleibt die Zeile ganz weg — ein Knopf ohne Wahl ist keiner.
+    @ViewBuilder
+    private var zoomPicker: some View {
+        if failure == nil, zoom.stops.count > 1 {
+            HStack(spacing: 6) {
+                ForEach(zoom.stops, id: \.self) { stop in
+                    let active = nearestStop == stop
+                    Button {
+                        apply(stop, smooth: true)
+                    } label: {
+                        // Auf dem aktiven Knopf steht der wirkliche Wert — wer mit den
+                        // Fingern zwischen zwei Linsen steht, will 1,8× lesen und
+                        // nicht 1×.
+                        Text(active ? zoom.label(zoom.current) : zoom.label(stop))
+                            .font(.eh(active ? 13 : 12, .caption, weight: .semibold))
+                            .monospacedDigit()
+                            .foregroundStyle(active ? .black : .white)
+                            .frame(minWidth: 40)
+                            .padding(.vertical, 7)
+                            .background(Capsule().fill(active ? .white : .black.opacity(0.35)))
+                    }
+                    .buttonStyle(EHTap())
+                    .accessibilityLabel("Zoom \(zoom.label(stop))")
+                }
+            }
+        }
+    }
+
+    /// Welcher Knopf gerade gilt: der nächstgelegene unterhalb des Stands.
+    private var nearestStop: CGFloat? {
+        zoom.stops.last { $0 <= zoom.current + 0.001 } ?? zoom.stops.first
+    }
+
+    private func apply(_ factor: CGFloat, smooth: Bool) {
+        let wanted = min(max(factor, zoom.minimum), zoom.maximum)
+        zoom.current = wanted
+        camera.setZoom(wanted, smooth: smooth)
     }
 
     /// Der Wähler, und darunter in einer Zeile, was er bedeutet.

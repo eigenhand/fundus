@@ -47,6 +47,7 @@ final class CameraSession: NSObject, @unchecked Sendable {
     /// das Bild um 90 Grad gekippt beim Modell an — und ein gekipptes Etikett liest
     /// niemand, auch kein Modell.
     private var rotation: AVCaptureDevice.RotationCoordinator?
+    private var device: AVCaptureDevice?
 
     /// Was auf ein ausgelöstes Bild wartet, nach Aufnahme-Kennung.
     ///
@@ -56,9 +57,62 @@ final class CameraSession: NSObject, @unchecked Sendable {
     private var pending: [Int64: @Sendable (UIImage) -> Void] = [:]
     private let lock = NSLock()
 
-    static var isAvailable: Bool {
-        AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) != nil
+    static var isAvailable: Bool { bestCamera() != nil }
+
+    /// Die beste Rückkamera, die dieses Gerät hat.
+    ///
+    /// Bevorzugt ein **virtuelles** Gerät — Triple, Dual-Wide, Dual — und erst zuletzt
+    /// die einzelne Weitwinkellinse. Das ist nicht Ehrgeiz, sondern zwei Dinge, die
+    /// sonst fehlen:
+    ///
+    ///  - **Zoom über die Linsen hinweg.** Auf einem einzelnen Objektiv ist jeder
+    ///    Zoom ein Ausschnitt; ein virtuelles Gerät wechselt beim Zoomen selbst auf
+    ///    Ultraweitwinkel oder Tele, ohne dass die App davon etwas wissen muss.
+    ///  - **Makro.** iOS macht Nahaufnahmen, indem es unter einem gewissen Abstand auf
+    ///    das Ultraweitwinkel umschaltet. Ohne virtuelles Gerät passiert das nicht —
+    ///    und für eine App, in der Leute Aufdrucke auf Bauteilen fotografieren, ist
+    ///    das genau der Fall, auf den es ankommt.
+    ///
+    /// Beides hatte `UIImagePickerController` mitgebracht und ging verloren, als der
+    /// Sucher selbst gebaut wurde.
+    static func bestCamera() -> AVCaptureDevice? {
+        let types: [AVCaptureDevice.DeviceType] = [
+            .builtInTripleCamera, .builtInDualWideCamera, .builtInDualCamera,
+            .builtInWideAngleCamera,
+        ]
+        let found = AVCaptureDevice.DiscoverySession(
+            deviceTypes: types, mediaType: .video, position: .back).devices
+        for type in types {
+            if let device = found.first(where: { $0.deviceType == type }) { return device }
+        }
+        return found.first
     }
+
+    /// Was der Sucher über den Zoom wissen muss.
+    struct Zoom: Sendable, Equatable {
+        /// In Geräteeinheiten.
+        var minimum: CGFloat = 1
+        var maximum: CGFloat = 1
+        /// Wo „1×" liegt. Auf einem Gerät mit Ultraweitwinkel ist das **nicht** 1:
+        /// dort ist 1 das Ultraweitwinkel, also „0,5×".
+        var baseline: CGFloat = 1
+        /// Die Stellen, an denen die Linse wechselt — daraus werden die Knöpfe.
+        var stops: [CGFloat] = [1]
+
+        var current: CGFloat = 1
+
+        /// Was auf dem Knopf steht: 0,5× statt 1,0.
+        func label(_ factor: CGFloat) -> String {
+            let shown = factor / baseline
+            let rounded = (shown * 10).rounded() / 10
+            return rounded == rounded.rounded()
+                ? "\(Int(rounded))×"
+                : String(format: "%.1f×", rounded).replacingOccurrences(of: ".", with: ",")
+        }
+    }
+
+    /// Nur lesen, und nur auf dem Hauptakteur — der Sucher zeigt es an.
+    private(set) nonisolated(unsafe) var zoom = Zoom()
 
     var flashMode: AVCaptureDevice.FlashMode = .auto
 
@@ -123,9 +177,8 @@ final class CameraSession: NSObject, @unchecked Sendable {
     /// Nur einmal, und nur auf `queue`.
     private func configureIfNeeded() -> Failure? {
         guard session.inputs.isEmpty else { return nil }
-        guard let device = AVCaptureDevice.default(.builtInWideAngleCamera,
-                                                   for: .video, position: .back)
-        else { return .unavailable }
+        guard let device = Self.bestCamera() else { return .unavailable }
+        self.device = device
 
         session.beginConfiguration()
         defer { session.commitConfiguration() }
@@ -149,7 +202,81 @@ final class CameraSession: NSObject, @unchecked Sendable {
         // Ohne Vorschauebene: die gehört der Oberfläche, und der Winkel, auf den es
         // ankommt, ist der des Geräts zum Horizont — nicht der der Ansicht.
         rotation = AVCaptureDevice.RotationCoordinator(device: device, previewLayer: nil)
+        zoom = Self.zoomRange(of: device)
+        applyZoom(zoom.baseline)     // bei „1×" aufmachen, nicht beim Ultraweitwinkel
         return nil
+    }
+}
+
+extension CameraSession {
+
+    /// Der Zoombereich dieses Geräts, samt der Stellen, an denen die Linse wechselt.
+    ///
+    /// Die Umrechnung auf „×" ist der heikle Teil. `videoZoomFactor` 1 ist die
+    /// **weiteste** Linse, die das virtuelle Gerät hat — bei einem Triple oder
+    /// Dual-Wide also das Ultraweitwinkel, das der Nutzer als 0,5× kennt. Bei einem
+    /// Dual (Weitwinkel + Tele) ist 1 dagegen schon 1×. Die Schaltpunkte allein
+    /// verraten das nicht; was es verrät, ist, ob ein Ultraweitwinkel verbaut ist.
+    static func zoomRange(of device: AVCaptureDevice) -> Zoom {
+        zoomRange(
+            switchOver: device.virtualDeviceSwitchOverVideoZoomFactors.map { CGFloat($0.doubleValue) },
+            hasUltraWide: device.constituentDevices
+                .contains { $0.deviceType == .builtInUltraWideCamera },
+            minimum: device.minAvailableVideoZoomFactor,
+            maximum: device.maxAvailableVideoZoomFactor)
+    }
+
+    /// Dieselbe Rechnung ohne Gerät, damit sie prüfbar ist.
+    ///
+    /// Ein `AVCaptureDevice` laesst sich nicht bauen, und die Zahlen unterscheiden
+    /// sich von Telefon zu Telefon — die Regel dahinter nicht.
+    static func zoomRange(switchOver: [CGFloat], hasUltraWide: Bool,
+                          minimum: CGFloat, maximum deviceMaximum: CGFloat) -> Zoom {
+        let baseline = hasUltraWide ? (switchOver.first ?? 1) : 1
+
+        // Über das Achtfache hinaus ist es Brei. Wer den Aufdruck lesen will, kommt
+        // näher heran — dafür gibt es den Makro.
+        let maximum = min(deviceMaximum, baseline * 8)
+
+        var stops = [minimum]
+        stops += switchOver.filter { $0 > minimum && $0 < maximum }
+        if !stops.contains(where: { abs($0 - baseline) < 0.01 }), baseline < maximum {
+            stops.append(baseline)
+        }
+        stops.sort()
+
+        return Zoom(minimum: minimum, maximum: maximum, baseline: baseline,
+                    stops: stops, current: baseline)
+    }
+
+    /// Setzt den Zoom. Aus der Oberfläche gerufen, ausgeführt auf dem eigenen Faden.
+    ///
+    /// `smooth` für Knöpfe, damit es gleitet; für die Zwei-Finger-Geste nicht — die
+    /// soll den Fingern folgen und nicht hinterherlaufen.
+    func setZoom(_ factor: CGFloat, smooth: Bool = false) {
+        queue.async { [weak self] in
+            guard let self else { return }
+            self.applyZoom(factor, smooth: smooth)
+        }
+    }
+
+    private func applyZoom(_ factor: CGFloat, smooth: Bool = false) {
+        guard let device else { return }
+        let wanted = min(max(factor, zoom.minimum), zoom.maximum)
+        do {
+            try device.lockForConfiguration()
+            defer { device.unlockForConfiguration() }
+            if smooth {
+                device.ramp(toVideoZoomFactor: wanted, withRate: 8)
+            } else {
+                device.cancelVideoZoomRamp()
+                device.videoZoomFactor = wanted
+            }
+            zoom.current = wanted
+        } catch {
+            // Ein gesperrtes Gerät ist kein Grund, die Aufnahme abzubrechen — es
+            // bleibt eben beim bisherigen Ausschnitt.
+        }
     }
 }
 
