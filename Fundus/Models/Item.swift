@@ -144,7 +144,7 @@ struct Provenance: Codable, Equatable, Hashable {
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
-        origin  = try c.decodeIfPresent(Origin.self, forKey: .origin) ?? .manual
+        origin  = c.decodeLenient(Origin.self, forKey: .origin) ?? .manual
         photoID = try c.decodeIfPresent(String.self, forKey: .photoID)
         model   = try c.decodeIfPresent(String.self, forKey: .model)
         at      = try c.decodeIfPresent(Date.self, forKey: .at) ?? Date()

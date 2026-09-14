@@ -513,6 +513,26 @@ final class LookupTests: XCTestCase {
         XCTAssertEqual(item.code?.lookup?.candidates.first?.match, .near)
     }
 
+    /// Dasselbe im Bestand, und dort wiegt es schwerer: ein einziges unbekanntes
+    /// `kind` aus einer neueren Fassung der App hätte den ganzen Bestand unlesbar
+    /// gemacht.
+    func testUnknownEnumInAnItemDoesNotLoseTheItem() throws {
+        let json = #"""
+        {"name":"Wandler","note":"bleibt",
+         "code":{"value":"MP1584EN","kind":"nfc","origin":"gefunkt",
+                 "lookup":{"query":"q","candidates":[{"title":"X","match":"telepathisch"}]}},
+         "provenance":{"origin":"traumdeutung"}}
+        """#
+        let item = try JSONDecoder().decode(Item.self, from: Data(json.utf8))
+        XCTAssertEqual(item.name, "Wandler")
+        XCTAssertEqual(item.note, "bleibt")
+        XCTAssertEqual(item.code?.value, "MP1584EN")
+        XCTAssertEqual(item.code?.kind, .unknown, "Unbekannte Art heisst unbekannte Art.")
+        XCTAssertEqual(item.code?.origin, .read)
+        XCTAssertEqual(item.code?.lookup?.candidates.first?.match, .family)
+        XCTAssertEqual(item.provenance.origin, .manual)
+    }
+
     /// Ein Bestand aus der Zeit vor dieser Funktion muss weiter lesbar sein.
     func testItemWithoutCodeStillDecodes() throws {
         let item = try JSONDecoder().decode(Item.self, from: Data(#"{"name":"Zange"}"#.utf8))

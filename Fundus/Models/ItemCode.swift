@@ -68,8 +68,8 @@ struct ItemCode: Codable, Equatable, Hashable {
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         value  = try c.decodeIfPresent(String.self, forKey: .value) ?? ""
-        kind   = try c.decodeIfPresent(Kind.self, forKey: .kind) ?? .unknown
-        origin = try c.decodeIfPresent(Origin.self, forKey: .origin) ?? .read
+        kind   = c.decodeLenient(Kind.self, forKey: .kind) ?? .unknown
+        origin = c.decodeLenient(Origin.self, forKey: .origin) ?? .read
         lookup = try c.decodeIfPresent(CodeLookup.self, forKey: .lookup)
     }
 }
@@ -127,7 +127,7 @@ struct CodeCandidate: Codable, Equatable, Hashable {
         summary    = try c.decodeIfPresent(String.self, forKey: .summary) ?? ""
         sourceURL  = try c.decodeIfPresent(String.self, forKey: .sourceURL) ?? ""
         sourceName = try c.decodeIfPresent(String.self, forKey: .sourceName) ?? ""
-        match      = try c.decodeIfPresent(Match.self, forKey: .match) ?? .family
+        match      = c.decodeLenient(Match.self, forKey: .match) ?? .family
         codeSeen   = try c.decodeIfPresent(String.self, forKey: .codeSeen) ?? ""
     }
 }

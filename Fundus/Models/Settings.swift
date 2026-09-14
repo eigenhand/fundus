@@ -152,7 +152,7 @@ struct SearchConfig: Codable, Equatable {
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         let d = SearchConfig()
-        source            = try c.decodeIfPresent(Source.self, forKey: .source) ?? d.source
+        source            = c.decodeLenient(Source.self, forKey: .source) ?? d.source
         embeddingPath     = try c.decodeIfPresent(String.self, forKey: .embeddingPath) ?? d.embeddingPath
         embeddingModel    = try c.decodeIfPresent(String.self, forKey: .embeddingModel) ?? ""
         embeddingBaseURL  = try c.decodeIfPresent(String.self, forKey: .embeddingBaseURL) ?? ""
