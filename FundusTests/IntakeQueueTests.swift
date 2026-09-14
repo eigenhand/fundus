@@ -117,6 +117,31 @@ final class IntakeQueueTests: XCTestCase {
         XCTAssertEqual(j.badge, "!")
     }
 
+    /// Der Knopf im Prüfschritt hiess „Nichts übernehmen" und war abgeschaltet. Wer
+    /// alles abwählte, um die Aufnahme loszuwerden, sass fest.
+    func testDeselectingEverythingOffersToDiscard() {
+        let j = job()
+        j.result.proposals = [Proposal(name: "a"), Proposal(name: "b")]
+        j.phase = .review
+        XCTAssertEqual(j.commitAction, .take(2), "Angehakt ist beides — beides wird übernommen.")
+
+        j.result.proposals[0].accepted = false
+        XCTAssertEqual(j.commitAction, .take(1))
+
+        j.result.proposals[1].accepted = false
+        XCTAssertEqual(j.commitAction, .discard,
+                       "Nichts anhaken heisst nicht: keine Handlung. Es heisst: weg damit.")
+        XCTAssertEqual(j.commitAction.label, "Aufnahme verwerfen",
+                       "Die Beschriftung muss sagen, was der Knopf tut.")
+    }
+
+    /// Auch eine Aufnahme ganz ohne Vorschläge muss sich wegtippen lassen.
+    func testAnEmptyResultCanBeDiscarded() {
+        let j = job()
+        j.phase = .review
+        XCTAssertEqual(j.commitAction, .discard)
+    }
+
     // MARK: Der Sucher
 
     /// Wer einen Keller abgeht, stellt einmal auf Doku und will das nicht bei jedem

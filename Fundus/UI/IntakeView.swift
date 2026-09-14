@@ -301,17 +301,26 @@ struct IntakeView: View {
         }
     }
 
+    /// Übernehmen — oder, wenn nichts angehakt ist, die Aufnahme wegwerfen.
+    ///
+    /// Hier stand „Nichts übernehmen" auf einem Knopf, der abgeschaltet war. Die
+    /// Beschriftung versprach eine Handlung, der Knopf verweigerte sie, und wer alles
+    /// abgewählt hatte, um die Aufnahme loszuwerden, saß fest. Ein abgeschalteter
+    /// Knopf ist nur dann richtig, wenn es *nichts zu tun* gibt — hier gibt es etwas:
+    /// diese Aufnahme soll weg.
     private var commitBar: some View {
         HStack(spacing: 12) {
-            let n = job.acceptedCount
+            let action = job.commitAction
             Button {
-                model.commit(job)
+                switch action {
+                case .take:    model.commit(job)
+                case .discard: model.discard(job)
+                }
                 dismiss()
             } label: {
-                Text(n == 0 ? "Nichts übernehmen" : "\(n) übernehmen")
+                Text(action.label)
             }
-            .buttonStyle(EHButtonStyle(prominent: n > 0))
-            .disabled(n == 0)
+            .buttonStyle(EHButtonStyle(prominent: action != .discard))
 
             Spacer()
 

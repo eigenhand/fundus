@@ -80,6 +80,29 @@ final class IntakeJob: Identifiable {
 
     var acceptedCount: Int { result.proposals.filter(\.accepted).count }
 
+    /// Was der grosse Knopf im Prüfschritt tut.
+    ///
+    /// Als Regel hier und nicht als Fragezeichen in der Ansicht, weil genau daran
+    /// etwas kaputt war: der Knopf hiess „Nichts übernehmen" und war abgeschaltet.
+    /// Wer alles abwählte, um eine Aufnahme loszuwerden, sass fest — die Beschriftung
+    /// versprach eine Handlung, der Knopf verweigerte sie. Nichts anzuhaken heisst
+    /// nicht „keine Handlung", es heisst „diese Aufnahme soll weg".
+    enum CommitAction: Equatable {
+        case take(Int)
+        case discard
+
+        var label: String {
+            switch self {
+            case .take(let n): return "\(n) übernehmen"
+            case .discard:     return "Aufnahme verwerfen"
+            }
+        }
+    }
+
+    var commitAction: CommitAction {
+        acceptedCount == 0 ? .discard : .take(acceptedCount)
+    }
+
     /// Was auf dem Symbol steht.
     var badge: String? {
         switch phase {
