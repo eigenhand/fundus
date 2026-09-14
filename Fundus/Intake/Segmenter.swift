@@ -130,17 +130,44 @@ actor Segmenter {
 
     /// Was an dieser Stelle liegt. Der Punkt in 0…1, Ursprung oben links.
     func object(at point: CGPoint) throws -> SegmentedObject? {
+        // 1 heisst: dieser Punkt gehoert zum Ding. 0 hiesse: er gehoert ausdruecklich
+        // nicht dazu — das waere die Verfeinerung, die es hier noch nicht gibt.
+        try predict([(point, 1)])
+    }
+
+    /// Was in diesem Kasten liegt. Fuer den Fall, dass ein Tipp das Falsche trifft —
+    /// bei einem Ding vor unruhigem Hintergrund oder einem, das ein anderes verdeckt.
+    ///
+    /// SAM kennt dafuer einen eigenen Prompt: zwei Punkte mit den Marken **2** und
+    /// **3** statt 1, also „hier oben links, dort unten rechts". Dass Apples Umsetzung
+    /// die behalten hat, ist gemessen und nicht angenommen — mit zwei Rechtecken im
+    /// Bild und einem Kasten um das eine kommt genau dieses heraus, Zeichen fuer
+    /// Zeichen dasselbe wie bei einem Tipp hinein. Dieselben zwei Punkte als
+    /// Vordergrund markiert liefern dagegen das ganze Bild, und das ist die
+    /// Gegenprobe: die Marken werden wirklich als Kasten gelesen.
+    func object(in box: CGRect) throws -> SegmentedObject? {
+        guard box.width > 0.01, box.height > 0.01 else { return nil }
+        return try predict([
+            (CGPoint(x: box.minX, y: box.minY), 2),
+            (CGPoint(x: box.maxX, y: box.maxY), 3),
+        ])
+    }
+
+    private func predict(_ prompts: [(point: CGPoint, label: Int32)]) throws -> SegmentedObject? {
         guard let promptEncoder, let decoder, let embedding else {
             throw Failure.broken("Es ist kein Foto kodiert.")
         }
+        guard !prompts.isEmpty else { return nil }
 
-        let points = try MLMultiArray(shape: [1, 1, 2], dataType: .float32)
-        points[[0, 0, 0]] = NSNumber(value: Float(point.x) * Float(Self.side))
-        points[[0, 0, 1]] = NSNumber(value: Float(point.y) * Float(Self.side))
-        // 1 heisst: dieser Punkt gehoert zum Ding. 0 hiesse: er gehoert ausdruecklich
-        // nicht dazu — das waere die Verfeinerung, die es hier noch nicht gibt.
-        let labels = try MLMultiArray(shape: [1, 1], dataType: .int32)
-        labels[[0, 0]] = 1
+        let count = NSNumber(value: prompts.count)
+        let points = try MLMultiArray(shape: [1, count, 2], dataType: .float32)
+        let labels = try MLMultiArray(shape: [1, count], dataType: .int32)
+        for (i, prompt) in prompts.enumerated() {
+            let index = NSNumber(value: i)
+            points[[0, index, 0]] = NSNumber(value: Float(prompt.point.x) * Float(Self.side))
+            points[[0, index, 1]] = NSNumber(value: Float(prompt.point.y) * Float(Self.side))
+            labels[[0, index]] = NSNumber(value: prompt.label)
+        }
 
         let prompted = try promptEncoder.prediction(from: MLDictionaryFeatureProvider(
             dictionary: ["points": points, "labels": labels]))

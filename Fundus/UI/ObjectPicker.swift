@@ -50,6 +50,9 @@ struct ObjectPicker: View {
     @State private var working = false
     @State private var trouble: String?
 
+    /// Der aufgezogene Kasten, solange der Finger liegt. In Ansichtskoordinaten.
+    @State private var band: (from: CGPoint, to: CGPoint)?
+
     private var usingSam: Bool { segmenter != nil }
 
     var body: some View {
@@ -142,17 +145,45 @@ struct ObjectPicker: View {
                     .allowsHitTesting(false)
                 }
             }
+            .overlay { rubberBand(in: geo.size) }
             .contentShape(Rectangle())
             // Der Fingertipp ist die Frage. Nur mit SAM — ohne es gibt es nichts zu
             // fragen, da stehen die Antworten schon als Rahmen da.
             .onTapGesture { location in
-                guard usingSam, !preparing, !working else { return }
-                let rect = frame(for: CGRect(x: 0, y: 0, width: 1, height: 1), in: geo.size)
-                guard rect.contains(location) else { return }
-                let point = CGPoint(x: (location.x - rect.minX) / rect.width,
-                                    y: (location.y - rect.minY) / rect.height)
+                guard !preparing, !working else { return }
+                guard let point = normalised(location, in: geo.size) else { return }
+                // Abwählen geht immer — auch ohne Modell, denn gezogen werden kann
+                // auch dort. Ein Kasten, den man nicht mehr loswird, waere schlimmer
+                // als gar keiner.
+                if let hit = picked.first(where: { $0.box.contains(point) }) {
+                    picked.removeAll { $0.id == hit.id }
+                    trouble = nil
+                    return
+                }
+                guard usingSam else { return }
                 Task { await tap(point) }
             }
+            // Ziehen statt tippen: den Gegenstand selbst einkreisen. Für den Fall,
+            // dass ein Tipp das Falsche trifft — ein Ding vor unruhigem Hintergrund,
+            // oder eines, das ein anderes halb verdeckt.
+            //
+            // Zehn Punkte Mindestweg, damit ein Tipp ein Tipp bleibt: bei null
+            // Mindestweg schluckt das Ziehen jede Berührung, und die Rahmen im
+            // Rückfallmodus wären nicht mehr antippbar.
+            .gesture(
+                DragGesture(minimumDistance: 10)
+                    .onChanged { value in
+                        guard !preparing, !working else { return }
+                        band = (value.startLocation, value.location)
+                    }
+                    .onEnded { value in
+                        let drawn = band
+                        band = nil
+                        guard !preparing, !working, let drawn else { return }
+                        guard let box = normalisedBox(from: drawn.from, to: value.location,
+                                                      in: geo.size) else { return }
+                        Task { await circle(box) }
+                    })
         }
     }
 
@@ -180,14 +211,88 @@ struct ObjectPicker: View {
             .accessibilityLabel(isPicked ? "Gewählt" : "Gegenstand")
     }
 
+    /// Der Kasten, solange gezogen wird.
+    @ViewBuilder
+    private func rubberBand(in size: CGSize) -> some View {
+        if let band {
+            let rect = CGRect(x: min(band.from.x, band.to.x), y: min(band.from.y, band.to.y),
+                              width: abs(band.to.x - band.from.x),
+                              height: abs(band.to.y - band.from.y))
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .strokeBorder(.white, style: StrokeStyle(lineWidth: 2, dash: [7, 5]))
+                .background(RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(.white.opacity(0.12)))
+                .frame(width: rect.width, height: rect.height)
+                .position(x: rect.midX, y: rect.midY)
+                .allowsHitTesting(false)
+        }
+    }
+
+    /// Ein Punkt der Ansicht in Bildkoordinaten, oder nil, wenn er neben dem Bild liegt.
+    private func normalised(_ point: CGPoint, in size: CGSize) -> CGPoint? {
+        let rect = frame(for: CGRect(x: 0, y: 0, width: 1, height: 1), in: size)
+        guard rect.contains(point) else { return nil }
+        return CGPoint(x: (point.x - rect.minX) / rect.width,
+                       y: (point.y - rect.minY) / rect.height)
+    }
+
+    /// Zwei Ecken in einen Kasten in Bildkoordinaten.
+    ///
+    /// Beschnitten statt verworfen: wer über den Rand hinauszieht, meint das Ding bis
+    /// zum Rand und nicht „nichts".
+    private func normalisedBox(from: CGPoint, to: CGPoint, in size: CGSize) -> CGRect? {
+        Self.box(from: from, to: to,
+                 picture: Self.frame(for: CGRect(x: 0, y: 0, width: 1, height: 1),
+                                     image: image.size, in: size))
+    }
+
+    /// Dieselbe Rechnung ohne Ansicht, damit sie prüfbar ist.
+    ///
+    /// Drei Dinge stecken darin, und jedes wäre ein eigener kleiner Ärger: die Ecken
+    /// können in beliebiger Reihenfolge kommen (wer von rechts unten nach links oben
+    /// zieht, meint denselben Kasten), sie können neben dem Bild liegen (dann gilt
+    /// der Rand, nicht „nichts"), und ein Strich ist kein Kasten.
+    static func box(from: CGPoint, to: CGPoint, picture: CGRect) -> CGRect? {
+        guard picture.width > 0, picture.height > 0 else { return nil }
+        func place(_ p: CGPoint) -> CGPoint {
+            CGPoint(x: min(max((p.x - picture.minX) / picture.width, 0), 1),
+                    y: min(max((p.y - picture.minY) / picture.height, 0), 1))
+        }
+        let a = place(from), b = place(to)
+        let box = CGRect(x: min(a.x, b.x), y: min(a.y, b.y),
+                         width: abs(b.x - a.x), height: abs(b.y - a.y))
+        return box.width > 0.02 && box.height > 0.02 ? box : nil
+    }
+
+    /// Ein aufgezogener Kasten: mit SAM wird daraus die Kante des Dings darin, ohne
+    /// SAM bleibt es der Kasten selbst.
+    private func circle(_ box: CGRect) async {
+        trouble = nil
+        guard let segmenter else {
+            // Ohne Modell ist der gezogene Kasten die Auswahl. Das ist kein Notbehelf,
+            // sondern genau das, was der Nutzer gezeichnet hat.
+            picked.append(SegmentedObject(id: UUID(), box: box, mask: nil, bits: [], side: 0))
+            return
+        }
+        working = true
+        defer { working = false }
+        do {
+            guard let object = try await segmenter.object(in: box) else {
+                // Der Kasten ist nicht verloren, nur ungenauer: SAM hat nichts
+                // gefunden, der Nutzer hat aber etwas gemeint.
+                picked.append(SegmentedObject(id: UUID(), box: box, mask: nil, bits: [], side: 0))
+                return
+            }
+            guard !picked.contains(where: { overlaps($0.box, object.box) }) else { return }
+            picked.append(object)
+        } catch {
+            trouble = error.localizedDescription
+        }
+    }
+
     /// Ein Tipp: entweder ein schon gewähltes Ding wieder abwählen, oder ein neues
     /// dazunehmen.
     private func tap(_ point: CGPoint) async {
-        if let hit = picked.first(where: { $0.box.contains(point) }) {
-            picked.removeAll { $0.id == hit.id }
-            trouble = nil
-            return
-        }
         guard let segmenter else { return }
         working = true
         trouble = nil
@@ -279,7 +384,7 @@ struct ObjectPicker: View {
         .background(.black.opacity(0.4))
     }
 
-    private var count: Int { usingSam ? picked.count : chosenOffers.count }
+    private var count: Int { usingSam ? picked.count : picked.count + chosenOffers.count }
 
     private var takeLabel: String {
         switch count {
@@ -297,7 +402,9 @@ struct ObjectPicker: View {
         if preparing { return "Das Gerät sieht sich das Bild an." }
         if let trouble { return trouble }
         if usingSam {
-            if picked.isEmpty { return "Tippe an, was du meinst — oder nimm das ganze Bild." }
+            if picked.isEmpty {
+                return "Tippe an, was du meinst — oder zieh einen Kasten darum."
+            }
             return picked.count == 1
                 ? "Ein Ausschnitt, eine Aufnahme. Weitere antippen geht."
                 : "\(picked.count) Ausschnitte, \(picked.count) Aufnahmen."
@@ -306,19 +413,28 @@ struct ObjectPicker: View {
             return "Keine einzelnen Gegenstände erkannt — das ganze Bild geht als eine "
                  + "Aufnahme. Mit dem Erkennungsmodell aus den Einstellungen ginge das besser."
         }
-        return chosenOffers.isEmpty
-            ? "Nichts angetippt: das ganze Bild geht als eine Aufnahme."
-            : "\(chosenOffers.count) Ausschnitt\(chosenOffers.count == 1 ? "" : "e") — so viele Aufnahmen."
+        return chosenOffers.isEmpty && picked.isEmpty
+            ? "Nichts gewählt: das ganze Bild geht als eine Aufnahme. Einen Kasten "
+            + "ziehen geht auch."
+            : "\(count) Ausschnitt\(count == 1 ? "" : "e") — so viele Aufnahmen."
     }
 
     private func take() {
         // Mit SAM wird freigestellt, nicht nur geschnitten: der Gegenstand bleibt, der
         // Rest wird weiss. Ohne SAM gibt es keinen Umriss, nur einen Kasten — dort
         // bleibt es beim Ausschnitt.
-        let pieces = usingSam
-            ? picked.compactMap { ObjectFinder.cutOut(image, object: $0) }
-            : offered.filter { chosenOffers.contains($0.id) }
-                     .compactMap { ObjectFinder.crop(image, to: $0.box) }
+        // Mit Umriss wird freigestellt, ohne bleibt es beim Kasten — das trifft die
+        // Rahmen aus dem Rückfallmodus und die von Hand gezogenen, bei denen SAM
+        // nichts gefunden hat.
+        let fromPicked = picked.compactMap { object in
+            object.bits.isEmpty
+                ? ObjectFinder.crop(image, to: object.box)
+                : ObjectFinder.cutOut(image, object: object)
+        }
+        let fromOffers = usingSam ? [] : offered
+            .filter { chosenOffers.contains($0.id) }
+            .compactMap { ObjectFinder.crop(image, to: $0.box) }
+        let pieces = fromPicked + fromOffers
 
         // Nichts angetippt, oder kein Ausschnitt brauchbar: dann eben das ganze Bild.
         // Mit leeren Händen aus diesem Bildschirm zu gehen wäre der falsche Ausgang —
