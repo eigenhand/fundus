@@ -117,6 +117,46 @@ final class IntakeQueueTests: XCTestCase {
         XCTAssertEqual(j.badge, "!")
     }
 
+    // MARK: Der Sucher
+
+    /// Wer einen Keller abgeht, stellt einmal auf Doku und will das nicht bei jedem
+    /// Regal wieder tun.
+    func testCaptureModeIsRemembered() throws {
+        var settings = AppSettings()
+        XCTAssertEqual(settings.captureMode, .single, "Das gewohnte Verhalten ist die Vorgabe.")
+
+        settings.captureMode = .doku
+        let encoder = JSONEncoder()
+        let back = try JSONDecoder().decode(AppSettings.self, from: try encoder.encode(settings))
+        XCTAssertEqual(back.captureMode, .doku)
+    }
+
+    /// Ein Bestand aus der Zeit vor dem Sucher, und eine Ablage mit einem Modus, den
+    /// es nicht gibt — beides darf nicht dazu führen, dass die App nicht startet.
+    ///
+    /// Der zweite Fall war es, der den Fehler in `decodeIfPresent` ans Licht gebracht
+    /// hat: er warf, statt auf die Vorgabe zu fallen, und riss die ganze Datei mit.
+    func testUnknownOrMissingCaptureModeFallsBack() throws {
+        func decode(_ json: String) throws -> AppSettings {
+            try JSONDecoder().decode(AppSettings.self, from: Data(json.utf8))
+        }
+        XCTAssertEqual(try decode("{}").captureMode, .single)
+        XCTAssertEqual(try decode(#"{"captureMode":"zeitraffer"}"#).captureMode, .single)
+
+        // Und der eigentliche Punkt: der Rest der Datei überlebt es.
+        let mixed = try decode(#"{"captureMode":"zeitraffer","intakeConcurrency":5}"#)
+        XCTAssertEqual(mixed.intakeConcurrency, 5,
+                       "Ein unbekannter Modus darf nicht die übrigen Einstellungen kosten.")
+    }
+
+    func testBothModesAreOffered() {
+        XCTAssertEqual(CaptureMode.allCases.count, 2)
+        for mode in CaptureMode.allCases {
+            XCTAssertFalse(mode.label.isEmpty)
+            XCTAssertFalse(mode.hint.isEmpty, "„Doku\u{201C} allein sagt niemandem, was passiert.")
+        }
+    }
+
     // MARK: Die Einstellung
 
     func testStoredConcurrencyIsClampedOnLoad() throws {

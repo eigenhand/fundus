@@ -161,6 +161,35 @@ struct SearchConfig: Codable, Equatable {
     }
 }
 
+/// Wie der Sucher sich verhält, wenn ein Bild im Kasten ist.
+///
+/// Zwei Modi und kein dritter, weil es zwei Arten gibt, diese App zu benutzen: man
+/// hält ein Ding in der Hand und will es eintragen, oder man geht einen Keller ab.
+/// Der erste Fall will den Sucher danach zu haben, der zweite will ihn offen —
+/// und für den zweiten gab es bisher nur den Weg über zwölfmal aufmachen.
+enum CaptureMode: String, Codable, CaseIterable, Identifiable, Sendable {
+    /// Ein Bild, dann zurück zur Liste. Das Verhalten von vorher.
+    case single
+    /// Der Sucher bleibt offen, jedes Bild geht sofort in die Reihe.
+    case doku
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .single: return "Einzelfoto"
+        case .doku:   return "Doku"
+        }
+    }
+
+    var hint: String {
+        switch self {
+        case .single: return "Ein Bild, dann zurück."
+        case .doku:   return "Der Sucher bleibt offen — durchfotografieren."
+        }
+    }
+}
+
 struct AppSettings: Codable, Equatable {
     var model = ModelConfig()
     var search = SearchConfig()
@@ -181,6 +210,13 @@ struct AppSettings: Codable, Equatable {
     /// was ein Anbieter als Schwarm auffasst.
     var intakeConcurrency: Int = 2
 
+    /// Welcher Modus im Sucher zuletzt eingestellt war.
+    ///
+    /// Gemerkt und nicht jedes Mal zurückgesetzt: wer einen Keller abgeht, stellt
+    /// einmal auf Doku und will das nicht bei jedem Regal wieder tun. Einzelfoto ist
+    /// die Vorgabe, weil es das gewohnte Verhalten ist.
+    var captureMode: CaptureMode = .single
+
     init() {}
 
     init(from decoder: Decoder) throws {
@@ -193,5 +229,6 @@ struct AppSettings: Codable, Equatable {
         // oder kaputten Ablage kommen, und 0 hieße „nie wieder ein Foto lesen“.
         intakeConcurrency = (try c.decodeIfPresent(Int.self, forKey: .intakeConcurrency) ?? 2)
             .clamped(to: IntakeSchedule.concurrencyRange)
+        captureMode = c.decodeLenient(CaptureMode.self, forKey: .captureMode) ?? .single
     }
 }

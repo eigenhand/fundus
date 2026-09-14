@@ -46,10 +46,7 @@ struct InventoryView: View {
                 .presentationDetents([.height(280)])
         }
         .fullScreenCover(isPresented: $showCamera) {
-            CameraPicker { image in
-                model.enqueue([image], placeID: pendingPlace)
-            }
-            .ignoresSafeArea()
+            CameraScreen(placeID: pendingPlace)
         }
         .sheet(isPresented: $showLibrary) {
             LibraryPicker { images in
@@ -264,7 +261,7 @@ struct InventoryView: View {
             }
 
             Menu {
-                if CameraPicker.isAvailable {
+                if CameraSession.isAvailable {
                     Button { showCamera = true } label: {
                         Label("Fotografieren", systemImage: "camera")
                     }
