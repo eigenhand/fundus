@@ -12,11 +12,27 @@ struct InventoryView: View {
     @Environment(AppModel.self) private var model
 
     @State private var showSettings = false
-    @State private var showPlaces = false
+    @State private var places: PlacesSheet?
     @State private var showCamera = false
     @State private var showLibrary = false
     @State private var showManual = false
     @State private var pendingPlace: UUID?
+    /// Der Sucher hat nach den Orten verlangt. Das Blatt geht erst auf, wenn er weg
+    /// ist — zwei Vollbilder gleichzeitig gibt es nicht.
+    @State private var wantsPlaces = false
+
+    /// Warum die Orte offen sind, und nicht nur dass sie es sind.
+    ///
+    /// Als `sheet(item:)` und nicht als Schalter mit einem zweiten Merker daneben,
+    /// und das ist gemessen und nicht Geschmack: mit zwei getrennten Zuständen baut
+    /// SwiftUI das Blatt mit dem Stand, den es beim Aufgehen gerade sieht, und das
+    /// war hier der alte — der Ort wurde angelegt und landete nirgends, und die Zeile
+    /// „aus dem Sucher" erschien erst eine Änderung später. Mit `item` reist der
+    /// Grund mit der Anzeige und kann nicht daneben liegen.
+    private enum PlacesSheet: Int, Identifiable {
+        case list, forCamera
+        var id: Int { rawValue }
+    }
     @State private var onlyStale = false
     /// Der Auftrag, den der Nutzer aus der Reihe angetippt hat.
     @State private var openJob: IntakeJob?
@@ -40,13 +56,24 @@ struct InventoryView: View {
             .toolbar(.hidden, for: .navigationBar)
         }
         .sheet(isPresented: $showSettings) { SettingsView() }
-        .sheet(isPresented: $showPlaces) { PlacesView() }
+        .sheet(item: $places) { entry in
+            PlacesView(adopt: entry == .forCamera ? { pendingPlace = $0 } : nil)
+        }
         .sheet(isPresented: $showManual) {
             ManualEntrySheet(placeID: pendingPlace)
                 .presentationDetents([.height(280)])
         }
-        .fullScreenCover(isPresented: $showCamera) {
-            CameraScreen(placeID: pendingPlace)
+        // Der Sucher schickt zu den Orten, indem er sich schliesst. Das Blatt geht
+        // erst danach auf und nicht gleichzeitig: ein Blatt, das angefordert wird,
+        // während ein Vollbild noch weggeht, erscheint nicht — es fällt still aus,
+        // und der Nutzer hat auf „Ort anlegen" getippt und steht vor der Liste.
+        .fullScreenCover(isPresented: $showCamera,
+                         onDismiss: {
+                             guard wantsPlaces else { return }
+                             wantsPlaces = false
+                             places = .forCamera
+                         }) {
+            CameraScreen(placeID: $pendingPlace, onNewPlace: { wantsPlaces = true })
         }
         .sheet(isPresented: $showLibrary) {
             LibraryPicker { images in
@@ -78,7 +105,7 @@ struct InventoryView: View {
         VStack(spacing: 12) {
             AppHeader(title: "Fundus", subtitle: subtitle) {
                 HStack(spacing: 8) {
-                    RoundIconButton(systemName: "tray.2", label: "Orte") { showPlaces = true }
+                    RoundIconButton(systemName: "tray.2", label: "Orte") { places = .list }
                     RoundIconButton(systemName: "gearshape", label: "Einstellungen") {
                         showSettings = true
                     }
@@ -301,7 +328,7 @@ struct InventoryView: View {
             if !model.inventory.places.isEmpty { Divider() }
             Button("Ohne Ort") { pendingPlace = nil }
             Divider()
-            Button { showPlaces = true } label: { Label("Orte verwalten", systemImage: "tray.2") }
+            Button { places = .list } label: { Label("Orte verwalten", systemImage: "tray.2") }
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: "tray")

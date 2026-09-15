@@ -6,6 +6,14 @@ import SwiftUI
 /// 2“ darunter, fertig. Das Umbenennen geht in der Zeile, weil ein Ort, der „Kiste“
 /// heißt, spätestens bei der zweiten Kiste einen besseren Namen braucht.
 struct PlacesView: View {
+    /// Aus dem Sucher gekommen: dann wird der neu angelegte Ort gleich der, in den
+    /// fotografiert wird.
+    ///
+    /// Ohne das wäre der Umweg zwar kurz, aber leer — man legt „Regal 4" an, geht
+    /// zurück in den Sucher und fotografiert nach „Regal 3", weil dort der Wähler
+    /// noch steht. Und zwar genau in dem Moment, in dem man am wenigsten nachsieht.
+    var adopt: ((UUID) -> Void)?
+
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
 
@@ -140,6 +148,13 @@ struct PlacesView: View {
 
     private var adder: some View {
         VStack(alignment: .leading, spacing: 8) {
+            if adopt != nil {
+                Text("Aus dem Sucher: der neue Ort ist danach gewählt. "
+                     + "Zurück geht es über die Kamera.")
+                    .font(EH.meta)
+                    .foregroundStyle(EH.muted)
+            }
+
             if let parent = newParent {
                 HStack(spacing: 6) {
                     Text("unter \(model.inventory.tree.path(of: parent))")
@@ -185,8 +200,9 @@ struct PlacesView: View {
     }
 
     private func commit() {
-        guard model.addPlace(name: newName, under: newParent) != nil else { return }
+        guard let place = model.addPlace(name: newName, under: newParent) else { return }
         newName = ""
+        adopt?(place.id)
         // Der Elternort bleibt stehen: wer „Regal 1“ anlegt, legt gleich „Regal 2“ an.
     }
 }

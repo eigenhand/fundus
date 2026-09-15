@@ -18,7 +18,14 @@ struct CameraScreen: View {
 
     /// Wohin die Aufnahmen kommen. Steht schon fest, bevor jemand auslöst — man weiß
     /// es ja, man steht davor.
-    let placeID: UUID?
+    ///
+    /// Als Bindung und nicht als Wert: der Ort wird hier im Sucher gewählt und gilt
+    /// danach weiter. Wer im Keller zwölf Bretter aufnimmt und dabei einmal das Regal
+    /// wechselt, soll nicht hinterher zwölf Einträge umräumen.
+    @Binding var placeID: UUID?
+
+    /// Der Weg zu den Orten. Der Sucher schliesst sich dabei — siehe `placeMenu`.
+    let onNewPlace: () -> Void
 
     @State private var camera = CameraSession()
     @State private var failure: CameraSession.Failure?
@@ -108,13 +115,7 @@ struct CameraScreen: View {
 
             Spacer(minLength: 8)
 
-            Text(placeLabel)
-                .font(EH.meta)
-                .foregroundStyle(.white.opacity(0.85))
-                .lineLimit(1)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(Capsule().fill(.black.opacity(0.35)))
+            placeMenu
 
             Spacer(minLength: 8)
 
@@ -138,6 +139,56 @@ struct CameraScreen: View {
 
     private var placeLabel: String {
         placeID.map { model.inventory.tree.path(of: $0) } ?? "Ohne Ort"
+    }
+
+    /// Wohin die nächste Aufnahme kommt — im Sucher und nicht dahinter.
+    ///
+    /// Bisher stand hier nur, was in der Liste eingestellt war. Das ist die falsche
+    /// Reihenfolge: man weiß den Ort, während man davor steht, und nicht, bevor man
+    /// losgeht. Wer erst im Keller merkt, dass die Aufnahmen ins alte Regal laufen,
+    /// musste den Sucher schliessen, umstellen und wieder öffnen — oder es hinterher
+    /// an vierzig Einträgen richten.
+    private var placeMenu: some View {
+        Menu {
+            // Mit Haken statt als Knopfreihe: die Frage ist nicht „was tun", sondern
+            // „wo bin ich", und darauf gehört eine sichtbare Antwort.
+            Picker("Ort", selection: $placeID) {
+                Text("Ohne Ort").tag(UUID?.none)
+                ForEach(model.inventory.tree.flattened(), id: \.place.id) { entry in
+                    Text(model.inventory.tree.path(of: entry.place.id))
+                        .tag(UUID?.some(entry.place.id))
+                }
+            }
+            .pickerStyle(.inline)
+
+            Divider()
+
+            Button {
+                // Der Sucher geht zu, die Orte gehen auf. Ein Blatt über der Kamera
+                // ginge auch und wäre schlechter: einen Ort anzulegen heisst, einen
+                // Baum zu sortieren — unterordnen, umbenennen, nachsehen, was schon
+                // da ist. Das ist keine Handlung für einen Zettel über dem Sucher.
+                // Zurück kommt man mit einem Tipp, und dafür weiss man jedes Mal,
+                // wo man steht.
+                onNewPlace()
+                dismiss()
+            } label: {
+                Label("Ort anlegen …", systemImage: "plus")
+            }
+        } label: {
+            HStack(spacing: 5) {
+                Text(placeLabel)
+                    .font(EH.meta)
+                    .lineLimit(1)
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 9, weight: .semibold))
+            }
+            .foregroundStyle(.white.opacity(0.85))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(Capsule().fill(.black.opacity(0.35)))
+        }
+        .accessibilityLabel("Ort für die Aufnahmen: \(placeLabel)")
     }
 
     // MARK: Unten
