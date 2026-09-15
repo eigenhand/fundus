@@ -188,7 +188,7 @@ Form statt gefüllter Kacheln. Kein Dashboard hat runde Kacheln; drei Kreise sag
 
 ## Lizenz
 
-Apache-2.0. Siehe [LICENSE](LICENSE). Copyright 2026 eigenhand.
+Apache-2.0. Siehe [LICENSE](LICENSE). Copyright 2026 Christoph Lindl-Guk.
 
 Permissiv und nicht Copyleft, weil eine Inventar-App auf einem Telefon nichts ist,
 was jemand als Dienst übernehmen könnte — das Risiko, gegen das ein Copyleft
