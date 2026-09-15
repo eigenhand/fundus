@@ -16,6 +16,11 @@ import SwiftUI
 ///    Bei einem Portrait trifft sie; bei einer Werkbank liegt sie daneben, und das
 ///    ist kein Zufall — sie ist für Motive gebaut, nicht für Bauteile.
 ///
+/// Über beidem steht der gezogene Kasten: wer einen Rahmen zieht, hat die Frage
+/// selbst beantwortet, und dann wird auch keine gestellt. Was darin liegt, geht
+/// vollständig in die Aufnahme — kein Umriss, keine weissen Stellen, kein zweiter
+/// Ausschnitt über demselben Ding.
+///
 /// Vorgewählt ist beide Male die Mitte. Das ist der häufigste Fall: man hält etwas in
 /// der Hand und zielt darauf.
 struct ObjectPicker: View {
@@ -182,7 +187,7 @@ struct ObjectPicker: View {
                         guard !preparing, !working, let drawn else { return }
                         guard let box = normalisedBox(from: drawn.from, to: value.location,
                                                       in: geo.size) else { return }
-                        Task { await circle(box) }
+                        circle(box)
                     })
         }
     }
@@ -252,7 +257,7 @@ struct ObjectPicker: View {
     /// können in beliebiger Reihenfolge kommen (wer von rechts unten nach links oben
     /// zieht, meint denselben Kasten), sie können neben dem Bild liegen (dann gilt
     /// der Rand, nicht „nichts"), und ein Strich ist kein Kasten.
-    static func box(from: CGPoint, to: CGPoint, picture: CGRect) -> CGRect? {
+    nonisolated static func box(from: CGPoint, to: CGPoint, picture: CGRect) -> CGRect? {
         guard picture.width > 0, picture.height > 0 else { return nil }
         func place(_ p: CGPoint) -> CGPoint {
             CGPoint(x: min(max((p.x - picture.minX) / picture.width, 0), 1),
@@ -264,30 +269,62 @@ struct ObjectPicker: View {
         return box.width > 0.02 && box.height > 0.02 ? box : nil
     }
 
-    /// Ein aufgezogener Kasten: mit SAM wird daraus die Kante des Dings darin, ohne
-    /// SAM bleibt es der Kasten selbst.
-    private func circle(_ box: CGRect) async {
-        trouble = nil
-        guard let segmenter else {
-            // Ohne Modell ist der gezogene Kasten die Auswahl. Das ist kein Notbehelf,
-            // sondern genau das, was der Nutzer gezeichnet hat.
-            picked.append(SegmentedObject(id: UUID(), box: box, mask: nil, bits: [], side: 0))
+    /// Ein aufgezogener Kasten ist der Kasten. Kein Modell dazwischen.
+    ///
+    /// SAM könnte hier gefragt werden, und es antwortete auch: Apples Umsetzung kennt
+    /// den Kastenprompt, zwei Punkte mit den Marken 2 und 3, und auf dem Mac liefert
+    /// er die Kante des Dings im Rahmen auf zwei Promille genau. Auf einem Regalfoto
+    /// ist genau das aber die falsche Antwort. Es sucht sich **ein** Ding im Kasten,
+    /// und der freigestellte Ausschnitt bekommt weisse Stellen überall dort, wo die
+    /// Maske das Ding nicht ganz getroffen hat oder ein zweites daneben lag.
+    ///
+    /// Wer von Hand einen Rahmen zieht, hat schon gesagt, was er meint. Ein Modell,
+    /// das dieselbe Frage noch einmal stellt und anders beantwortet, ist dann kein
+    /// Zugewinn, sondern ein Widerspruch.
+    private func circle(_ box: CGRect) {
+        guard Self.isUsable(box, pixels: pixels) else {
+            trouble = "Der Kasten ist zu klein — daraus liest auch das Modell nichts."
             return
         }
-        working = true
-        defer { working = false }
-        do {
-            guard let object = try await segmenter.object(in: box) else {
-                // Der Kasten ist nicht verloren, nur ungenauer: SAM hat nichts
-                // gefunden, der Nutzer hat aber etwas gemeint.
-                picked.append(SegmentedObject(id: UUID(), box: box, mask: nil, bits: [], side: 0))
-                return
-            }
-            guard !picked.contains(where: { overlaps($0.box, object.box) }) else { return }
-            picked.append(object)
-        } catch {
-            trouble = error.localizedDescription
-        }
+        trouble = nil
+        picked = Self.replacing(picked, by: box)
+    }
+
+    /// Der gezogene Kasten überschreibt, was an dieser Stelle schon gewählt war.
+    ///
+    /// Sonst läge ein Ausschnitt über dem anderen: zwei bezahlte Aufnahmen für ein
+    /// Ding, und auf der einen fehlt die Hälfte. Was daneben liegt, bleibt — wer
+    /// vorher zwei Sachen angetippt hat und dann eine dritte einkreist, meint drei.
+    ///
+    /// Statisch, damit die Regel prüfbar ist: dass ein Kasten den alten Fund an
+    /// seiner Stelle ersetzt und den am anderen Bildrand nicht, sieht man einem
+    /// Screenshot nicht an.
+    nonisolated static func replacing(_ picked: [SegmentedObject], by box: CGRect) -> [SegmentedObject] {
+        picked.filter { !overlaps($0.box, box) }
+            + [SegmentedObject(id: UUID(), box: box, mask: nil, bits: [], side: 0)]
+    }
+
+    /// Die Pixel des Bildes, nicht seine Punkte.
+    ///
+    /// `size` einer `UIImage` ist in Punkten, und bei einem Bild mit Massstab 2 wäre
+    /// das die halbe Wahrheit. `ObjectFinder` schneidet in Pixeln, also wird hier auch
+    /// in Pixeln gemessen.
+    private var pixels: CGSize {
+        guard let cg = image.cgImage else { return image.size }
+        return CGSize(width: cg.width, height: cg.height)
+    }
+
+    /// Ob aus diesem Kasten überhaupt ein Ausschnitt werden kann.
+    ///
+    /// Der Kasten steht in Bildanteilen, die Grenze in Pixeln — deshalb braucht die
+    /// Frage die Grösse des Bildes. Ohne sie verschwände ein zu kleiner Kasten
+    /// stillschweigend: `ObjectFinder` gibt unter `minimumEdge` nichts zurück, die
+    /// Leiste hätte „1 Ausschnitt" versprochen, und in die Reihe ginge das ganze
+    /// Brett. Lieber gleich sagen, dass der Rahmen zu klein war.
+    nonisolated static func isUsable(_ box: CGRect, pixels: CGSize) -> Bool {
+        let floor = CGFloat(ObjectFinder.minimumEdge)
+        return (box.width * pixels.width).rounded() >= floor
+            && (box.height * pixels.height).rounded() >= floor
     }
 
     /// Ein Tipp: entweder ein schon gewähltes Ding wieder abwählen, oder ein neues
@@ -306,14 +343,16 @@ struct ObjectPicker: View {
                 return
             }
             // Zweimal auf dasselbe zu tippen soll es nicht verdoppeln.
-            guard !picked.contains(where: { overlaps($0.box, object.box) }) else { return }
+            guard !picked.contains(where: { Self.overlaps($0.box, object.box) }) else { return }
             picked.append(object)
         } catch {
             trouble = error.localizedDescription
         }
     }
 
-    private func overlaps(_ a: CGRect, _ b: CGRect) -> Bool {
+    /// Ob zwei Kästen dasselbe Ding meinen: mehr als sechzig Prozent des kleineren
+    /// liegen im anderen.
+    nonisolated static func overlaps(_ a: CGRect, _ b: CGRect) -> Bool {
         let cut = a.intersection(b)
         guard !cut.isNull else { return false }
         let shared = cut.width * cut.height
@@ -334,7 +373,7 @@ struct ObjectPicker: View {
     ///
     /// Statisch, damit sie prüfbar ist: ein Screenshot zeigt, dass Rahmen irgendwo
     /// liegen, nicht dass sie richtig liegen.
-    static func frame(for box: CGRect, image: CGSize, in size: CGSize) -> CGRect {
+    nonisolated static func frame(for box: CGRect, image: CGSize, in size: CGSize) -> CGRect {
         guard image.width > 0, image.height > 0, size.width > 0, size.height > 0
         else { return .zero }
         let imageRatio = image.width / image.height
@@ -420,15 +459,15 @@ struct ObjectPicker: View {
     }
 
     private func take() {
-        // Mit SAM wird freigestellt, nicht nur geschnitten: der Gegenstand bleibt, der
-        // Rest wird weiss. Ohne SAM gibt es keinen Umriss, nur einen Kasten — dort
-        // bleibt es beim Ausschnitt.
-        // Mit Umriss wird freigestellt, ohne bleibt es beim Kasten — das trifft die
-        // Rahmen aus dem Rückfallmodus und die von Hand gezogenen, bei denen SAM
-        // nichts gefunden hat.
+        // Mit Umriss wird freigestellt: der Gegenstand bleibt, der Rest wird weiss.
+        // Ohne Umriss — also bei einem von Hand gezogenen Kasten — bleibt alles
+        // stehen, was darin liegt, und zwar **ohne Rand**: bei den Vorschlägen unten
+        // sitzt der Rahmen maschinell auf der Kante und der Aufdruck daneben fällt
+        // sonst weg, hier hat ihn ein Mensch gezogen und dabei mitgemeint, wo er
+        // aufhören soll.
         let fromPicked = picked.compactMap { object in
             object.bits.isEmpty
-                ? ObjectFinder.crop(image, to: object.box)
+                ? ObjectFinder.crop(image, to: object.box, margin: 0)
                 : ObjectFinder.cutOut(image, object: object)
         }
         let fromOffers = usingSam ? [] : offered

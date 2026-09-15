@@ -135,24 +135,11 @@ actor Segmenter {
         try predict([(point, 1)])
     }
 
-    /// Was in diesem Kasten liegt. Fuer den Fall, dass ein Tipp das Falsche trifft —
-    /// bei einem Ding vor unruhigem Hintergrund oder einem, das ein anderes verdeckt.
-    ///
-    /// SAM kennt dafuer einen eigenen Prompt: zwei Punkte mit den Marken **2** und
-    /// **3** statt 1, also „hier oben links, dort unten rechts". Dass Apples Umsetzung
-    /// die behalten hat, ist gemessen und nicht angenommen — mit zwei Rechtecken im
-    /// Bild und einem Kasten um das eine kommt genau dieses heraus, Zeichen fuer
-    /// Zeichen dasselbe wie bei einem Tipp hinein. Dieselben zwei Punkte als
-    /// Vordergrund markiert liefern dagegen das ganze Bild, und das ist die
-    /// Gegenprobe: die Marken werden wirklich als Kasten gelesen.
-    func object(in box: CGRect) throws -> SegmentedObject? {
-        guard box.width > 0.01, box.height > 0.01 else { return nil }
-        return try predict([
-            (CGPoint(x: box.minX, y: box.minY), 2),
-            (CGPoint(x: box.maxX, y: box.maxY), 3),
-        ])
-    }
-
+    /// Marke 1 heisst Vordergrund. SAM kennt auch 0 („nicht das"), 2 und 3 (die
+    /// beiden Ecken eines Kastens) — beides steht hier nicht, weil es nichts ruft.
+    /// Der Kasten ist gemessen worden und funktioniert; er ist trotzdem draussen,
+    /// denn ein von Hand gezogener Rahmen soll gerade **nicht** noch einmal
+    /// befragt werden, siehe `ObjectPicker.circle`.
     private func predict(_ prompts: [(point: CGPoint, label: Int32)]) throws -> SegmentedObject? {
         guard let promptEncoder, let decoder, let embedding else {
             throw Failure.broken("Es ist kein Foto kodiert.")

@@ -39,6 +39,15 @@ enum ObjectFinder {
     /// und jeder angetippte Ausschnitt ist ein eigener, bezahlter Modellaufruf.
     static let maxObjects = 8
 
+    /// Die kürzeste Kante, aus der noch etwas zu lesen ist.
+    ///
+    /// Ein Ausschnitt von dreissig Pixeln enthält keine Schrift mehr und keine Kante,
+    /// die ein Modell benennen könnte — ihn zu schicken hiesse, einen Aufruf zu
+    /// bezahlen und eine Vermutung zu bekommen. Die Zahl steht hier und nicht dreimal
+    /// im Code, weil auch die Oberfläche sie kennen muss: ein Kasten, aus dem hier
+    /// nichts wird, darf sich nicht erst beim Übernehmen in Luft auflösen.
+    static let minimumEdge = 64
+
     static func find(in image: UIImage) async -> [FoundObject] {
         await withCheckedContinuation { continuation in
             queue.async { continuation.resume(returning: locate(image)) }
@@ -158,7 +167,8 @@ enum ObjectFinder {
                           width: (area.width * CGFloat(width)).rounded(),
                           height: (area.height * CGFloat(height)).rounded())
             .intersection(CGRect(x: 0, y: 0, width: width, height: height))
-        guard rect.width >= 64, rect.height >= 64 else { return nil }
+        guard rect.width >= CGFloat(minimumEdge), rect.height >= CGFloat(minimumEdge)
+        else { return nil }
 
         var source = [UInt8](repeating: 0, count: width * height * 4)
         source.withUnsafeMutableBytes { raw in
@@ -279,7 +289,7 @@ enum ObjectFinder {
                           height: (padded.height * h).rounded())
 
         // Zu klein heisst: daraus liest auch das Modell nichts mehr.
-        guard rect.width >= 64, rect.height >= 64,
+        guard rect.width >= CGFloat(minimumEdge), rect.height >= CGFloat(minimumEdge),
               let piece = cg.cropping(to: rect) else { return nil }
         return UIImage(cgImage: piece)
     }

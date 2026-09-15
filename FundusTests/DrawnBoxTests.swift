@@ -47,6 +47,65 @@ final class DrawnBoxTests: XCTestCase {
                                       to: CGPoint(x: 102, y: 250), picture: picture))
     }
 
+    // MARK: Was aus dem Kasten wird
+
+    /// Der gezogene Kasten ist der Kasten — nicht die Anregung fuer ein Modell.
+    ///
+    /// Er ersetzt, was an seiner Stelle schon gewaehlt war. Ohne das laegen zwei
+    /// Ausschnitte uebereinander: zwei bezahlte Aufnahmen fuer ein Ding, und auf der
+    /// einen fehlt die Haelfte, weil die Maske das Ding nicht ganz getroffen hat.
+    func testADrawnBoxReplacesTheFindUnderneathIt() {
+        let here = object(CGRect(x: 0.30, y: 0.30, width: 0.20, height: 0.20))
+        let overThere = object(CGRect(x: 0.80, y: 0.80, width: 0.10, height: 0.10))
+
+        let after = ObjectPicker.replacing([here, overThere],
+                                           by: CGRect(x: 0.25, y: 0.25,
+                                                      width: 0.40, height: 0.40))
+
+        XCTAssertEqual(after.count, 2, "Der Fund darunter geht, der am Rand bleibt.")
+        XCTAssertEqual(after.first?.id, overThere.id)
+        XCTAssertNil(after.first(where: { $0.id == here.id }))
+    }
+
+    /// Ein Kasten um mehrere Funde herum macht daraus **einen** Ausschnitt.
+    ///
+    /// Genau der Fall, um den es geht: das Modell hat drei Dinge einzeln gefunden,
+    /// gemeint ist aber das eine, das sie zusammen bilden.
+    func testABoxAroundSeveralFindsLeavesOnlyTheBox() {
+        let bits = [object(CGRect(x: 0.20, y: 0.20, width: 0.10, height: 0.10)),
+                    object(CGRect(x: 0.35, y: 0.25, width: 0.12, height: 0.14)),
+                    object(CGRect(x: 0.50, y: 0.30, width: 0.08, height: 0.09))]
+
+        let after = ObjectPicker.replacing(bits, by: CGRect(x: 0.15, y: 0.15,
+                                                            width: 0.50, height: 0.40))
+
+        XCTAssertEqual(after.count, 1)
+        XCTAssertEqual(after[0].box, CGRect(x: 0.15, y: 0.15, width: 0.50, height: 0.40))
+        XCTAssertTrue(after[0].bits.isEmpty,
+                      "Ohne Umriss wird geschnitten und nicht freigestellt — sonst "
+                      + "waere alles ausser einem Ding weiss.")
+    }
+
+    // MARK: Zu klein
+
+    /// Unter `ObjectFinder.minimumEdge` entsteht kein Ausschnitt mehr. Ohne diese
+    /// Pruefung verschwaende ein winziger Kasten stillschweigend und statt seiner
+    /// ginge das ganze Brett in die Reihe — gezogen, „1 Ausschnitt" gelesen, das
+    /// Regal bekommen.
+    func testATinyBoxIsRefusedBeforeItCanVanish() {
+        let photo = CGSize(width: 1_400, height: 1_050)
+        XCTAssertTrue(ObjectPicker.isUsable(CGRect(x: 0.4, y: 0.4, width: 0.2, height: 0.2),
+                                            pixels: photo))
+        // 3 Prozent von 1050 sind 32 Pixel — hoch genug fuer den Kasten selbst und
+        // zu wenig fuer einen Ausschnitt.
+        XCTAssertFalse(ObjectPicker.isUsable(CGRect(x: 0.4, y: 0.4, width: 0.2, height: 0.03),
+                                             pixels: photo))
+    }
+
+    private func object(_ box: CGRect) -> SegmentedObject {
+        SegmentedObject(id: UUID(), box: box, mask: nil, bits: [], side: 0)
+    }
+
     func testAZeroSizedPictureYieldsNothing() {
         XCTAssertNil(ObjectPicker.box(from: .zero, to: CGPoint(x: 10, y: 10), picture: .zero))
     }
