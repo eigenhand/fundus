@@ -68,59 +68,42 @@ struct SettingsView: View {
     private var modelSection: some View {
         SectionLabel(text: "Modell")
 
-        if BundledSetup.isManaged {
-            HairlineCard {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Dieser Build bringt einen Zugang mit.")
-                        .font(EH.bodySmall)
-                        .foregroundStyle(EH.slate)
-                    Text("\(BundledSetup.providerName) · \(BundledSetup.chatModel)")
-                        .font(EH.mono)
-                        .foregroundStyle(EH.muted)
-                    Text("Für die Testrunde. Eine normal installierte Fundus bringt "
-                         + "keinen Zugang mit — dann stehen hier die Felder.")
-                        .font(EH.meta)
-                        .foregroundStyle(EH.muted)
-                }
-            }
-        } else {
-            VStack(spacing: 0) {
-                field("Adresse", text: Binding(
-                    get: { model.settings.model.baseURL },
-                    set: { model.settings.model.baseURL = $0 }),
-                      placeholder: "https://api.beispiel.ai")
-                Divider().overlay(EH.hair)
-                field("Pfad", text: Binding(
-                    get: { model.settings.model.path },
-                    set: { model.settings.model.path = $0 }),
-                      placeholder: "/v1/chat/completions", mono: true)
-                Divider().overlay(EH.hair)
-                field("Modell", text: Binding(
-                    get: { model.settings.model.model },
-                    set: { model.settings.model.model = $0 }),
-                      placeholder: "anbieter/modellname", mono: true)
-                Divider().overlay(EH.hair)
-                keyField
-                Divider().overlay(EH.hair)
-                tokenField
-            }
-            .onDisappear { model.endpointChanged() }
-
-            Toggle(isOn: $shareKey) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Mit Spind und Faden teilen")
-                        .font(EH.bodySmall)
-                        .foregroundStyle(EH.navy)
-                    Text("Legt Adresse und Modell im gemeinsamen Ordner ab und den "
-                         + "Schlüssel in der gemeinsamen Schlüsselbundgruppe. Wer eine "
-                         + "der Apps einrichtet, hat alle eingerichtet.")
-                        .font(EH.meta)
-                        .foregroundStyle(EH.muted)
-                }
-            }
-            .tint(EH.navy)
-            .padding(.vertical, 12)
+        VStack(spacing: 0) {
+            field("Adresse", text: Binding(
+                get: { model.settings.model.baseURL },
+                set: { model.settings.model.baseURL = $0 }),
+                  placeholder: "https://api.beispiel.ai")
+            Divider().overlay(EH.hair)
+            field("Pfad", text: Binding(
+                get: { model.settings.model.path },
+                set: { model.settings.model.path = $0 }),
+                  placeholder: "/v1/chat/completions", mono: true)
+            Divider().overlay(EH.hair)
+            field("Modell", text: Binding(
+                get: { model.settings.model.model },
+                set: { model.settings.model.model = $0 }),
+                  placeholder: "anbieter/modellname", mono: true)
+            Divider().overlay(EH.hair)
+            keyField
+            Divider().overlay(EH.hair)
+            tokenField
         }
+        .onDisappear { model.endpointChanged() }
+
+        Toggle(isOn: $shareKey) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Mit Spind und Faden teilen")
+                    .font(EH.bodySmall)
+                    .foregroundStyle(EH.navy)
+                Text("Legt Adresse und Modell im gemeinsamen Ordner ab und den "
+                     + "Schlüssel in der gemeinsamen Schlüsselbundgruppe. Wer eine "
+                     + "der Apps einrichtet, hat alle eingerichtet.")
+                    .font(EH.meta)
+                    .foregroundStyle(EH.muted)
+            }
+        }
+        .tint(EH.navy)
+        .padding(.vertical, 12)
 
         probeRow
     }

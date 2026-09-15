@@ -67,20 +67,14 @@ final class AppModel {
     /// Nimmt einen Endpoint, den eine Schwester-App hinterlegt hat.
     ///
     /// Nur, wenn hier noch keiner steht — eine eingerichtete App soll sich nicht von
-    /// einer anderen umkonfigurieren lassen. Der eingebaute Beta-Schlüssel hat
-    /// Vorrang, weil ein TestFlight-Build für sich funktionieren muss.
+    /// einer anderen umkonfigurieren lassen.
+    ///
+    /// Das ist seit heute der einzige Weg, auf dem Fundus zu einem Zugang kommt, ohne
+    /// dass jemand tippt. Vorher stand davor ein Zweig für Builds mit eingebautem
+    /// Schlüssel; der ist weg, und mit ihm der Schlüssel im Binary. Wer Faden auf
+    /// demselben Gerät eingerichtet hat, bekommt dessen Endpoint hier weiterhin
+    /// angeboten — die App Group teilt ihn, der Nutzer hat ihn selbst eingetragen.
     private func adoptSharedEndpointIfNeeded() {
-        if BundledSetup.isManaged, !settings.model.isComplete {
-            Keychain.set(BundledSetup.apiKey, account: BundledSetup.keychainAccount)
-            settings.model.baseURL = BundledSetup.baseURL
-            settings.model.path = BundledSetup.chatPath
-            settings.model.model = BundledSetup.chatModel
-            settings.model.maxOutputTokens = BundledSetup.maxOutputTokens
-            settings.model.keychainAccount = BundledSetup.keychainAccount
-            adoptBundledSearchKey()
-            save()
-            return
-        }
         guard !settings.model.isComplete, let shared = SharedEndpoint.read() else { return }
         settings.model.baseURL = shared.baseURL
         settings.model.path = shared.path
@@ -88,18 +82,6 @@ final class AppModel {
         settings.model.keychainAccount = shared.keychainAccount
         save()
         banner = Banner(text: "Endpoint von \(shared.writtenBy) übernommen.")
-    }
-
-    /// Der Suchschlüssel aus dem Build, und mit ihm das Nachschlagen an.
-    ///
-    /// Eingeschaltet und nicht nur hinterlegt: ein Testflug, bei dem die Funktion
-    /// erst gesucht werden muss, testet sie nicht. Wer sie nicht will, schaltet sie
-    /// in den Einstellungen aus — dort steht auch, was dabei das Gerät verlässt.
-    private func adoptBundledSearchKey() {
-        guard BundledSetup.hasSearch, searchKey.isEmpty else { return }
-        Keychain.set(BundledSetup.searchAPIKey, account: settings.lookup.keychainAccount,
-                     shared: false)
-        settings.lookup.enabled = true
     }
 
     /// Speichert verzögert. Zwanzig Tastendrücke in einem Namensfeld sollen nicht
