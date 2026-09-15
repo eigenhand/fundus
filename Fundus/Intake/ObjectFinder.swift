@@ -18,11 +18,13 @@ struct FoundObject: Identifiable, Equatable, Sendable {
 /// Findet die Gegenstände auf einem Foto, damit der Nutzer sie antippen kann.
 ///
 /// Mit Apples Instanzmaske und nicht mit YOLO, und das ist keine Bequemlichkeit:
-/// Ultralytics steht unter AGPL-3.0, was für ein GPL-3.0-Repo eine Entscheidung wäre
-/// und nicht eine Abhängigkeit. Vor allem aber hilft die Klassenliste nicht — achtzig
-/// COCO-Klassen kennen `person`, `bottle` und `chair`, aber keinen Schrittmotor und
-/// keine Sortimentsbox. Was das Ding *ist*, sagt ohnehin das Modell, das das Foto
-/// liest. Hier wird nur gebraucht, **wo** die Dinge sind.
+/// Ultralytics steht unter AGPL-3.0. In ein Apache-2.0-Projekt lässt sich das nicht
+/// hineinnehmen — das ganze Ergebnis müsste dann unter AGPL stehen. Das wäre eine
+/// Entscheidung über das Projekt und nicht eine Abhängigkeit. Vor allem aber hilft
+/// die Klassenliste nicht — achtzig COCO-Klassen kennen `person`, `bottle` und
+/// `chair`, aber keinen Schrittmotor und keine Sortimentsbox. Was das Ding *ist*,
+/// sagt ohnehin das Modell, das das Foto liest. Hier wird nur gebraucht, **wo** die
+/// Dinge sind.
 ///
 /// Genau das kann `VNGenerateForegroundInstanceMaskRequest` seit iOS 17, auf dem
 /// Gerät, ohne Gewichte im Bundle: dieselbe Technik wie „Motiv ausschneiden" im

@@ -188,4 +188,12 @@ Form statt gefüllter Kacheln. Kein Dashboard hat runde Kacheln; drei Kreise sag
 
 ## Lizenz
 
-GPL-3.0. Siehe [LICENSE](LICENSE).
+Apache-2.0. Siehe [LICENSE](LICENSE). Copyright 2026 eigenhand.
+
+Permissiv und nicht Copyleft, weil eine Inventar-App auf einem Telefon nichts ist,
+was jemand als Dienst übernehmen könnte — das Risiko, gegen das ein Copyleft
+schützt, gibt es hier nicht. Apache-2.0 statt MIT wegen der ausdrücklichen
+Patentlizenz.
+
+Die Modellgewichte gehören nicht dazu: sie werden zur Laufzeit geladen und stehen
+unter ihren eigenen Lizenzen (siehe `Intake/SegmentAssets.swift`).
