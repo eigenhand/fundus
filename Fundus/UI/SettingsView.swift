@@ -44,8 +44,7 @@ struct SettingsView: View {
                             titleVisibility: .visible) {
             Button("Löschen", role: .destructive) { model.dropIndex() }
         } message: {
-            Text("Kein Eintrag wird angerührt. Die Namenssuche findet weiter alles, "
-                 + "die Suche nach Bedeutung nicht mehr.")
+            Text("Kein Eintrag wird angerührt. Die Namenssuche findet weiter alles, die Suche nach Bedeutung nicht mehr.")
         }
     }
 
@@ -96,9 +95,7 @@ struct SettingsView: View {
                 Text("Mit Spind und Faden teilen")
                     .font(EH.bodySmall)
                     .foregroundStyle(EH.navy)
-                Text("Legt Adresse und Modell im gemeinsamen Ordner ab und den "
-                     + "Schlüssel in der gemeinsamen Schlüsselbundgruppe. Wer eine "
-                     + "der Apps einrichtet, hat alle eingerichtet.")
+                Text("Legt Adresse und Modell im gemeinsamen Ordner ab und den Schlüssel in der gemeinsamen Schlüsselbundgruppe. Wer eine der Apps einrichtet, hat alle eingerichtet.")
                     .font(EH.meta)
                     .foregroundStyle(EH.muted)
             }
@@ -127,8 +124,7 @@ struct SettingsView: View {
                     .keyboardType(.numberPad)
                 Spacer(minLength: 0)
             }
-            Text("Reasoning-Modelle brauchen den Vorrat doppelt — erst zum Nachdenken, "
-                 + "dann zum Schreiben. Zu wenig sieht aus wie eine leere Antwort.")
+            Text("Reasoning-Modelle brauchen den Vorrat doppelt — erst zum Nachdenken, dann zum Schreiben. Zu wenig sieht aus wie eine leere Antwort.")
                 .font(EH.meta)
                 .foregroundStyle(EH.muted)
                 .padding(.top, 2)
@@ -230,10 +226,7 @@ struct SettingsView: View {
 
             segmenterRow
 
-            Text("Fotos kommen in eine Reihe und werden nebeneinander gelesen. Mehr "
-                 + "gleichzeitig heisst frueher fertig \u{2014} bis der Anbieter drosselt. "
-                 + "Wer 429 oder Zeitablaeufe sieht, stellt es herunter. Die Reihe "
-                 + "fasst \(IntakeSchedule.maxQueued) Aufnahmen.")
+            Text("Fotos kommen in eine Reihe und werden nebeneinander gelesen. Mehr gleichzeitig heisst frueher fertig \u{2014} bis der Anbieter drosselt. Wer 429 oder Zeitablaeufe sieht, stellt es herunter. Die Reihe fasst \(IntakeSchedule.maxQueued) Aufnahmen.")
                 .font(EH.meta)
                 .foregroundStyle(EH.muted)
                 .lineSpacing(2)
@@ -282,12 +275,8 @@ struct SettingsView: View {
             }
 
             Text(model.segmenterInstalled
-                 ? "Im Objekte-Modus tippst du auf ein Ding, und das Geraet sagt, wo es "
-                 + "aufhoert. Liegt auf dem Geraet (\(ByteCountFormatter.string(fromByteCount: model.segmenterBytes, countStyle: .file)))."
-                 : "Ohne dieses Modell sucht sich das Geraet im Objekte-Modus selbst aus, "
-                 + "was ein Gegenstand ist — das ist fuer Portraits gebaut und liegt an "
-                 + "einer Werkbank oft daneben. Mit ihm entscheidet dein Finger. "
-                 + "Segment Anything 2.1 von Apple, Apache-2.0, laeuft auf dem Geraet.")
+                 ? "Im Objekte-Modus tippst du auf ein Ding, und das Geraet sagt, wo es aufhoert. Liegt auf dem Geraet (\(ByteCountFormatter.string(fromByteCount: model.segmenterBytes, countStyle: .file)))."
+                 : "Ohne dieses Modell sucht sich das Geraet im Objekte-Modus selbst aus, was ein Gegenstand ist — das ist fuer Portraits gebaut und liegt an einer Werkbank oft daneben. Mit ihm entscheidet dein Finger. Segment Anything 2.1 von Apple, Apache-2.0, laeuft auf dem Geraet.")
                 .font(EH.meta)
                 .foregroundStyle(EH.muted)
                 .lineSpacing(2)
@@ -306,10 +295,7 @@ struct SettingsView: View {
                 Text("Kennungen im Netz aufloesen")
                     .font(EH.bodySmall)
                     .foregroundStyle(EH.navy)
-                Text("Steht auf einem Ding eine Herstellernummer, oder entziffert das "
-                     + "Geraet einen Strichcode, sucht die App danach und legt bis zu "
-                     + "drei Moeglichkeiten vor. Ausgewaehlt ist keine: du tippst die "
-                     + "richtige an, oder keine. Die Nummer steht daneben.")
+                Text("Steht auf einem Ding eine Herstellernummer, oder entziffert das Geraet einen Strichcode, sucht die App danach und legt bis zu drei Moeglichkeiten vor. Ausgewaehlt ist keine: du tippst die richtige an, oder keine. Die Nummer steht daneben.")
                     .font(EH.meta)
                     .foregroundStyle(EH.muted)
                     .lineSpacing(2)
@@ -334,12 +320,7 @@ struct SettingsView: View {
                 searchKeyField
             }
 
-            Text("Voreingestellt auf Brave Search — derselbe Schluessel, den Faden "
-                 + "benutzt. Jeder Dienst geht, der JSON mit Titel, Adresse und "
-                 + "Beschreibung liefert. Hoechstens \(IdentityLookup.maxPerIntake) "
-                 + "Nummern je Aufnahme: ein voller Werkzeugkoffer kostet sonst vierzig "
-                 + "Suchen und vierzig Modellaufrufe fuer eine Liste, die vielleicht "
-                 + "verworfen wird.")
+            Text("Voreingestellt auf Brave Search — derselbe Schluessel, den Faden benutzt. Jeder Dienst geht, der JSON mit Titel, Adresse und Beschreibung liefert. Hoechstens \(IdentityLookup.maxPerIntake) Nummern je Aufnahme: ein voller Werkzeugkoffer kostet sonst vierzig Suchen und vierzig Modellaufrufe fuer eine Liste, die vielleicht verworfen wird.")
                 .font(EH.meta)
                 .foregroundStyle(EH.muted)
                 .lineSpacing(2)
@@ -377,9 +358,7 @@ struct SettingsView: View {
     private var searchSection: some View {
         SectionLabel(text: "Suche")
 
-        Text("Die Namenssuche läuft immer und braucht nichts. Für die Suche nach "
-             + "Bedeutung — „das Kabel mit dem eckigen Stecker“ — werden Vektoren "
-             + "gebraucht, und die kommen von hier.")
+        Text("Die Namenssuche läuft immer und braucht nichts. Für die Suche nach Bedeutung — „das Kabel mit dem eckigen Stecker“ — werden Vektoren gebraucht, und die kommen von hier.")
             .font(EH.bodySmall)
             .foregroundStyle(EH.slate)
             .lineSpacing(3)
@@ -416,8 +395,7 @@ struct SettingsView: View {
                         .font(EH.body)
                         .foregroundStyle(EH.navy)
                     Text(source == .onDevice
-                         ? "Apples Modell, 108 MB, 8 ms je Eintrag. Gröber, aber ohne Netz — "
-                           + "und ein Keller hat selten Empfang."
+                         ? "Apples Modell, 108 MB, 8 ms je Eintrag. Gröber, aber ohne Netz — und ein Keller hat selten Empfang."
                          : "Genauer, kostet aber bei jeder Suche eine Anfrage.")
                         .font(EH.meta)
                         .foregroundStyle(EH.muted)
@@ -646,9 +624,7 @@ struct SettingsView: View {
     @ViewBuilder
     private var aboutSection: some View {
         SectionLabel(text: "Fundus")
-        Text("Ein Lagerbestand fürs iPhone, der nichts mitbringt außer der Oberfläche. "
-             + "Modell, Endpoint und Schlüssel kommen von dir. Kein Konto, kein "
-             + "Zwischenserver, keine Telemetrie.")
+        Text("Ein Lagerbestand fürs iPhone, der nichts mitbringt außer der Oberfläche. Modell, Endpoint und Schlüssel kommen von dir. Kein Konto, kein Zwischenserver, keine Telemetrie.")
             .font(EH.bodySmall)
             .foregroundStyle(EH.slate)
             .lineSpacing(3)
@@ -661,7 +637,7 @@ struct SettingsView: View {
 
     // MARK: Kleinteile
 
-    private func field(_ label: String, text: Binding<String>,
+    private func field(_ label: LocalizedStringKey, text: Binding<String>,
                        placeholder: String, mono: Bool = false) -> some View {
         VStack(alignment: .leading, spacing: 3) {
             EH.label(label)

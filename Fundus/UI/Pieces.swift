@@ -58,7 +58,7 @@ struct FreshnessMark: View {
                 .foregroundStyle(freshness == .seen ? EH.muted : color)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(freshness.label), zuletzt gesehen \(Ago.string(item.lastSeenAt))")
+        .accessibilityLabel(Text("\(freshness.label), zuletzt gesehen \(Ago.string(item.lastSeenAt))"))
     }
 }
 
@@ -127,7 +127,7 @@ struct ItemRow: View {
 // MARK: - Abschnittsüberschrift
 
 struct SectionLabel: View {
-    let text: String
+    let text: LocalizedStringKey
     var body: some View {
         HStack(spacing: 10) {
             EH.label(text)
@@ -179,7 +179,7 @@ struct SearchField: View {
                         .foregroundStyle(EH.muted)
                 }
                 .buttonStyle(EHTap())
-                .accessibilityLabel("Suche leeren")
+                .accessibilityLabel(Text("Suche leeren"))
             }
         }
         .padding(.horizontal, 16)
@@ -212,7 +212,7 @@ struct BannerView: View {
                     .foregroundStyle(EH.muted)
             }
             .buttonStyle(EHTap())
-            .accessibilityLabel("Meldung schließen")
+            .accessibilityLabel(Text("Meldung schließen"))
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
@@ -280,8 +280,8 @@ struct RoundIconButton: View {
 // MARK: - Leerer Zustand
 
 struct EmptyNote: View {
-    let label: String
-    let text: String
+    let label: LocalizedStringKey
+    let text: LocalizedStringKey
 
     var body: some View {
         VStack(spacing: 12) {

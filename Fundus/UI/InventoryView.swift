@@ -173,8 +173,7 @@ struct InventoryView: View {
             } else if model.inventory.items.isEmpty {
                 EmptyNote(
                     label: "Noch nichts drin",
-                    text: "Fotografiere ein Regal, eine Schublade, eine Kiste. "
-                        + "Dein Modell liest, was darauf ist, und du hakst ab, was stimmt.")
+                    text: "Fotografiere ein Regal, eine Schublade, eine Kiste. Dein Modell liest, was darauf ist, und du hakst ab, was stimmt.")
                     .listRowInsets(EdgeInsets())
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
@@ -217,7 +216,7 @@ struct InventoryView: View {
                 Section {
                     ForEach(direct) { row($0) }
                 } header: {
-                    SectionLabel(text: tree.path(of: entry.place.id))
+                    SectionLabel(text: LocalizedStringKey(tree.path(of: entry.place.id)))
                         .textCase(nil)
                 }
                 .listRowInsets(EdgeInsets(top: 0, leading: EH.gutter, bottom: 0, trailing: EH.gutter))
@@ -303,7 +302,7 @@ struct InventoryView: View {
                     .frame(width: 54, height: 54)
                     .background(Circle().fill(EH.navy))
             }
-            .accessibilityLabel("Regal fotografieren")
+            .accessibilityLabel(Text("Regal fotografieren"))
         }
         .padding(.horizontal, EH.gutter)
         .padding(.top, 10)
@@ -343,7 +342,7 @@ struct InventoryView: View {
             .background(Capsule().fill(EH.surface))
             .overlay(Capsule().stroke(EH.hair, lineWidth: EH.hairWidth))
         }
-        .accessibilityLabel("Ort für neue Einträge: \(currentPlaceLabel)")
+        .accessibilityLabel(Text("Ort für neue Einträge: \(currentPlaceLabel)"))
     }
 
     private var currentPlaceLabel: String {

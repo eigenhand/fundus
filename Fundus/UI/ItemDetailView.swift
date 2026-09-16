@@ -243,7 +243,7 @@ struct ItemDetailView: View {
         .onDisappear(perform: commit)
     }
 
-    private func labelledField(_ label: String, text: Binding<String>,
+    private func labelledField(_ label: LocalizedStringKey, text: Binding<String>,
                                placeholder: String = "", axis: Axis = .horizontal) -> some View {
         VStack(alignment: .leading, spacing: 3) {
             EH.label(label)

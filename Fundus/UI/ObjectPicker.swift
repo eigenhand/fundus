@@ -449,12 +449,10 @@ struct ObjectPicker: View {
                 : "\(picked.count) Ausschnitte, \(picked.count) Aufnahmen."
         }
         if offered.isEmpty {
-            return "Keine einzelnen Gegenstände erkannt — das ganze Bild geht als eine "
-                 + "Aufnahme. Mit dem Erkennungsmodell aus den Einstellungen ginge das besser."
+            return "Keine einzelnen Gegenstände erkannt — das ganze Bild geht als eine Aufnahme. Mit dem Erkennungsmodell aus den Einstellungen ginge das besser."
         }
         return chosenOffers.isEmpty && picked.isEmpty
-            ? "Nichts gewählt: das ganze Bild geht als eine Aufnahme. Einen Kasten "
-            + "ziehen geht auch."
+            ? "Nichts gewählt: das ganze Bild geht als eine Aufnahme. Einen Kasten ziehen geht auch."
             : "\(count) Ausschnitt\(count == 1 ? "" : "e") — so viele Aufnahmen."
     }
 

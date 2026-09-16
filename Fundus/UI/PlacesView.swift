@@ -45,9 +45,7 @@ struct PlacesView: View {
                 let n = model.inventory.items(at: place.id).count
                 Text(n == 0
                      ? "Der Ort und alle Unterorte werden gelöscht."
-                     : "Der Ort und alle Unterorte werden gelöscht. "
-                       + "\(n) \(n == 1 ? "Ding liegt" : "Dinge liegen") danach nirgends — "
-                       + "gelöscht wird davon nichts.")
+                     : "Der Ort und alle Unterorte werden gelöscht. \(n) \(n == 1 ? "Ding liegt" : "Dinge liegen") danach nirgends — gelöscht wird davon nichts.")
             }
         }
     }
@@ -72,8 +70,7 @@ struct PlacesView: View {
         List {
             if model.inventory.places.isEmpty {
                 EmptyNote(label: "Keine Orte",
-                          text: "Ein Ort ist, wo etwas liegt: Keller, Regal 2, Kiste C. "
-                              + "Ohne Orte geht es auch — dann liegt alles auf einem Haufen.")
+                          text: "Ein Ort ist, wo etwas liegt: Keller, Regal 2, Kiste C. Ohne Orte geht es auch — dann liegt alles auf einem Haufen.")
                     .plainRow()
             }
             ForEach(model.inventory.tree.flattened(), id: \.place.id) { entry in
@@ -133,7 +130,7 @@ struct PlacesView: View {
                     .foregroundStyle(newParent == place.id ? EH.navy : EH.muted)
             }
             .buttonStyle(EHTap())
-            .accessibilityLabel("Unterort in \(place.name) anlegen")
+            .accessibilityLabel(Text("Unterort in \(place.name) anlegen"))
         }
         .padding(.vertical, 10)
         .listRowBackground(Color.clear)
@@ -149,8 +146,7 @@ struct PlacesView: View {
     private var adder: some View {
         VStack(alignment: .leading, spacing: 8) {
             if adopt != nil {
-                Text("Aus dem Sucher: der neue Ort ist danach gewählt. "
-                     + "Zurück geht es über die Kamera.")
+                Text("Aus dem Sucher: der neue Ort ist danach gewählt. Zurück geht es über die Kamera.")
                     .font(EH.meta)
                     .foregroundStyle(EH.muted)
             }
@@ -168,7 +164,7 @@ struct PlacesView: View {
                             .foregroundStyle(EH.muted)
                     }
                     .buttonStyle(EHTap())
-                    .accessibilityLabel("Nicht unterordnen")
+                    .accessibilityLabel(Text("Nicht unterordnen"))
                 }
             }
 

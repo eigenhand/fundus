@@ -112,8 +112,7 @@ struct IntakeView: View {
                 Text("Steht in der Reihe.")
                     .font(EH.bodySmall)
                     .foregroundStyle(EH.slate)
-                Text("Es werden \(model.settings.intakeConcurrency) Fotos gleichzeitig "
-                     + "gelesen. In den Einstellungen änderbar.")
+                Text("Es werden \(model.settings.intakeConcurrency) Fotos gleichzeitig gelesen. In den Einstellungen änderbar.")
                     .font(EH.meta)
                     .foregroundStyle(EH.muted)
                     .multilineTextAlignment(.center)
@@ -161,8 +160,7 @@ struct IntakeView: View {
             HairlineCard(fill: EH.surfaceSunk) {
                 VStack(alignment: .leading, spacing: 8) {
                     EH.label("Kein Bestand")
-                    Text("Das Modell hat das Foto gelesen und nichts darauf gefunden, "
-                         + "was in einen Bestand gehört.")
+                    Text("Das Modell hat das Foto gelesen und nichts darauf gefunden, was in einen Bestand gehört.")
                         .font(EH.bodySmall)
                         .foregroundStyle(EH.slate)
                         .lineSpacing(3)
@@ -268,8 +266,7 @@ struct IntakeView: View {
     private var unreadable: some View {
         VStack(alignment: .leading, spacing: 8) {
             SectionLabel(text: "Nicht bestimmbar")
-            Text("Das Modell hat es gesehen, konnte es aber nicht benennen. "
-                 + "Hier musst du selbst nachsehen.")
+            Text("Das Modell hat es gesehen, konnte es aber nicht benennen. Hier musst du selbst nachsehen.")
                 .font(EH.meta)
                 .foregroundStyle(EH.muted)
                 .padding(.bottom, 2)
@@ -293,8 +290,7 @@ struct IntakeView: View {
                 .fill(EH.hair)
                 .frame(height: EH.hairWidth)
                 .padding(.vertical, 16)
-            Text("Gelesen von \(job.result.model). Was du übernimmst, behält das "
-                 + "als Herkunft und dieses Foto als Beleg.")
+            Text("Gelesen von \(job.result.model). Was du übernimmst, behält das als Herkunft und dieses Foto als Beleg.")
                 .font(EH.meta)
                 .foregroundStyle(EH.muted)
                 .lineSpacing(2)
@@ -530,7 +526,7 @@ private struct ProposalRow: View {
                         .background(Circle().fill(EH.surfaceSunk))
                 }
                 .buttonStyle(EHTap())
-                .accessibilityLabel("Menge verringern")
+                .accessibilityLabel(Text("Menge verringern"))
 
                 Text("\(q)")
                     .font(.eh(15, .callout, weight: .medium))
@@ -542,7 +538,7 @@ private struct ProposalRow: View {
                     .font(.eh(15, .callout))
                     .foregroundStyle(EH.muted)
                     .frame(minWidth: 20)
-                    .accessibilityLabel("Menge ungezählt")
+                    .accessibilityLabel(Text("Menge ungezählt"))
             }
 
             Button {
@@ -555,7 +551,7 @@ private struct ProposalRow: View {
                     .background(Circle().fill(EH.surfaceSunk))
             }
             .buttonStyle(EHTap())
-            .accessibilityLabel("Menge erhöhen")
+            .accessibilityLabel(Text("Menge erhöhen"))
         }
     }
 }

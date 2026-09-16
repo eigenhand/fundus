@@ -111,7 +111,7 @@ struct CameraScreen: View {
                     .background(Circle().fill(.black.opacity(0.35)))
             }
             .buttonStyle(EHTap())
-            .accessibilityLabel("Sucher schliessen")
+            .accessibilityLabel(Text("Sucher schliessen"))
 
             Spacer(minLength: 8)
 
@@ -130,7 +130,7 @@ struct CameraScreen: View {
                     .background(Circle().fill(.black.opacity(0.35)))
             }
             .buttonStyle(EHTap())
-            .accessibilityLabel("Blitz: \(flash.label)")
+            .accessibilityLabel(Text("Blitz: \(flash.label)"))
             .disabled(failure != nil)
         }
         .padding(.horizontal, EH.gutter)
@@ -188,7 +188,7 @@ struct CameraScreen: View {
             .padding(.vertical, 6)
             .background(Capsule().fill(.black.opacity(0.35)))
         }
-        .accessibilityLabel("Ort für die Aufnahmen: \(placeLabel)")
+        .accessibilityLabel(Text("Ort für die Aufnahmen: \(placeLabel)"))
     }
 
     // MARK: Unten
@@ -238,7 +238,7 @@ struct CameraScreen: View {
                             .background(Capsule().fill(active ? .white : .black.opacity(0.35)))
                     }
                     .buttonStyle(EHTap())
-                    .accessibilityLabel("Zoom \(zoom.label(stop))")
+                    .accessibilityLabel(Text("Zoom \(zoom.label(stop))"))
                 }
             }
         }
@@ -292,7 +292,7 @@ struct CameraScreen: View {
         }
         .buttonStyle(EHTap())
         .disabled(failure != nil || starting || queueIsFull)
-        .accessibilityLabel("Auslösen")
+        .accessibilityLabel(Text("Auslösen"))
     }
 
     /// Das zuletzt aufgenommene Bild, klein und links.
