@@ -1,11 +1,15 @@
 # Fundus
 
+[![Tests](https://github.com/eigenhand/fundus/actions/workflows/tests.yml/badge.svg)](https://github.com/eigenhand/fundus/actions/workflows/tests.yml)
+
 Ein Lagerbestand fürs iPhone, der nichts mitbringt außer der Oberfläche. Modell,
 Endpoint und API-Key kommen von dir. Keine Zwischenserver, keine Konten, keine
 Telemetrie — die App spricht ausschließlich mit der Adresse, die du einträgst.
 
 Design nach [eigenhand.dev](https://eigenhand.dev). Schwester von
 [Faden](https://github.com/eigenhand/faden) (KI-Chat) und Spind (Dateien).
+
+Was die App schützt und was ausdrücklich nicht: [SECURITY.md](SECURITY.md).
 
 ## Was drin ist
 
