@@ -67,7 +67,8 @@ def draw(dark=False):
     for dx, dy in ((-60, -30), (52, -4), (-14, 54)):
         d.ellipse([s(cx + dx - r), s(cy + dy - r), s(cx + dx + r), s(cy + dy + r)], fill=ink)
 
-    # Unten rechts, ueber Eck dazu: ein laengliches Teil, quer im Fach.
+    # Bottom right, diagonally across from it: an elongated part, lying sideways in
+    # the compartment.
     bx0, bx1 = VS + 62, IX1 - 62
     by, bh = (RS + IY1) / 2, 29
     d.rounded_rectangle([s(bx0), s(by - bh), s(bx1), s(by + bh)], radius=s(bh), fill=ink)

@@ -1,22 +1,22 @@
 name: Tests
 
-# Warum es das gibt: 164 Tests, die bisher nur lief, wer daran dachte. Ein Test, den
-# niemand automatisch ausführt, ist eine Behauptung über die Vergangenheit.
+# Why this exists: 164 tests that until now only ran for whoever remembered them. A
+# test nobody runs automatically is an assertion about the past.
 #
-# Zwei davon überspringen sich hier immer, und das ist erwartet: Core ML rechnet im
-# Simulator die SAM-Maske nicht aus — Kodierer und Bewertungen kommen richtig heraus,
-# `low_res_masks` ist Byte für Byte null, auf allen drei Rechenwegen. Dasselbe Modell
-# auf dem Mac liefert eine Maske, die auf zwei Promille auf dem Prüfrechteck liegt.
-# Es ist also nicht der Code, und ein Läufer ohne Gerät ändert daran nichts.
+# Two of them always skip here, and that is expected: Core ML does not compute the
+# SAM mask in the simulator — encoder and scores come out correctly, `low_res_masks`
+# is zero byte for byte, on all three compute paths. The same model on the Mac
+# delivers a mask that sits on the test rectangle to within two parts per thousand.
+# So it is not the code, and a runner without a device changes nothing about that.
 #
-# macOS-Minuten zählen bei privaten Repos zehnfach. Deshalb keine Läufe für
-# Änderungen, die den Code nicht anfassen, und ein abgebrochener Vorlauf, sobald ein
+# macOS minutes count tenfold on private repos. Hence no runs for changes that do not
+# touch the code, and an aborted earlier run as soon as a
 # neuer Commit kommt.
 #
-# Das Info.plist stand einmal in dieser Liste und gehört nicht hinein. Es sieht aus
-# wie Konfiguration, ist aber Verhalten: Dort stand `UIUserInterfaceStyle = Light`
-# und hat die gesamte dunkle Farbpalette wirkungslos gemacht — eine Änderung, die
-# kein Test der Welt bemerkt hätte, wenn kein Test gelaufen wäre.
+# The Info.plist once stood in this list and does not belong in it. It looks like
+# configuration but is behaviour: `UIUserInterfaceStyle = Light` stood in there and
+# made the entire dark palette inert — a change no test in the world would have
+# caught if no test had run.
 
 on:
   push:
@@ -39,9 +39,9 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      # Steht im Protokoll, damit ein Fehlschlag, der an der Werkzeugkette liegt,
-      # nicht wie einer im Code aussieht. Das Abbild bringt mehrere Xcodes mit; die
-      # Voreinstellung ist 26.6, und genau damit ist dieser Lauf hier geprüft worden.
+      # In the log, so that a failure caused by the toolchain does not look like one
+      # in the code. The image carries several Xcodes; the default is 26.6, and that
+      # is exactly what this run was checked against.
       - name: Werkzeugkette melden
         run: |
           xcodebuild -version
@@ -53,13 +53,13 @@ jobs:
       - name: Projekt erzeugen
         run: xcodegen generate
 
-      # `OS=latest` und keine feste Zahl: das Abbild führt drei Laufzeiten mit, und
-      # ohne Angabe bricht xcodebuild mit einem irreführenden „My Mac"-Fehler ab,
-      # weil der Gerätename mehrdeutig ist — derselbe Grund, aus dem run-tests.sh
-      # die Kennung heraussucht, statt den Namen weiterzureichen.
-      # Laeuft vor den Tests, weil er in einer Sekunde sagt, was der Testlauf
-      # nicht sieht: Xcode traegt neue Strings beim Bauen von selbst in den
-      # Katalog ein — ohne Uebersetzung, und ohne dass irgendetwas rot wird.
+      # `OS=latest` and not a fixed number: the image carries three runtimes, and
+      # without a version xcodebuild fails with a misleading "My Mac" error, because
+      # the device name is ambiguous — the same reason run-tests.sh looks the
+      # identifier up instead of passing the name along.
+      # Runs before the tests, because in one second it says what the test run does
+      # not see: Xcode enters new strings into the catalogue by itself while
+      # building — untranslated, and without anything turning red.
       - name: Uebersetzungen vollstaendig
         run: ./check-localizations.py
 

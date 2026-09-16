@@ -1,24 +1,23 @@
 #!/bin/bash
-# Fuehrt die Testsuite auf einem Simulator aus.
+# Runs the test suite on a simulator.
 #
-# Mit ausdruecklichem Ziel, weil ein Name wie "iPhone 17 Pro" auf diesem Rechner
-# mehrfach existiert (mehrere iOS-Versionen) und xcodebuild eine mehrdeutige Angabe
-# nicht aufloest, sondern mit einem irrefuehrenden "My Mac"-Fehler abbricht.
+# With an explicit destination, because a name like "iPhone 17 Pro" exists several
+# times over on this machine (several iOS versions) and xcodebuild does not resolve an
+# ambiguous one but fails with a misleading "My Mac" error.
 set -euo pipefail
 cd "$(dirname "$0")"
 
 DEVICE="${1:-iPhone 17 Pro}"
 
-# Die Ermittlung der Kennung steht bewusst nicht in einer einzigen Zuweisung mit
-# Pipe. Mit `set -euo pipefail` bricht das Skript dann ab, sobald irgendein Glied
-# der Pipe scheitert — und zwar *bevor* die Fehlermeldung darunter ausgegeben werden
-# kann. Ergebnis: Exit 1 und kein Wort dazu. Genau das ist heute zweimal passiert,
-# xcodebuild antwortete zwischendurch nicht, und der Lauf sah aus wie ein
-# fehlgeschlagener Test.
+# Looking the identifier up is deliberately not one single assignment with a pipe.
+# With `set -euo pipefail` the script then aborts as soon as any link in the pipe
+# fails — and *before* the error message below it can be printed. The result: exit 1
+# and not a word about it. That happened twice in one day, xcodebuild stopped
+# answering in between, and the run looked like a failed test.
 DESTINATIONS=""
 if ! DESTINATIONS=$(xcodebuild -project Fundus.xcodeproj -scheme Fundus \
                       -showdestinations 2>&1); then
-  echo "xcodebuild -showdestinations ist fehlgeschlagen:" >&2
+  echo "xcodebuild -showdestinations failed:" >&2
   echo "$DESTINATIONS" | tail -5 >&2
   exit 1
 fi
@@ -30,7 +29,7 @@ ID=$(printf '%s\n' "$DESTINATIONS" \
      | sed -E 's/.*id:([0-9A-F-]+).*/\1/') || true
 
 if [ -z "$ID" ]; then
-  echo "Kein Simulator namens \"$DEVICE\" gefunden. Vorhanden sind:" >&2
+  echo "No simulator called \"$DEVICE\" found. Available:" >&2
   printf '%s\n' "$DESTINATIONS" | grep "platform:iOS Simulator" \
     | sed -E 's/.*name:([^}]+).*/  \1/' | sort -u >&2
   exit 1
