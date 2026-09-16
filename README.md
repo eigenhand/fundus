@@ -1,141 +1,138 @@
 # Fundus
 
+*English · [Deutsch](README.de.md)*
+
 [![Tests](https://github.com/eigenhand/fundus/actions/workflows/tests.yml/badge.svg)](https://github.com/eigenhand/fundus/actions/workflows/tests.yml)
 
-Ein Lagerbestand fürs iPhone, der nichts mitbringt außer der Oberfläche. Modell,
-Endpoint und API-Key kommen von dir. Keine Zwischenserver, keine Konten, keine
-Telemetrie — die App spricht ausschließlich mit der Adresse, die du einträgst.
+An inventory for the iPhone that brings nothing but the interface. The model, the
+endpoint and the API key come from you. No servers in between, no accounts, no
+telemetry — the app speaks only to the address you enter.
 
-Design nach [eigenhand.dev](https://eigenhand.dev). Schwester von
-[Faden](https://github.com/eigenhand/faden) (KI-Chat) und Spind (Dateien).
+Design after [eigenhand.dev](https://eigenhand.dev). Sister to
+[Faden](https://github.com/eigenhand/faden) (AI chat) and Spind (files).
 
-Was die App schützt und was ausdrücklich nicht: [SECURITY.md](SECURITY.md).
+What the app protects and what it expressly does not: [SECURITY.md](SECURITY.md).
 
-## Was drin ist
+## What is in it
 
-**Fotografieren statt tippen.** Ein Regal, eine Schublade, eine Kiste — dein Modell
-liest, was darauf ist, und schreibt daraus Einträge. Wer vierzig Dinge von Hand
-eintragen müsste, trägt sie nicht ein; das ist der Grund, warum diese App eine Kamera
-als auffälligsten Knopf hat.
+**Photographing instead of typing.** A shelf, a drawer, a box — your model reads what
+is on it and writes entries from that. Anyone who would have to enter forty things by
+hand does not enter them; that is why this app has a camera as its most prominent
+button.
 
-**Vorschläge, keine Einträge.** Nichts landet im Bestand ohne Häkchen. Ein Modell, das
-ein Regal liest, verzählt sich, fasst zusammen und liest Etiketten falsch — und ein
-Bestand, der Modellausgabe stillschweigend aufnimmt, ist schlechter als keiner, weil
-man ihm glaubt. Der Prüfschritt zeigt jeden Fund einzeln, mit editierbarem Namen und
-verstellbarer Menge, und sagt vorher an, wenn ein Fund auf einen bestehenden Eintrag
-fällt und die Menge erhöht statt einen zweiten anzulegen.
+**Suggestions, not entries.** Nothing lands in the inventory without a tick. A model
+reading a shelf miscounts, lumps things together and misreads labels — and an
+inventory that silently absorbs model output is worse than none, because people
+believe it. The review step shows every find individually, with an editable name and
+an adjustable quantity, and says in advance when a find falls on an existing entry and
+will raise its quantity rather than create a second one.
 
-**„Nicht bestimmbar“ ist eine Antwort.** Das Modell wird ausdrücklich angewiesen,
-nicht zu raten: keine Marke, keine Größe, keine Sorte, die es nicht sieht. Was es
-sieht, aber nicht benennen kann, kommt in eine eigene Liste — „eine graue Schachtel,
-Aufschrift unscharf“. Das sagt dir, wo du selbst nachsehen musst, statt dir eine
-plausible Erfindung als Bestand zu verkaufen.
+**“Cannot be determined” is an answer.** The model is expressly instructed not to
+guess: no brand, no size, no variety that it cannot see. What it sees but cannot name
+goes into a list of its own — “a grey box, lettering out of focus”. That tells you
+where you have to look yourself, instead of selling you a plausible invention as
+inventory.
 
-**Nummern werden nachgeschlagen, aber nichts wird ersetzt.** Steht auf einem Bauteil
-eine Herstellernummer, oder klebt ein Strichcode darauf, kann die App im Netz danach
-suchen und einen genauen Namen vorschlagen — „MP1584EN DC-DC-Abwärtswandler 3 A“
-statt „eine Platine“. Das ist die gefährlichste Funktion dieser App, und sie ist
-entsprechend gebaut. Ein aufgelöster Produktname steht am Ende einer Kette mit drei
-fehlbaren Gliedern: ein unscharfer Aufkleber, ein Modell, das Zeichen verwechselt,
-eine Suchmaschine, die auf jede Zeichenfolge irgendetwas antwortet. Danach sieht er
-verlässlicher aus als alles andere im Bestand und ist es am wenigsten. Deshalb:
+**Numbers get looked up, but nothing gets replaced.** If a part carries a manufacturer
+number, or a barcode is stuck to it, the app can search the web for it and propose a
+precise name — “MP1584EN DC-DC step-down converter 3 A” instead of “a circuit board”.
+This is the most dangerous feature in this app, and it is built accordingly. A resolved
+product name stands at the end of a chain with three fallible links: a blurred sticker,
+a model that confuses characters, a search engine that answers anything to any string.
+Afterwards it looks more reliable than everything else in the inventory and is the
+least so. Therefore:
 
-- Der Suchtreffer hat ein **eigenes Häkchen** und ist **aus** voreingestellt. Man kann
-  den Fund behalten und die Deutung verwerfen.
-- Die Nummer steht daneben, wörtlich, und bleibt am Eintrag — sie ist das Einzige,
-  was sich nachprüfen lässt, ohne das Ding in die Hand zu nehmen.
-- Am Eintrag steht die Suchanfrage, die Quelle und das Datum.
-- Passen die Treffer nicht zur Nummer, ist `null` die vorgesehene Antwort des
-  Modells. Kein Vorschlag ist besser als ein plausibler.
+- The search result has a **tick of its own** and is preset to **off**. You can keep
+  the find and discard the interpretation.
+- The number stands beside it, verbatim, and stays with the entry — it is the only
+  thing that can be checked without picking the thing up.
+- The entry carries the search query, the source and the date.
+- If the results do not match the number, `null` is the model's intended answer. No
+  suggestion is better than a plausible one.
 
-**Strichcodes liest das Gerät, nicht das Modell.** Apples Vision dekodiert EAN, UPC,
-Code 128, QR und DataMatrix aus dem Foto — mit Prüfziffer, ohne Netz, ohne Kosten, vor
-dem ersten bezahlten Aufruf. Ein Sprachmodell, dem man Balken zeigt, liest die Ziffern
-darunter ab und rät bei Unschärfe. Nennt das Modell eine EAN, die der Dekoder *nicht*
-gesehen hat, wird sie verworfen: einen Strichcode kann man nicht mit den Augen lesen.
-Herstellernummern dagegen stehen als Klartext auf dem Bauteil und dürfen abgelesen
-werden — sie bleiben als *abgelesen* markiert und damit als fehlbar.
+**Barcodes are read by the device, not by the model.** Apple's Vision decodes EAN, UPC,
+Code 128, QR and DataMatrix from the photo — with a check digit, without a network,
+without cost, before the first paid call. Show a language model some bars and it reads
+the digits underneath and guesses where they blur. If the model names an EAN the
+decoder did *not* see, it is discarded: a barcode cannot be read by eye. Manufacturer
+numbers, by contrast, stand as plain text on the part and may be read off — they stay
+marked as *read off* and therefore as fallible.
 
-**Menge oder „—“.** `null` heißt ungezählt, nicht null Stück. Eine geschätzte Zahl ist
-schlimmer als keine, weil sie wie eine Zählung aussieht. Dosen in einer Schachtel,
-Schrauben in einer Schüttung: ungezählt.
+**A quantity or “—”.** `null` means uncounted, not zero. An estimated number is worse
+than none, because it looks like a count. Tins in a box, screws in a bin: uncounted.
 
-**Jeder Eintrag weiß, wann du ihn zuletzt gesehen hast.** Ein Lagerbestand veraltet,
-während die Datenbank aussieht wie am ersten Tag — das ist die eine Unwahrheit, die
-eine Inventarapp von sich aus erzeugt. Drei Stufen: *gesehen* (bis 30 Tage),
-*vermutet* (bis 180), *unbestätigt*. Ein Wisch nach rechts bestätigt. Ein Filter zeigt,
-was zu lange nicht bestätigt wurde. Die beiden Grenzen sind gesetzt, nicht gemessen,
-und stehen als solche im Quelltext.
+**Every entry knows when you last saw it.** An inventory ages while the database looks
+like day one — that is the one untruth an inventory app produces all by itself. Three
+stages: *seen* (up to 30 days), *presumed* (up to 180), *unconfirmed*. A swipe right
+confirms. A filter shows what has gone too long without confirmation. The two
+thresholds are set, not measured, and say so in the source.
 
-**Und wer ihn geschrieben hat.** An jedem Eintrag steht, ob ihn ein Mensch getippt oder
-ein Modell aus einem Foto gelesen hat — und **welches** Modell. Das Foto bleibt als
-Beleg daneben. Wer später vor dem Regal steht und die Zahl nicht wiederfindet, muss
-wissen, wessen Zahl das war.
+**And who wrote it.** Every entry says whether a human typed it or a model read it off
+a photo — and **which** model. The photo stays beside it as evidence. Whoever stands in
+front of the shelf later and cannot find the number again needs to know whose number
+that was.
 
-**Suche, die findet, was du nicht benennen kannst.** Zwei Wege, und die Reihenfolge
-ist die Entscheidung: ein Namenstreffer ist eine Gewissheit, ein Kosinus eine
-Vermutung. Wer „Rudi“ tippt, bekommt das Ding, das Rudi heißt, an erster Stelle. Die
-Ähnlichkeitssuche verdient ihren Platz bei „das schwarze Kabel mit dem eckigen
-Stecker“ — da findet kein Teilstring etwas —, darf aber keinen sicheren Treffer nach
-unten schieben. Treffer aus Bedeutung sind als solche beschriftet.
+**Search that finds what you cannot name.** Two routes, and the order is the decision:
+a name match is a certainty, a cosine is a guess. Whoever types “Rudi” gets the thing
+called Rudi first. Similarity search earns its place with “the black cable with the
+square plug” — no substring finds anything there — but must not push a certain match
+down. Results that come from meaning are labelled as such.
 
-**Vektoren auf dem Gerät, voreingestellt.** Apples `NLContextualEmbedding`: 512
-Dimensionen, 108 MB Modelldateien, gemessen 8 ms je Eintrag und 13,5 MB
-Arbeitsspeicher. Gröber als ein Netzmodell — auf neun Fragen gegen vierzehn Sätze
-traf `qwen3-embedding-8b` siebenmal auf Platz eins, dieses hier fünfmal. Trotzdem die
-Voreinstellung, und der Grund ist der Ort: ein Bestand wird im Keller durchsucht, vor
-dem Regal, mit einem Balken Empfang oder keinem. Fünf von neun ohne Netz schlagen
-sieben von neun mit. Wer es anders will, stellt auf seinen Endpoint um.
+**Vectors on the device, by default.** Apple's `NLContextualEmbedding`: 512 dimensions,
+108 MB of model files, measured at 8 ms per entry and 13.5 MB of memory. Coarser than a
+network model — on nine questions against fourteen sentences, `qwen3-embedding-8b` hit
+first place seven times, this one five. The default nonetheless, and the reason is the
+place: an inventory is searched in the basement, in front of the shelf, with one bar of
+reception or none. Five out of nine without a network beat seven out of nine with. Do
+it differently and you switch to your endpoint.
 
-**Der Index sagt, was in ihm steckt.** Jeder Vektor trägt Modellnamen und Dimension.
-Zwei Einbettungen sind nur vergleichbar, wenn sie aus demselben Modell kommen — ohne
-Stempel rechnet die Suche nach einem Modellwechsel still zwischen zwei Räumen, die
-nichts miteinander zu tun haben. Die Einstellungen zählen deshalb *nutzbar / fremd /
-fehlt* und nennen die Modelle, die im Index liegen. Nachholen, neu aufbauen und
-löschen sind drei getrennte Knöpfe.
+**The index says what is in it.** Every vector carries a model name and a dimension.
+Two embeddings are comparable only if they come from the same model — without the stamp
+the search would quietly compute between two spaces that have nothing to do with each
+other after a model change. The settings therefore count *usable / foreign / missing*
+and name the models that lie in the index. Catching up, rebuilding and deleting are
+three separate buttons.
 
-**Orte als Baum.** Keller → Regal 2 → Kiste C. Als Baum und nicht als Zeichenkette,
-damit „alles im Keller“ beantwortbar bleibt und ein umbenannter Keller nicht in
-dreißig Einträgen stehenbleibt. Einen Ort zu löschen löscht keinen Bestand: die Dinge
-liegen danach nirgends, was stimmt und sichtbar ist.
+**Places as a tree.** Basement → shelf 2 → box C. As a tree and not as a string, so
+that “everything in the basement” stays answerable and a renamed basement does not
+linger in thirty entries. Deleting a place deletes no inventory: the things lie nowhere
+afterwards, which is true and visible.
 
-**Geteilt mit Spind und Faden.** Der Bestand liegt als Klartext-JSON im gemeinsamen
-Container `group.dev.eigenhand.shared` — Spind kann ihn synchronisieren, ohne Fundus
-zu kennen. Endpoint und Modellname liegen daneben in `eigenhand/endpoint.json`, der
-Schlüssel in der gemeinsamen Schlüsselbundgruppe: wer eine der drei Apps einrichtet,
-hat alle drei eingerichtet. Ist die App Group in einem Build nicht freigeschaltet,
-fällt die App auf ihren eigenen Ordner zurück — und sagt in den Einstellungen,
-welcher der beiden gilt, statt es erraten zu lassen.
+**Shared with Spind and Faden.** The inventory lies as plain JSON in the shared
+container `group.dev.eigenhand.shared` — Spind can sync it without knowing Fundus. The
+endpoint and model name lie beside it in `eigenhand/endpoint.json`, the key in the
+shared keychain group: set up one of the three apps and you have set up all three. If
+the app group is not enabled in a build, the app falls back to its own folder — and
+says in the settings which of the two applies, instead of leaving you to guess.
 
-## Was es nicht tut
+## What it does not do
 
-- **Kein Barcode als Hauptweg.** EAN wird gelesen, wo eine ist, und aufgelöst, wenn
-  man es einschaltet. Aber eine Kiste M4-Schrauben und ein namenloses USB-C-Kabel
-  haben keinen, und das ist der Normalfall in einer Werkstatt.
-- **Keine Konten, kein Server, keine Synchronisierung von uns.** Dafür ist Spind da.
-- **Keine automatische Übernahme von Modellausgabe.** Siehe oben — das ist der Punkt.
-- **Keine Mengenschätzung.** Was nicht zählbar ist, bleibt ungezählt.
+- **No barcode as the main route.** EAN is read where there is one, and resolved if you
+  switch that on. But a box of M4 screws and a nameless USB-C cable have none, and that
+  is the normal case in a workshop.
+- **No accounts, no server, no syncing from us.** That is what Spind is for.
+- **No silent adoption of model output.** See above — that is the point.
+- **No quantity estimates.** What cannot be counted stays uncounted.
 
-## Einrichten
+## Setting it up
 
-Bei der ersten Öffnung fragt Fundus nach Adresse, Pfad, Modellname und Schlüssel.
-Alles OpenAI-kompatible geht: `/v1/chat/completions` mit `image_url`-Inhalten. Das
-Modell muss Bilder lesen können — **„Bilder prüfen“** in den Einstellungen schickt ein
-winziges Zweifarbenbild und fragt, was darauf ist. Eine Ablehnung heißt nein, eine
-Antwort, die beide Farben nennt, heißt ja. Geraten wird nichts.
+On first launch Fundus asks for an address, path, model name and key. Anything
+OpenAI-compatible works: `/v1/chat/completions` with `image_url` contents. The model has
+to be able to read images — **“Check images”** in the settings sends a tiny two-colour
+picture and asks what is on it. A refusal means no, an answer that names both colours
+means yes. Nothing is guessed.
 
-Getestet mit `z-ai/glm-5.3-flash` über TensorX. Reasoning-Modelle brauchen den
-Token-Vorrat doppelt — erst zum Nachdenken, dann zum Schreiben —, deshalb steht das
-Limit bei 32 000 und ist in den Einstellungen verstellbar. Zu wenig davon sieht aus
-wie eine leere Antwort; die App sagt inzwischen, wenn es das war.
+Tested with `z-ai/glm-5.3-flash` through TensorX. Reasoning models need the token budget
+twice — first to think, then to write — which is why the limit sits at 32,000 and is
+adjustable in the settings. Too little of it looks like an empty answer; the app now
+says when that is what it was.
 
-Das Nachschlagen von Nummern ist aus, bis ein Suchschlüssel eingetragen ist.
-Voreingestellt auf Brave Search, weil Faden denselben benutzt; jeder Dienst geht, der
-JSON mit Titel, Adresse und Beschreibung liefert. Höchstens acht Nummern je Aufnahme —
-ein voller Werkzeugkoffer kostet sonst vierzig Suchen und vierzig Modellaufrufe für
-eine Liste, die vielleicht verworfen wird.
+Looking numbers up is off until a search key is entered. Preset to Brave Search,
+because Faden uses the same one; any service works that returns JSON with a title, an
+address and a description. At most eight numbers per photo — a full toolbox would
+otherwise cost forty searches and forty model calls for a list that may be thrown away.
 
-## Bauen
+## Building
 
 ```bash
 brew install xcodegen
@@ -143,61 +140,58 @@ xcodegen generate
 open Fundus.xcodeproj
 ```
 
-Die `.xcodeproj` steht nicht im Repo — sie entsteht aus `project.yml`. Die Bundle-ID
-ist `dev.eigenhand.fundus.ios`; für die App Group braucht sie im Developer-Portal das
-Recht `com.apple.security.application-groups` mit `group.dev.eigenhand.shared`.
+The `.xcodeproj` is not in the repository — it is generated from `project.yml`. The
+bundle ID is `dev.eigenhand.fundus.ios`; for the app group it needs the
+`com.apple.security.application-groups` entitlement with `group.dev.eigenhand.shared`
+in the developer portal.
 
 ```bash
-./run-tests.sh            # 76 Tests auf einem Simulator
-./release.sh              # Archiv, Upload zu TestFlight, Zuweisung
+./run-tests.sh            # 182 tests on a simulator
+./release.sh              # archive, upload to TestFlight, assignment
 git config core.hooksPath .githooks
 ```
 
-Der Haken verhindert, dass ein für einen TestFlight-Build eingesetzter Schlüssel in
-die Historie gerät. Er liegt versioniert im Repo, weil ein Haken in `.git/hooks` bei
-keinem Klonen mitwandert.
+The hook keeps a key used for a TestFlight build out of the history. It lies versioned
+in the repository, because a hook in `.git/hooks` travels with no clone.
 
-## Aufbau
+## Layout
 
 ```
 Fundus/
-  Models/      Item · ItemCode · Place · Inventory · Settings   — Werttypen, prüfbar
+  Models/      Item · ItemCode · Place · Inventory · Settings   — value types, testable
   Intake/      IntakePrompt · PhotoIntake · BarcodeScanner · IdentityLookup
-  Search/      LocalEmbedder · Indexer · ItemSearch     — Namen, Bedeutung, Index
+  Search/      LocalEmbedder · Indexer · ItemSearch     — names, meaning, index
   Storage/     SharedContainer · Store · Keychain · PhotoStore
-  Providers/   ModelClient · SearchClient · VisionProbe  — der ganze Netzverkehr
+  Providers/   ModelClient · SearchClient · VisionProbe  — all the network traffic
   UI/          InventoryView · IntakeView · ItemDetailView · PlacesView · SettingsView
-  App/         AppModel · FundusApp · BundledSetup
-  Design/      Theme                                    — wörtlich wie in Faden
+  App/         AppModel · FundusApp
+  Design/      Theme                                    — verbatim as in Faden
 ```
 
-`ModelClient` ist absichtlich klein: ein Bild hin, JSON zurück, plus Vektoren. Fadens
-Anbieterschicht kann zwei Wire-Formate, Werkzeugaufrufe und Gedankengang — neunhundert
-Zeilen davon mitzuschleppen hieße, sie in zwei Apps zu pflegen, damit eine einen
-Bruchteil benutzt. Gestreamt wird trotzdem: ein getesteter Anbieter beantwortete
-gestreamte Aufrufe in Sekunden, während nicht-gestreamte derselben Größe überhaupt
-nicht zurückkamen.
+`ModelClient` is deliberately small: an image out, JSON back, plus vectors. Faden's
+provider layer speaks two wire formats, tool calls and reasoning — carrying nine hundred
+lines of that along would mean maintaining them in two apps so that one could use a
+fraction. It streams nonetheless: one tested provider answered streamed calls in
+seconds, while non-streamed ones of the same size did not come back at all.
 
-## Das Icon
+## The icon
 
-Ein Sortierkasten von oben, navy auf hell wie der Rest der Familie. Erzeugt, nicht
-gemalt — `python3 Tools/make-icon.py` schreibt die drei Fassungen (hell, dunkel,
-getönt) neu und kommt dabei auf dieselben Bytes.
+A sorting box seen from above, navy on light like the rest of the family. Generated,
+not painted — `python3 Tools/make-icon.py` rewrites the three variants (light, dark,
+tinted) and arrives at the same bytes.
 
-Drei Anläufe, und die Korrekturen stehen im Skript: Rechtecke in Zellen lesen sich
-als Wireframe, nicht als Kasten. Was den Unterschied macht, ist die dicke Außenwand
-gegen dünne Stege — ein Diagramm hat überall dieselbe Strichstärke — und Inhalt mit
-Form statt gefüllter Kacheln. Kein Dashboard hat runde Kacheln; drei Kreise sagen
-„Schrauben".
+Three attempts, and the corrections stand in the script: rectangles in cells read as a
+wireframe, not as a box. What makes the difference is the thick outer wall against thin
+dividers — a diagram has the same stroke width everywhere — and contents with a shape
+instead of filled tiles. No dashboard has round tiles; three circles say “screws”.
 
-## Lizenz
+## Licence
 
-Apache-2.0. Siehe [LICENSE](LICENSE). Copyright 2026 Christoph Lindl-Guk.
+Apache-2.0. See [LICENSE](LICENSE). Copyright 2026 Christoph Lindl-Guk.
 
-Permissiv und nicht Copyleft, weil eine Inventar-App auf einem Telefon nichts ist,
-was jemand als Dienst übernehmen könnte — das Risiko, gegen das ein Copyleft
-schützt, gibt es hier nicht. Apache-2.0 statt MIT wegen der ausdrücklichen
-Patentlizenz.
+Permissive and not copyleft, because an inventory app on a phone is not something
+anyone could take over as a service — the risk a copyleft protects against does not
+exist here. Apache-2.0 rather than MIT because of the express patent licence.
 
-Die Modellgewichte gehören nicht dazu: sie werden zur Laufzeit geladen und stehen
-unter ihren eigenen Lizenzen (siehe `Intake/SegmentAssets.swift`).
+The model weights are not part of it: they are downloaded at runtime and stand under
+their own licences (see `Intake/SegmentAssets.swift`).

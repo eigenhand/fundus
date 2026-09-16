@@ -1,98 +1,98 @@
-# Sicherheit
+# Security
 
-## Lücken melden
+*English · [Deutsch](SECURITY.de.md)*
 
-Sicherheitsprobleme bitte **nicht** als öffentliches Issue, sondern per E-Mail an
-<christoph.lindl-guk@pm.me>. Ich antworte, so schnell ich kann – dies ist ein
-Freizeitprojekt ohne zugesagte Reaktionszeiten.
+## Reporting a vulnerability
 
-## Was das Gerät verlässt
+Please report security problems **not** as a public issue but by e-mail to
+<christoph.lindl-guk@pm.me>. I answer as fast as I can — this is a spare-time project
+with no promised response times.
 
-Fundus bringt keine Infrastruktur mit. Es gibt keinen Server von mir, keine
-Telemetrie und kein Konto.
+## What leaves the device
 
-| Wohin | Was | Wann |
+Fundus brings no infrastructure with it. There is no server of mine, no telemetry and
+no account.
+
+| Where | What | When |
 | --- | --- | --- |
-| Modell-Endpoint | Das Foto und die Namen der Dinge, die schon im Bestand sind | Beim Lesen einer Aufnahme |
-| Suchanbieter | Die abgelesene Kennung und der vermutete Name | Nur wenn Nachschlagen an ist |
+| Model endpoint | The photo and the names of the things already in the inventory | When a photo is read |
+| Search provider | The identifier read off and the presumed name | Only when looking up is on |
 
-Der Bestand selbst, die Fotos und die Orte bleiben auf dem Gerät. Das Nachschlagen
-ist ausschaltbar, und in den Einstellungen steht, was dabei hinausgeht.
+The inventory itself, the photos and the places stay on the device. Looking up can be
+switched off, and the settings say what goes out when it is on.
 
-## Schlüssel
+## Keys
 
-API-Schlüssel liegen im **Schlüsselbund des Geräts**. Wer die Einstellung „Mit Spind
-und Faden teilen" einschaltet, legt Adresse und Modellname in den gemeinsamen Ordner
-der App-Gruppe und den Schlüssel in die gemeinsame Schlüsselbundgruppe – dann richtet
-eine eingerichtete App die anderen mit ein. Das ist der Zweck und zugleich der Preis:
-die drei Apps sehen denselben Schlüssel. Ausgeschaltet bleibt alles in Fundus.
+API keys live in the **device's keychain**. Whoever switches on “Share with Spind and
+Faden” puts the address and the model name into the shared folder of the app group and
+the key into the shared keychain group — one app that is set up then sets up the
+others. That is the purpose and at the same time the price: the three apps see the same
+key. Switched off, everything stays in Fundus.
 
-Bis September 2026 trugen die TestFlight-Builds einen Schlüssel im Binary. Das war
-eine bewusste Abwägung und ist keine mehr – ein Schlüssel im ausgelieferten Binary
-ist für jeden lesbar, der das Binary hat. Ein versionierter `pre-commit`-Haken schlägt
-an, wenn etwas, das nach einem Schlüssel aussieht, in einen Commit gerät.
+Until September 2026 the TestFlight builds carried a key in the binary. That was a
+deliberate trade-off and is no longer one — a key in a shipped binary is readable by
+anyone who has the binary. A versioned `pre-commit` hook fires when something that
+looks like a key finds its way into a commit.
 
-## Die Bauart, um die es geht
+## The architecture this is about
 
-Fundus hat keine Werkzeuge, die ein Modell aufrufen könnte. Der Hebel ist leiser: was
-das Modell aus fremdem Text macht, wird ein **Vorschlag**, und ein Häkchen später
-steht er im Bestand.
+Fundus has no tools a model could call. The lever is quieter: what the model makes of
+foreign text becomes a **suggestion**, and one tick later it stands in the inventory.
 
-**Suchtreffer sind eingefasst.** Sie stehen zwischen Marken mit einer je Aufruf
-gewürfelten Kennung, und die Systemanweisung des Nachschlagens sagt, was darin gilt:
-Material, keine Anweisung – und in `name`, `maker` und `note` kommt nur, was den
-Gegenstand beschreibt, keine Adressen und keine Aufforderungen. Der Anlass: eine
-Seite, die auf eine gängige Bauteilnummer optimiert ist, schreibt sonst in fremde
-Inventare. Ein Eintragsname ist kurz, wird später gesucht, und niemand liest ihn
-zweimal.
+**Search results are fenced.** They stand between marks carrying an identifier rolled
+per call, and the system instruction for looking up says what holds inside them:
+material, not instruction — and into `name`, `maker` and `note` goes only what
+describes the object, no addresses and no demands. The occasion: a page optimised for a
+common part number otherwise writes into other people's inventories. An entry name is
+short, gets searched later, and nobody reads it twice.
 
-**Ein Aufkleber ist ein Aufkleber.** Text im Foto lässt sich nicht einfassen – er ist
-Teil des Bildes. Dagegen hilft nur die Regel in der Anweisung: was auf einem Etikett
-steht, ist Aufdruck und keine Anweisung. Dieser Weg braucht kein Netz und keinen
-Angreifer im WLAN, nur eine Sekunde am Regal.
+**A sticker is a sticker.** Text in a photo cannot be fenced — it is part of the image.
+The only thing that helps is the rule in the instruction: what stands on a label is
+print, not instruction. This route needs no network and no attacker on the Wi-Fi, just
+a second at the shelf.
 
-**Die Etikette prüft die App selbst.** Ob ein Vorschlag ein Volltreffer ist, glaubt
-Fundus dem Modell nicht: `exact` heisst, die Kennung steht **wörtlich** in einem
-Treffer, und das wird nachgesehen. Tut sie es nicht, wird der Vorschlag auf `near`
-zurückgestuft. Ein Modell, das gefällig sein will, stuft sonst jeden Treffer hoch –
-und genau diese Etikette entscheidet, wie viel Vertrauen die Zeile bekommt.
+**The app checks the label itself.** Whether a suggestion is an exact match is not
+something Fundus takes the model's word for: `exact` means the identifier stands
+**verbatim** in a result, and that gets looked up. If it does not, the suggestion is
+downgraded to `near`. A model that wants to please otherwise rates every result a
+bullseye — and that very label decides how much trust the line is given.
 
-**Nichts geht ungefragt in den Bestand.** Alles, was aus einer Aufnahme kommt, ist
-ein Vorschlag mit Häkchen. Das ist der Grund, warum man diesem Bestand glauben kann,
-und zugleich die wirksamste Massnahme gegen alles oben.
+**Nothing enters the inventory unasked.** Everything that comes out of a photo is a
+suggestion with a tick. That is the reason this inventory can be believed, and at the
+same time the most effective measure against everything above.
 
-## Modellgewichte
+## Model weights
 
-Das Segmentierungsmodell (SAM 2.1, Apples Core-ML-Fassung, Apache-2.0) wird zur
-Laufzeit geladen und liegt nicht im Bundle – die IPA bleibt dadurch unter zwei
-Megabyte, und die Lizenz der App bleibt von der des Modells getrennt.
+The segmentation model (SAM 2.1, Apple's Core ML version, Apache-2.0) is downloaded at
+runtime and is not in the bundle — the IPA stays under two megabytes that way, and the
+app's licence stays separate from the model's.
 
-Geladen wird über HTTPS von `huggingface.co`; geprüft wird die Dateigrösse gegen das,
-was der Server nennt. Eine Prüfsumme gibt es nicht. Das ist eine Abwägung: sie würde
-bei jeder Aktualisierung der fremden Ablage brechen, und Core-ML-Gewichte sind Daten
-und kein Programm. Wer dem Transport nicht traut, lädt das Modell nicht.
+It is downloaded over HTTPS from `huggingface.co`; what is checked is the file size
+against what the server states. There is no checksum. That is a trade-off: it would
+break with every update of the foreign store, and Core ML weights are data, not a
+program. Whoever does not trust the transport does not download the model.
 
-## Bewusste Kompromisse
+## Deliberate compromises
 
-**Das Foto geht an einen fremden Endpoint.** Das ist der Zweck der App. Welcher, sagt
-der Nutzer; was dort damit geschieht, kann Fundus nicht prüfen.
+**The photo goes to a foreign endpoint.** That is the purpose of the app. Which one is
+up to the user; what happens to it there is not something Fundus can check.
 
-**Die Einfassung ist eine Bitte, keine Schranke.** Ob das Modell sich daran hält, kann
-keine Zeile Code erzwingen. Was ein erfolgreicher Angriff erreicht, ist ein falscher
-Vorschlag – und den sieht der Nutzer, bevor er ihn abhakt.
+**The fence is a request, not a barrier.** Whether the model holds to it cannot be
+enforced by any line of code. What a successful attack achieves is a wrong suggestion —
+and the user sees it before ticking it off.
 
-**Die geteilte Schlüsselbundgruppe ist eine Entscheidung.** Siehe oben unter
-„Schlüssel". Wer sie nicht will, lässt die Einstellung aus.
+**The shared keychain group is a decision.** See above under “Keys”. Whoever does not
+want it leaves the setting off.
 
-Dieselben Massnahmen und dieselben Grenzen stehen in Faden; die beiden Apps teilen die
-Bauart, aber keinen Code.
+The same measures and the same limits stand in Faden; the two apps share the
+architecture, but no code.
 
-## Was geprüft ist
+## What is tested
 
-169 Tests, davon zwei übersprungen: Core ML rechnet im Simulator die SAM-Maske nicht
-aus. Kodierer und Bewertungen kommen richtig heraus, `low_res_masks` ist Byte für Byte
-null, auf allen drei Rechenwegen – dasselbe Modell auf dem Mac liefert eine Maske, die
-auf zwei Promille auf dem Prüfrechteck liegt. Es ist also nicht der Code. Auf dem
-Gerät laufen die beiden mit.
+182 tests, two of them skipped: Core ML does not compute the SAM mask in the simulator.
+The encoder and the scores come out correctly, `low_res_masks` is zero byte for byte,
+on all three compute paths — the same model on the Mac delivers a mask that lies within
+two parts per thousand of the reference rectangle. So it is not the code. On a device
+the two run along.
 
-Die Tests laufen bei jedem Push.
+The tests run on every push.
