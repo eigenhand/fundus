@@ -4,14 +4,13 @@ import SwiftUI
 
 // MARK: - Zeitangaben
 
-/// Auf dem Hauptakteur, weil `RelativeDateTimeFormatter` nicht `Sendable` ist und
-/// diese Zeitangaben ausschließlich in Ansichten stehen. Ein
-/// `nonisolated(unsafe)` hätte den Compiler beruhigt, ohne die Frage zu
-/// beantworten, wer den Formatierer gleichzeitig benutzt.
+/// On the main actor, because `RelativeDateTimeFormatter` is not `Sendable` and these
+/// timestamps stand exclusively in views. A `nonisolated(unsafe)` would have calmed the
+/// compiler without answering the question of who uses the formatter at the same time.
 @MainActor
 enum Ago {
-    /// „vor 2 Tagen“. Ein Datum wie „13.09.2026“ verlangt vom Leser eine
-    /// Subtraktion; bei einer Sichtung ist der Abstand die ganze Aussage.
+    /// "2 days ago". A date like "13.09.2026" asks the reader to do a subtraction; for
+    /// a sighting the distance is the whole statement.
     private static let formatter: RelativeDateTimeFormatter = {
         let f = RelativeDateTimeFormatter()
         f.locale = Locale(identifier: "de_DE")
@@ -20,20 +19,20 @@ enum Ago {
     }()
 
     static func string(_ date: Date, now: Date = Date()) -> String {
-        // Unter einer Stunde sagt der Formatierer „vor 0 Stunden“ — für eine
-        // Sichtung, die man gerade selbst gemacht hat, liest sich das wie ein Fehler.
+        // Under an hour the formatter says "0 hours ago" — for a sighting you have just
+        // made yourself, that reads like a bug.
         if now.timeIntervalSince(date) < 3_600 { return "gerade" }
         return formatter.localizedString(for: date, relativeTo: now)
     }
 }
 
-// MARK: - Verlässlichkeit
+// MARK: - Reliability
 
-/// Der Zustand einer Sichtung als Punkt und Wort.
+/// The state of a sighting as a dot and a word.
 ///
-/// Farbe *und* Wort, nicht nur Farbe: die drei Stufen sind eine Aussage über die
-/// Verlässlichkeit eines Eintrags, und die darf nicht daran hängen, ob jemand
-/// Grün von Ocker unterscheiden kann.
+/// Colour *and* word, not colour alone: the three grades are a statement about how far
+/// an entry can be relied on, and that must not hang on whether somebody can tell green
+/// from ochre.
 struct FreshnessMark: View {
     let item: Item
     var showDate = true
@@ -66,9 +65,9 @@ struct FreshnessMark: View {
 
 struct ItemRow: View {
     let item: Item
-    /// Woher der Treffer kam. `nil` außerhalb der Suche.
+    /// Where the hit came from. `nil` outside the search.
     var kind: ItemSearch.Kind?
-    /// Der Ortspfad, wenn die Liste nicht schon nach Ort gruppiert ist.
+    /// The place path, when the list is not already grouped by place.
     var placePath: String?
 
     var body: some View {
@@ -95,9 +94,9 @@ struct ItemRow: View {
                             .lineLimit(1)
                     }
                     if let kind, kind == .semantic {
-                        // Nur bei Bedeutung beschriftet. „Name“ an einen
-                        // Namenstreffer zu schreiben sagt dem Leser nichts, was er
-                        // nicht sieht; „Bedeutung“ sagt ihm, dass die App geraten hat.
+                        // Labelled only for meaning. Writing "name" on a name hit tells
+                        // the reader nothing they cannot see; "meaning" tells them the
+                        // app has guessed.
                         Text(kind.label)
                             .font(EH.meta)
                             .foregroundStyle(EH.muted)
@@ -124,7 +123,7 @@ struct ItemRow: View {
     }
 }
 
-// MARK: - Abschnittsüberschrift
+// MARK: - Section heading
 
 struct SectionLabel: View {
     let text: LocalizedStringKey
@@ -142,11 +141,11 @@ struct SectionLabel: View {
 
 // MARK: - Das Suchfeld
 
-/// Halbrund bei einer Zeile, wie die Eingabezeile in Faden.
+/// Fully rounded at one line, like the composer in Faden.
 ///
-/// Derselbe Radius aus derselben Rechnung: `composerHeight / 2`. Die beiden Apps
-/// stehen auf demselben Bildschirm, und ein Feld, das hier kastiger wäre als dort,
-/// wäre nicht eine andere App, sondern eine schlechtere.
+/// The same radius from the same arithmetic: `composerHeight / 2`. The two apps stand
+/// on the same screen, and a field that were boxier here than there would not be a
+/// different app but a worse one.
 struct SearchField: View {
     @Binding var text: String
     var placeholder = "Was suchst du?"
@@ -228,7 +227,7 @@ struct BannerView: View {
 
 // MARK: - Kopfzeile
 
-/// Die Wortmarke, gesetzt in der Familie, in der sie gezeichnet wurde.
+/// The wordmark, set in the family it was drawn in.
 struct AppHeader<Trailing: View>: View {
     var title = "Fundus"
     var subtitle: String?
@@ -253,8 +252,7 @@ struct AppHeader<Trailing: View>: View {
     }
 }
 
-/// Ein rundes Symbol zum Antippen — die Form, die in Faden die Knöpfe der Kopfzeile
-/// haben.
+/// A round symbol to tap — the shape the header buttons have in Faden.
 struct RoundIconButton: View {
     let systemName: String
     let label: String

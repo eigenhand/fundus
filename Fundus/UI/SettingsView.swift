@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Einstellungen. Vier Fragen: welches Modell, woher die Vektoren, wo die Daten
-/// liegen, und was im Index steckt.
+/// Settings. Four questions: which model, where the vectors come from, where the data
+/// lives, and what is in the index.
 struct SettingsView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
@@ -106,11 +106,11 @@ struct SettingsView: View {
         probeRow
     }
 
-    /// Sichtbar und verstellbar, weil die richtige Zahl vom Modell abhaengt.
+    /// Visible and adjustable, because the right number depends on the model.
     ///
-    /// Ein Reasoning-Modell verbraucht den Vorrat zweimal: erst zum Nachdenken, dann
-    /// zum Schreiben. Wer in die Grenze laeuft, soll das hier aendern koennen und
-    /// nicht auf einen neuen Build warten muessen.
+    /// A reasoning model spends the budget twice: first on thinking, then on writing.
+    /// Whoever runs into the limit should be able to change it here rather than having
+    /// to wait for a new build.
     private var tokenField: some View {
         VStack(alignment: .leading, spacing: 3) {
             EH.label("Ausgabetoken, hoechstens")
@@ -155,9 +155,9 @@ struct SettingsView: View {
         .padding(.vertical, 11)
     }
 
-    /// „Prüfen“ statt „Speichern“: ob ein Endpoint Bilder liest, ist die Frage, an
-    /// der diese App hängt, und niemand sollte sie erst beim ersten Regalfoto
-    /// gestellt bekommen.
+    /// "Check" rather than "save": whether an endpoint reads images is the question
+    /// this app hangs on, and nobody should have it put to them for the first time with
+    /// their first photo of a shelf.
     @ViewBuilder
     private var probeRow: some View {
         HStack(spacing: 12) {
@@ -192,17 +192,17 @@ struct SettingsView: View {
 
     // MARK: Nummern nachschlagen
 
-    /// Aus, bis jemand einen Schlüssel eintraegt.
+    /// Off until somebody enters a key.
     ///
-    /// Dieselbe Praemisse wie beim Modell: die App bringt keine Infrastruktur mit.
-    /// Und hier waere das Stillschweigen teurer als dort — bei eingeschalteter Suche
-    /// verlaesst eine Nummer aus dem Keller des Nutzers das Geraet.
-    /// Wie viele Fotos gleichzeitig gelesen werden.
+    /// The same premise as for the model: the app brings no infrastructure of its own.
+    /// And here silence would be more expensive than there — with the search switched
+    /// on, a number from the user's cellar leaves the device.
+    /// How many photos are read at once.
     ///
-    /// Eine Einstellung und keine Konstante, weil die richtige Zahl nicht von der App
-    /// abhaengt, sondern vom Anbieter: der eine nimmt sechs Aufrufe nebeneinander an,
-    /// der naechste drosselt ab zwei und antwortet mit 429. Beides kann die App nicht
-    /// wissen, und beides merkt der Nutzer sofort.
+    /// A setting and not a constant, because the right number does not depend on the
+    /// app but on the provider: one accepts six calls side by side, the next throttles
+    /// from two onwards and answers with 429. The app can know neither, and the user
+    /// notices both at once.
     @ViewBuilder
     private var intakeSection: some View {
         SectionLabel(text: "Aufnahme")
@@ -234,11 +234,11 @@ struct SettingsView: View {
         .padding(.vertical, 12)
     }
 
-    /// Das Modell fuer den Fingertipp im Objekte-Modus.
+    /// The model for tapping in object mode.
     ///
-    /// Achtzig Megabyte, und deshalb steht hier, was sie bringen und was ohne sie
-    /// passiert — ein Knopf mit einer Zahl dahinter, ohne Begruendung, wird entweder
-    /// nie oder blind gedrueckt.
+    /// Eighty megabytes, which is why it says here what they buy and what happens
+    /// without them — a button with a number behind it and no reason given is either
+    /// never pressed or pressed blindly.
     @ViewBuilder
     private var segmenterRow: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -459,11 +459,11 @@ struct SettingsView: View {
 
     // MARK: Index
 
-    /// Was im Index steckt, gezählt statt behauptet.
+    /// What is in the index, counted rather than asserted.
     ///
-    /// Genau die Ansicht, die in Faden gefehlt hat: „nutzbar / fremd / fehlt“, und
-    /// welche Modelle überhaupt drinliegen. Ohne sie ist ein Wechsel der Quelle eine
-    /// Änderung, deren Folgen man erst merkt, wenn die Suche nichts mehr findet.
+    /// Exactly the view Faden was missing: "usable / foreign / absent", and which models
+    /// are in there at all. Without it, changing the source is a change whose
+    /// consequences you only notice once the search stops finding anything.
     @ViewBuilder
     private var indexSection: some View {
         SectionLabel(text: "Suchindex")
@@ -582,10 +582,10 @@ struct SettingsView: View {
         .padding(.top, 10)
     }
 
-    // MARK: Oberfläche
+    // MARK: Interface
 
-    // Steht weit unten: wer die App zum ersten Mal oeffnet, muss ein Modell
-    // einrichten. Die Sprache sucht man, wenn man sie sucht.
+    // Stands far down: whoever opens the app for the first time has to set up a model.
+    // The language is something you go looking for when you go looking for it.
     @ViewBuilder
     private var interfaceSection: some View {
         SectionLabel(text: "Oberfläche")
@@ -604,9 +604,9 @@ struct SettingsView: View {
             .labelsHidden()
             .pickerStyle(.menu)
             .tint(EH.navy)
-            // Eine Kennung und kein Text: Der Beschriftung dieses Waehlers steht
-            // seine eigene Auswahl an, und ein Test, der sie sucht, suchte nach dem
-            // Wechsel etwas anderes als vorher.
+            // An identifier and not text: this picker's label carries its own selection
+            // in it, and a test looking for that label would, after a switch, be
+            // looking for something other than before.
             .accessibilityIdentifier("language-picker")
         }
         .padding(.vertical, 4)
@@ -628,16 +628,16 @@ struct SettingsView: View {
             .accessibilityIdentifier("appearance-picker")
         }
         .padding(.vertical, 4)
-        // Ein Literal und keine Verkettung: Xcode traegt nur ganze Zeichenketten in
-        // den Katalog ein. Ein mit + zusammengesetzter Satz laesst sich nie
-        // uebersetzen, und niemand merkt es — er steht einfach weiter auf Deutsch.
+        // A literal and not a concatenation: Xcode only enters whole strings into the
+        // catalogue. A sentence assembled with + can never be translated, and nobody
+        // notices — it simply stays in German.
         Text("Gilt für die Oberfläche. Systemdialoge — etwa die Frage nach der Kamera — folgen weiterhin der Spracheinstellung des Geräts.")
             .font(EH.meta)
             .foregroundStyle(EH.muted)
             .lineSpacing(3)
     }
 
-    // MARK: Über
+    // MARK: About
 
     @ViewBuilder
     private var aboutSection: some View {
@@ -676,7 +676,7 @@ struct SettingsView: View {
     }
 }
 
-/// Das Teilen-Blatt des Systems, für die ausgegebene Datei.
+/// The system share sheet, for the exported file.
 struct ShareSheet: UIViewControllerRepresentable {
     let items: [Any]
     func makeUIViewController(context: Context) -> UIActivityViewController {
@@ -685,7 +685,7 @@ struct ShareSheet: UIViewControllerRepresentable {
     func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}
 }
 
-/// `sheet(item:)` braucht `Identifiable`; eine URL ist durch sich selbst bestimmt.
+/// `sheet(item:)` needs `Identifiable`; a URL is identified by itself.
 extension URL: @retroactive Identifiable {
     public var id: String { absoluteString }
 }

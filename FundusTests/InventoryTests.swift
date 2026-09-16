@@ -1,11 +1,11 @@
 import XCTest
 @testable import Fundus
 
-/// Die Aussagen, die in den Kommentaren stehen, hier als Prüfungen.
+/// The statements standing in the comments, here as checks.
 ///
-/// Ausgewählt nach dem, was still falsch sein kann: eine Dublette, eine Menge, die
-/// ersetzt statt addiert wird, ein Vektor aus dem falschen Modell. Nichts davon
-/// stürzt ab; alles davon macht den Bestand unwahr.
+/// Chosen by what can be quietly wrong: a duplicate, a quantity replaced instead of
+/// added, a vector from the wrong model. None of it crashes; all of it makes the
+/// inventory untrue.
 final class InventoryTests: XCTestCase {
 
     private func proposal(_ name: String, _ quantity: Int? = nil,
@@ -13,7 +13,7 @@ final class InventoryTests: XCTestCase {
         Proposal(name: name, quantity: quantity, unit: "", note: note)
     }
 
-    // MARK: absorb — das zweite Foto derselben Schublade
+    // MARK: absorb — the second photo of the same drawer
 
     func testSecondPhotoDoesNotDuplicate() {
         var inv = Inventory()
@@ -27,8 +27,8 @@ final class InventoryTests: XCTestCase {
         XCTAssertEqual(inv.items[0].quantity, 5, "Die Menge wird addiert, nicht ersetzt.")
     }
 
-    /// Ersetzen wäre die naheliegende Wahl und die falsche: ein halb verdecktes Regal
-    /// würde den Bestand nach unten korrigieren, obwohl nichts verbraucht wurde.
+    /// Replacing would be the obvious choice and the wrong one: a half-obscured shelf
+    /// would correct the stock downwards even though nothing had been used up.
     func testQuantityIsAddedNotReplaced() {
         var inv = Inventory()
         _ = inv.absorb(proposal("Dose", 8), at: nil, photoID: nil, model: nil)
@@ -47,8 +47,8 @@ final class InventoryTests: XCTestCase {
         }
     }
 
-    /// Derselbe Name an einem anderen Ort ist ein anderes Ding. Sonst würden zwei
-    /// Schraubenkisten in zwei Räumen zu einer zusammenfallen.
+    /// The same name in a different place is a different thing. Otherwise two boxes of
+    /// screws in two rooms would collapse into one.
     func testSameNameAtDifferentPlaceIsSeparate() {
         var inv = Inventory()
         let a = Place(name: "Keller"), b = Place(name: "Dachboden")
@@ -77,8 +77,8 @@ final class InventoryTests: XCTestCase {
         XCTAssertTrue(inv.items.isEmpty)
     }
 
-    /// Eine Sichtung ändert den Text nicht, also darf sie den Vektor nicht
-    /// wegwerfen — sonst kostet jedes „Gesehen“ eine Neuberechnung.
+    /// A sighting does not change the text, so it must not throw the vector away —
+    /// otherwise every "seen" costs a recomputation.
     func testMarkSeenKeepsEmbedding() {
         var inv = Inventory()
         var item = Item(name: "Hammer")
@@ -94,8 +94,8 @@ final class InventoryTests: XCTestCase {
 
     // MARK: Orte
 
-    /// Ein Ort zu löschen darf keinen Bestand vernichten. Die Dinge liegen danach
-    /// nirgends — das stimmt und ist sichtbar.
+    /// Deleting a place must not destroy any inventory. The things then lie nowhere —
+    /// which is true and visible.
     func testRemovingPlaceKeepsItems() {
         var inv = Inventory()
         let keller = Place(name: "Keller")
@@ -120,8 +120,8 @@ final class InventoryTests: XCTestCase {
         XCTAssertEqual(inv.items(at: keller.id, includingBelow: false).count, 0)
     }
 
-    /// Ein Ort in seinem eigenen Unterbaum wäre ein Ring, und aus einem Ring kommt
-    /// kein Pfad zurück.
+    /// A place inside its own subtree would be a ring, and no path comes back out of a
+    /// ring.
     func testMoveIntoOwnSubtreeIsRejected() {
         var inv = Inventory()
         let keller = Place(name: "Keller")
@@ -144,8 +144,8 @@ final class InventoryTests: XCTestCase {
         XCTAssertEqual(inv.tree.flattened().map(\.depth), [0, 1, 2])
     }
 
-    /// Die Tiefenbegrenzung im Pfad: ein von Hand verbogener Baum darf beim Zeichnen
-    /// einer Zeile nicht hängen bleiben.
+    /// The depth limit in the path: a tree bent out of shape by hand must not hang
+    /// while a row is being drawn.
     func testPathTerminatesOnCycle() {
         var a = Place(name: "A")
         var b = Place(name: "B")
@@ -175,9 +175,8 @@ final class InventoryTests: XCTestCase {
 
     // MARK: Nachsichtiges Dekodieren
 
-    /// Ein neues Feld darf keine bestehende Datei ungültig machen. Der
-    /// synthetisierte Decoder wirft bei einem fehlenden Schlüssel — und das hieße
-    /// hier: Bestand weg.
+    /// A new field must not invalidate an existing file. The synthesised decoder throws
+    /// on a missing key — and here that would mean: inventory gone.
     func testItemDecodesFromMinimalJSON() throws {
         let json = Data(#"{"name":"Zange"}"#.utf8)
         let decoder = JSONDecoder()

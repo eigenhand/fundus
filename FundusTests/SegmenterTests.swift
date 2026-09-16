@@ -2,27 +2,26 @@ import CoreML
 import XCTest
 @testable import Fundus
 
-/// Segment Anything, an einem Bild, dessen Antwort man kennt.
+/// Segment Anything, on a picture whose answer is known.
 ///
-/// Die Prüfung ist mit Absicht kein Foto aus dem Keller: bei einem echten Regal
-/// wüsste niemand, ob eine Maske „richtig" ist, und ein Test, der nur prüft, dass
-/// *irgendetwas* zurückkommt, prüft nichts. Hier steht ein dunkles Rechteck an einer
-/// bekannten Stelle auf hellem Grund. Tippt man in seine Mitte, muss der Kasten dieses
-/// Rechteck sein — und nicht das halbe Bild und nicht ein Fleck daneben.
+/// The check is deliberately not a photo from the cellar: with a real shelf nobody
+/// would know whether a mask is "right", and a test that only checks that *something*
+/// comes back checks nothing. Here a dark rectangle stands in a known place on a light
+/// ground. Tap its centre and the box has to be that rectangle — not half the picture
+/// and not a blob beside it.
 ///
-/// Zwei Gründe, warum er sich überspringen kann. Der erste ist harmlos: ohne
-/// geladenes Modell gibt es nichts zu prüfen, und die 80 MB liegen nicht im Repo und
-/// sollen es auch nicht.
+/// Two reasons why it can skip itself. The first is harmless: with no model loaded
+/// there is nothing to check, and the 80 MB are not in the repo and should not be.
 ///
-/// Der zweite ist ärgerlich und gemessen: **Core ML rechnet im Simulator die Maske
-/// nicht aus.** Kodierer und Bewertungen kommen richtig heraus — Einbettungen mit
-/// plausiblen Werten, drei Scores zwischen 0,1 und 0,98 —, aber `low_res_masks` ist
-/// Byte für Byte null, auf allen drei Rechenwegen. Dasselbe Modell, dieselben
-/// Eingaben, dieselben neunzig Zeilen auf dem Mac ausgeführt: Maske von -13,4 bis
-/// 10,3 und ein Kasten, der auf zwei Promille auf dem Rechteck liegt.
+/// The second is annoying and measured: **Core ML does not compute the mask in the
+/// simulator.** Encoder and scores come out correctly — embeddings with plausible
+/// values, three scores between 0.1 and 0.98 — but `low_res_masks` is zero byte for
+/// byte, on all three compute paths. The same model, the same inputs, the same ninety
+/// lines run on the Mac: a mask from -13.4 to 10.3 and a box that sits on the rectangle
+/// to within two parts per thousand.
 ///
-/// Es ist also nicht der Code. Derselbe Simulator schafft auch Vision nicht
-/// („Could not create inference context"). Auf dem Gerät läuft der Test mit.
+/// So it is not the code. The same simulator cannot manage Vision either ("Could not
+/// create inference context"). On a device the test runs along with the rest.
 final class SegmenterTests: XCTestCase {
 
     private func skipWhereCoreMLCannot() throws {
@@ -58,8 +57,8 @@ final class SegmenterTests: XCTestCase {
         let hit = try await segmenter.object(at: CGPoint(x: shape.midX, y: shape.midY))
         let object = try XCTUnwrap(hit, "Auf ein Rechteck getippt und nichts bekommen.")
 
-        // Grosszügig: die Maske hat 256 Pixel Kantenlänge, das sind vier Promille
-        // Auflösung je Schritt, und die Kanten laufen weich aus.
+        // Generous: the mask is 256 pixels along an edge, which is four parts per
+        // thousand of resolution per step, and the edges fade out softly.
         XCTAssertEqual(object.box.minX, shape.minX, accuracy: 0.06)
         XCTAssertEqual(object.box.minY, shape.minY, accuracy: 0.06)
         XCTAssertEqual(object.box.maxX, shape.maxX, accuracy: 0.06)
@@ -67,8 +66,8 @@ final class SegmenterTests: XCTestCase {
         XCTAssertNotNil(object.mask, "Ohne Umriss gibt es nichts anzuzeigen.")
     }
 
-    /// Derselbe Aufbau, anderes Rechteck: ein Test, der immer denselben Kasten
-    /// zurückgäbe, würde auch dann bestehen, wenn die Koordinaten vertauscht wären.
+    /// The same setup, a different rectangle: a test that always returned the same box
+    /// would pass even with the coordinates swapped.
     func testTheExtentFollowsTheObject() async throws {
         try skipWhereCoreMLCannot()
 
@@ -84,7 +83,7 @@ final class SegmenterTests: XCTestCase {
         XCTAssertEqual(object.box.height, shape.height, accuracy: 0.08)
     }
 
-    // MARK: Die Auswahl unter den drei Vorschlägen
+    // MARK: Choosing among the three proposals
 
     func testArgmaxPicksTheHighestScore() throws {
         let scores = try MLMultiArray(shape: [1, 3], dataType: .float32)
@@ -94,16 +93,16 @@ final class SegmenterTests: XCTestCase {
         XCTAssertEqual(Segmenter.argmax(scores), 1)
     }
 
-    // MARK: Die Umrechnung der Maske
+    // MARK: Converting the mask
 
-    /// Dieselbe Falle wie bei der Instanzmaske: eine vertauschte Achse liefert Kästen,
-    /// die plausibel aussehen und am falschen Ding liegen.
+    /// The same trap as with the instance mask: a swapped axis delivers boxes that look
+    /// plausible and lie on the wrong thing.
     func testMaskBoxUsesTopLeftOrigin() throws {
         let side = 64
         let masks = try MLMultiArray(shape: [1, 3, NSNumber(value: side), NSNumber(value: side)],
                                      dataType: .float32)
         for i in 0 ..< masks.count { masks[i] = -10 }
-        // Ein Fleck oben links im Kanal 1.
+        // A blob at the top left in channel 1.
         for y in 0 ..< 16 {
             for x in 0 ..< 16 {
                 masks[1 * side * side + y * side + x] = 8

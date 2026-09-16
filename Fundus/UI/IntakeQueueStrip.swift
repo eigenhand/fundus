@@ -1,20 +1,21 @@
 import SwiftUI
 
-/// Die Reihe der laufenden Aufnahmen, als Streifen über der Handlungsleiste.
+/// The queue of running shots, as a strip above the action bar.
 ///
-/// Das ist die eine Ansicht, die aus „ein Foto nach dem anderen“ eine Werkbank macht.
-/// Vorher belegte jede Aufnahme den ganzen Bildschirm, bis sie durch war — wer zwölf
-/// Fotos von einem Regalgang mitbrachte, wartete zwölfmal. Jetzt liegt jedes Foto als
-/// Symbol in der Reihe, arbeitet für sich, und der Nutzer fotografiert weiter.
+/// This is the one view that turns "one photo after another" into a workbench. Before,
+/// every shot held the whole screen until it was through — whoever brought twelve
+/// photos back from a walk along a shelf waited twelve times. Now every photo sits in
+/// the queue as a thumbnail, works away on its own, and the user carries on taking
+/// pictures.
 ///
-/// Das Foto **ist** das Symbol, und zwar solange, bis es zugeordnet ist. Ein Name
-/// stünde dort nicht — den kennt ja noch niemand, das ist der Sinn der Sache. Ein
-/// Platzhalter wäre in der Reihe von zwölf gleich aussehenden Kacheln unbrauchbar:
-/// welches Regalbrett gemeint ist, weiß man am Bild in einer Zehntelsekunde und an
-/// „Aufnahme 7“ gar nicht.
+/// The photo **is** the thumbnail, and stays so until it has been assigned. A name
+/// could not stand there — nobody knows it yet, that is the whole point. A placeholder
+/// would be useless in a row of twelve identical-looking tiles: which shelf board is
+/// meant is something you know from the picture in a tenth of a second and from "shot
+/// 7" not at all.
 struct IntakeQueueStrip: View {
     @Environment(AppModel.self) private var model
-    /// Welchen Auftrag der Nutzer angetippt hat.
+    /// Which job the user tapped.
     @Binding var open: IntakeJob?
 
     var body: some View {
@@ -36,8 +37,8 @@ struct IntakeQueueStrip: View {
                     }
                     .padding(.vertical, 2)
                 }
-                // Der Streifen wächst nicht mit: bei zwanzig Aufträgen soll die Liste
-                // darunter nicht auf einen Spalt zusammenschrumpfen.
+                // The strip does not grow with it: at twenty jobs the list underneath
+                // should not shrink to a slit.
                 .frame(height: 62)
             }
             .padding(.horizontal, EH.gutter)
@@ -45,7 +46,7 @@ struct IntakeQueueStrip: View {
         }
     }
 
-    /// „3 in Arbeit · 2 zu prüfen“ — und nur die Teile, die es gerade gibt.
+    /// "3 running · 2 to check" — and only the parts that currently exist.
     private var summary: String {
         let busy = model.jobs.filter { $0.phase.isBusy }.count
         let waiting = model.jobs.filter { $0.phase.isWaiting }.count
@@ -95,8 +96,8 @@ struct IntakeQueueStrip: View {
         .accessibilityLabel(spoken(job))
     }
 
-    /// Was noch arbeitet, liegt unter einem Schleier. Was fertig ist, liegt frei —
-    /// das ist der Unterschied, den man im Vorbeigehen sehen muss.
+    /// What is still working lies under a veil. What is finished lies clear — that is
+    /// the difference you have to be able to see in passing.
     @ViewBuilder
     private func scrim(_ phase: IntakeJob.Phase) -> some View {
         switch phase {
@@ -145,7 +146,7 @@ struct IntakeQueueStrip: View {
         }
     }
 
-    /// Grau für „nichts drauf", rot nur für einen echten Fehlschlag.
+    /// Grey for "nothing on it", red only for a real failure.
     private func badgeTint(_ phase: IntakeJob.Phase) -> Color {
         switch phase {
         case .failed: return EH.bad

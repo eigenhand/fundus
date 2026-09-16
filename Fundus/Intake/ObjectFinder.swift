@@ -2,52 +2,52 @@ import CoreImage
 import UIKit
 import Vision
 
-/// Ein Gegenstand, den das Gerät im Bild als eigenes Ding erkannt hat.
+/// An object the device recognised in the picture as a thing in its own right.
 struct FoundObject: Identifiable, Equatable, Sendable {
     let id: Int
-    /// In Bildkoordinaten, 0…1, Ursprung oben links — wie SwiftUI rechnet.
+    /// In image coordinates, 0…1, origin top left — the way SwiftUI works.
     let box: CGRect
 
-    /// Wie weit die Mitte dieses Gegenstands von der Bildmitte entfernt ist.
+    /// How far the centre of this object is from the centre of the image.
     var distanceFromCentre: CGFloat {
         let dx = box.midX - 0.5, dy = box.midY - 0.5
         return sqrt(dx * dx + dy * dy)
     }
 }
 
-/// Findet die Gegenstände auf einem Foto, damit der Nutzer sie antippen kann.
+/// Finds the objects in a photo so that the user can tap them.
 ///
-/// Mit Apples Instanzmaske und nicht mit YOLO, und das ist keine Bequemlichkeit:
-/// Ultralytics steht unter AGPL-3.0. In ein Apache-2.0-Projekt lässt sich das nicht
-/// hineinnehmen — das ganze Ergebnis müsste dann unter AGPL stehen. Das wäre eine
-/// Entscheidung über das Projekt und nicht eine Abhängigkeit. Vor allem aber hilft
-/// die Klassenliste nicht — achtzig COCO-Klassen kennen `person`, `bottle` und
-/// `chair`, aber keinen Schrittmotor und keine Sortimentsbox. Was das Ding *ist*,
-/// sagt ohnehin das Modell, das das Foto liest. Hier wird nur gebraucht, **wo** die
-/// Dinge sind.
+/// With Apple's instance mask and not with YOLO, and that is not convenience:
+/// Ultralytics is under AGPL-3.0. It cannot be taken into an Apache-2.0 project — the
+/// whole result would then have to stand under the AGPL. That would be a decision
+/// about the project and not a dependency. Above all, though, the class list does not
+/// help — eighty COCO classes know `person`, `bottle` and `chair`, but no stepper
+/// motor and no assortment box. What the thing *is* is something the model reading the
+/// photo says anyway. All that is needed here is **where** the things are.
 ///
-/// Genau das kann `VNGenerateForegroundInstanceMaskRequest` seit iOS 17, auf dem
-/// Gerät, ohne Gewichte im Bundle: dieselbe Technik wie „Motiv ausschneiden" im
-/// Fotoalbum. Sie findet die auffälligen Gegenstände im Vordergrund — eine Handvoll,
-/// nicht vierzig Schrauben in einer Dose. Dafür ist sie auch nicht gedacht.
+/// That is exactly what `VNGenerateForegroundInstanceMaskRequest` has been able to do
+/// since iOS 17, on the device, without weights in the bundle: the same technique as
+/// "lift subject from background" in the photo library. It finds the prominent objects
+/// in the foreground — a handful, not forty screws in a tin. It is not meant for that
+/// either.
 enum ObjectFinder {
 
     private static let queue = DispatchQueue(label: "dev.eigenhand.fundus.objekte")
     private static let ciContext = CIContext(options: [.useSoftwareRenderer: false])
 
-    /// Wie viele Gegenstände angeboten werden.
+    /// How many objects are offered.
     ///
-    /// Mehr als eine Handvoll ist keine Auswahl mehr, sondern eine zweite Aufgabe —
-    /// und jeder angetippte Ausschnitt ist ein eigener, bezahlter Modellaufruf.
+    /// More than a handful stops being a choice and becomes a second task — and every
+    /// tapped cut-out is its own paid model call.
     static let maxObjects = 8
 
-    /// Die kürzeste Kante, aus der noch etwas zu lesen ist.
+    /// The shortest edge from which anything can still be read.
     ///
-    /// Ein Ausschnitt von dreissig Pixeln enthält keine Schrift mehr und keine Kante,
-    /// die ein Modell benennen könnte — ihn zu schicken hiesse, einen Aufruf zu
-    /// bezahlen und eine Vermutung zu bekommen. Die Zahl steht hier und nicht dreimal
-    /// im Code, weil auch die Oberfläche sie kennen muss: ein Kasten, aus dem hier
-    /// nichts wird, darf sich nicht erst beim Übernehmen in Luft auflösen.
+    /// A cut-out of thirty pixels holds no lettering any more and no edge a model
+    /// could name — sending it would mean paying for a call and getting a guess. The
+    /// number stands here and not three times over in the code, because the interface
+    /// has to know it too: a box that comes to nothing here must not dissolve into air
+    /// only at the moment of taking it over.
     static let minimumEdge = 64
 
     static func find(in image: UIImage) async -> [FoundObject] {
@@ -73,26 +73,25 @@ enum ObjectFinder {
                 forInstances: IndexSet(integer: instance), from: handler),
                   let box = box(of: mask)
             else { continue }
-            // Winzige Flecken sind Rauschen, kein Gegenstand — und ein Tippziel von
-            // zwei Prozent Bildfläche trifft ohnehin niemand.
+            // Tiny specks are noise, not objects — and nobody hits a tap target of two
+            // per cent of the image area anyway.
             guard box.width * box.height > 0.004 else { continue }
             found.append(FoundObject(id: instance, box: box))
         }
-        // Die grössten zuerst: was gross im Bild steht, ist meistens gemeint.
+        // Largest first: what stands large in the picture is usually what is meant.
         return Array(found.sorted { $0.box.width * $0.box.height > $1.box.width * $1.box.height }
             .prefix(maxObjects))
     }
 
-    /// Der umschliessende Kasten einer Maske, in 0…1 mit Ursprung oben links.
+    /// The bounding box of a mask, in 0…1 with the origin top left.
     ///
-    /// Die Maske wird vor dem Abtasten klein gerechnet. Ein Tippziel braucht keine
-    /// Pixelgenauigkeit, und ein Bild in voller Grösse Zeile für Zeile durchzugehen —
-    /// achtmal, einmal je Gegenstand — wäre der einzige Teil hier, den man spürt.
+    /// The mask is scaled down before it is scanned. A tap target needs no
+    /// pixel-accuracy, and walking a full-size image row by row — eight times, once
+    /// per object — would be the only part here that you would feel.
     ///
-    /// `internal`, weil die Umrechnung von unten-links nach oben-links genau die
-    /// Stelle ist, an der ein Vorzeichenfehler niemandem auffällt, bis die Rahmen im
-    /// Bild gespiegelt liegen. Dafür gibt es einen Test mit einer Maske, deren Fleck
-    /// man kennt.
+    /// `internal`, because converting from bottom-left to top-left is exactly the spot
+    /// where a sign error goes unnoticed until the frames lie mirrored in the picture.
+    /// There is a test for it with a mask whose blob is known.
     static func box(of mask: CVPixelBuffer) -> CGRect? {
         var ci = CIImage(cvPixelBuffer: mask)
         guard ci.extent.width > 0, ci.extent.height > 0 else { return nil }
@@ -132,17 +131,17 @@ enum ObjectFinder {
                       height: CGFloat(maxY - minY + 1) / CGFloat(h))
     }
 
-    /// Stellt einen Gegenstand frei: Umriss behalten, alles andere weiss.
+    /// Cuts an object free: keep the outline, everything else white.
     ///
-    /// Der Grund ist derselbe wie beim Zuschneiden überhaupt, nur eine Stufe weiter.
-    /// Ein Ausschnitt liest sich besser als ein Regal; ein freigestellter Gegenstand
-    /// liest sich besser als ein Ausschnitt, in dem noch das halbe Bett liegt. Was
-    /// weiss ist, lenkt nicht ab und wird nicht mitbeschrieben.
+    /// The reason is the same as for cropping at all, only one step further. A cut-out
+    /// reads better than a shelf; an object cut free reads better than a cut-out with
+    /// half the bed still in it. What is white does not distract and does not get
+    /// described along with the rest.
     ///
-    /// Der Rand von zwei Prozent ist kein Sicherheitsabstand, sondern Inhalt: eine
-    /// Maske sitzt auf der Kante, und genau auf der Kante steht oft, worauf es
-    /// ankommt — der Rand des Gehäuses, der Schatten, der ein Ding vom Untergrund
-    /// trennt. Geschnitten wird deshalb am **erweiterten** Umriss.
+    /// The margin of two per cent is not a safety distance but content: a mask sits on
+    /// the edge, and it is often exactly on the edge that what matters stands — the
+    /// rim of the housing, the shadow that separates a thing from what it lies on. The
+    /// cut is therefore made at the **widened** outline.
     static func cutOut(_ image: UIImage, object: SegmentedObject,
                        margin: CGFloat = 0.02) -> UIImage? {
         let base = image.scaledDown(maxEdge: 1_400)
@@ -151,13 +150,13 @@ enum ObjectFinder {
         let width = cg.width, height = cg.height
         guard width > 0, height > 0 else { return nil }
 
-        // Gleich weit in alle Richtungen, gemessen an der laengeren Kante — sonst
-        // bekaeme ein flaches Ding waagerecht viel mehr Rand als senkrecht.
+        // Equally far in every direction, measured against the longer edge — otherwise
+        // a flat thing would get much more margin horizontally than vertically.
         let reach = margin * max(object.box.width, object.box.height)
-        // Aufgerundet, und ohne Rand wirklich null. Die Maske hat 256 Pixel
-        // Kantenlaenge: zwei Prozent eines mittelgrossen Gegenstands sind darin
-        // anderthalb Pixel, und abgerundet waere der Rand genau dann verschwunden,
-        // wenn er verlangt wurde.
+        // Rounded up, and with no margin genuinely zero. The mask is 256 pixels along
+        // an edge: two per cent of a medium-sized object comes to one and a half
+        // pixels in it, and rounded down the margin would have vanished at exactly the
+        // moment it was asked for.
         let radius = margin > 0
             ? max(1, Int((reach * CGFloat(object.side)).rounded(.up)))
             : 0
@@ -189,8 +188,8 @@ enum ObjectFinder {
 
         for y in 0 ..< outHeight {
             let sourceY = top + y
-            // Die Maske ist quadratisch und steht fuer das ganze Bild — dieselbe
-            // lineare Umrechnung wie beim Kasten.
+            // The mask is square and stands for the whole image — the same linear
+            // conversion as for the box.
             let maskY = min(object.side - 1, (sourceY * object.side) / height)
             for x in 0 ..< outWidth {
                 let sourceX = left + x
@@ -219,11 +218,11 @@ enum ObjectFinder {
         return UIImage(cgImage: piece)
     }
 
-    /// Den Umriss nach aussen wachsen lassen.
+    /// Grow the outline outwards.
     ///
-    /// In zwei Durchgaengen statt einem Quadrat je Punkt: waagerecht, dann senkrecht.
-    /// Das Ergebnis ist dasselbe und die Arbeit waechst mit dem Radius statt mit
-    /// seinem Quadrat.
+    /// In two passes rather than a square per point: horizontally, then vertically.
+    /// The result is the same and the work grows with the radius rather than with its
+    /// square.
     static func dilate(_ bits: [UInt8], side: Int, radius: Int) -> [UInt8] {
         guard radius > 0, side > 0, bits.count == side * side else { return bits }
         var wide = [UInt8](repeating: 0, count: bits.count)
@@ -253,7 +252,7 @@ enum ObjectFinder {
         return out
     }
 
-    /// Der umschliessende Kasten einer Rohmaske, in 0…1 mit Ursprung oben links.
+    /// The bounding box of a raw mask, in 0…1 with the origin top left.
     static func bounds(of bits: [UInt8], side: Int) -> CGRect? {
         guard side > 0, bits.count == side * side else { return nil }
         var minX = side, minY = side, maxX = -1, maxY = -1
@@ -272,12 +271,12 @@ enum ObjectFinder {
                       height: CGFloat(maxY - minY + 1) / CGFloat(side))
     }
 
-    /// Schneidet einen Gegenstand aus dem Foto.
+    /// Cuts an object out of the photo.
     ///
-    /// Mit Rand, und der ist nicht Kosmetik: was das Modell braucht, um ein Bauteil zu
-    /// benennen, steht oft knapp daneben — der Aufdruck auf dem Gehäuse, der Stecker
-    /// am Kabel, die Beschriftung auf dem Deckel. Ein Ausschnitt genau an der Kante
-    /// schneidet das weg.
+    /// With a margin, and it is not cosmetic: what the model needs in order to name a
+    /// component often stands just beside it — the lettering on the housing, the plug
+    /// on the cable, the label on the lid. A cut-out exactly on the edge cuts that
+    /// away.
     static func crop(_ image: UIImage, to box: CGRect, margin: CGFloat = 0.08) -> UIImage? {
         let base = image.scaledDown(maxEdge: 1_400)
         guard let cg = base.cgImage else { return nil }
@@ -290,7 +289,7 @@ enum ObjectFinder {
                           width: (padded.width * w).rounded(),
                           height: (padded.height * h).rounded())
 
-        // Zu klein heisst: daraus liest auch das Modell nichts mehr.
+        // Too small means: the model will read nothing from it either.
         guard rect.width >= CGFloat(minimumEdge), rect.height >= CGFloat(minimumEdge),
               let piece = cg.cropping(to: rect) else { return nil }
         return UIImage(cgImage: piece)

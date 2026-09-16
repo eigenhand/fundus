@@ -1,16 +1,15 @@
 import UIKit
 
-/// Die Fotos, als Dateien neben dem Bestand.
+/// The photos, as files beside the inventory.
 ///
-/// Nicht im JSON: ein Bild als base64 im Bestand würde die Datei auf ein Vielfaches
-/// aufblähen, bei jedem Speichern mitgeschrieben und bei jedem Start mitgeladen
-/// werden — und Spind müsste den ganzen Bestand neu übertragen, weil ein Foto
-/// dazukam. Als Datei daneben ändert sich beim Fotografieren genau eine Datei.
+/// Not in the JSON: an image as base64 inside the inventory would blow the file up
+/// several times over, be written on every save and loaded on every start — and Spind
+/// would have to transfer the whole inventory again because one photo was added. As a
+/// file beside it, taking a photo changes exactly one file.
 ///
-/// Die Bilder sind der Beleg zu den Einträgen, die ein Modell geschrieben hat. Wer
-/// später vor dem Regal steht und die Zahl nicht wiederfindet, kann nachsehen, was
-/// das Modell gesehen hat. Deshalb werden sie behalten und nicht nach der Aufnahme
-/// verworfen.
+/// The images are the evidence for the entries a model wrote. Whoever stands in front
+/// of the shelf later and cannot find the number again can look at what the model saw.
+/// That is why they are kept and not discarded after the shot.
 enum PhotoStore {
     private static let dirName = "photos"
 
@@ -24,11 +23,12 @@ enum PhotoStore {
         dir.appendingPathComponent(id).appendingPathExtension("jpg")
     }
 
-    /// Legt ein Bild ab und gibt seine Kennung zurück.
+    /// Stores an image and returns its identifier.
     ///
-    /// Gespeichert wird die verkleinerte Fassung, dieselbe, die an das Modell geht:
-    /// ein Bestandsfoto ist ein Beleg, kein Bildarchiv, und die Originalauflösung
-    /// wäre pro Aufnahme ein Vielfaches an Platz im synchronisierten Ordner.
+    /// What gets stored is the scaled-down version, the same one that goes to the
+    /// model: an inventory photo is evidence, not a picture archive, and the original
+    /// resolution would be several times the space in the synchronised folder for every
+    /// shot.
     @discardableResult
     static func save(_ image: UIImage, maxEdge: CGFloat = 1_400,
                      quality: CGFloat = 0.8) -> String? {
@@ -47,12 +47,11 @@ enum PhotoStore {
         try? FileManager.default.removeItem(at: url(for: id))
     }
 
-    /// Fotos, auf die kein Eintrag mehr verweist.
+    /// Photos no entry points at any more.
     ///
-    /// Gelöscht wird nur auf Ansage. Ein Bild automatisch mitzuräumen, weil der
-    /// letzte Eintrag daraus gelöscht wurde, nimmt dem Nutzer den Beleg für eine
-    /// Entscheidung, die er gerade trifft — und wenn er sie rückgängig machen will,
-    /// ist das Bild dann weg.
+    /// Deleting only happens when asked for. Tidying an image away automatically
+    /// because the last entry from it was deleted takes away the evidence for a decision
+    /// the user is making right now — and if they want to undo it, the image is gone.
     static func orphans(keeping referenced: Set<String>) -> [String] {
         let files = (try? FileManager.default.contentsOfDirectory(atPath: dir.path)) ?? []
         return files

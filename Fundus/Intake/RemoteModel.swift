@@ -1,20 +1,20 @@
 import Foundation
 
-/// Ein Modell, das zur Laufzeit vom Netz kommt.
+/// A model that comes off the network at runtime.
 ///
-/// Beschreibt, **was** geladen wird; das Wie steht einmal hier und nicht in jedem
-/// Modell noch einmal. Zwei gibt es inzwischen — SAM 2.1 mit 80 MB fuer den
-/// Fingertipp und SAM 3.1 mit 1,7 GB fuer die Textsuche —, und ein zweiter Lader
-/// waere ein zweiter Ort, an dem das Fortsetzen kaputtgehen kann.
+/// Describes **what** gets downloaded; the how stands here once and not again in every
+/// model. There are two of them by now — SAM 2.1 at 80 MB for tapping and SAM 3.1 at
+/// 1.7 GB for the text search — and a second downloader would be a second place where
+/// resuming can break.
 struct RemoteModel: Sendable {
-    /// Der Ordner unter `eigenhand/`, in dem die Dateien liegen.
+    /// The folder under `eigenhand/` in which the files live.
     let folder: String
-    /// Das Verzeichnis auf Hugging Face, mit Schraegstrich am Ende.
+    /// The directory on Hugging Face, with a trailing slash.
     let source: String
-    /// Die Dateien, relativ zu beidem. Ein `.mlpackage` ist ein Verzeichnis und wird
-    /// Datei fuer Datei wieder zusammengesetzt.
+    /// The files, relative to both. An `.mlpackage` is a directory and gets reassembled
+    /// file by file.
     let files: [String]
-    /// Ungefaehr, fuer die Anzeige vor dem Download.
+    /// Approximate, for the display before the download.
     let approximateBytes: Int64
 
     var directory: URL {
@@ -32,11 +32,11 @@ struct RemoteModel: Sendable {
         return dir
     }
 
-    /// Ob alle Dateien da sind — und nicht nur angefangen.
+    /// Whether every file is there — and not merely begun.
     ///
-    /// Geprueft wird gegen die Groesse, die der Server nennt, und nicht nur auf
-    /// Vorhandensein: eine halb geladene `weight.bin` ist eine Datei, die es gibt, und
-    /// Core ML sagt dazu nur „konnte nicht geladen werden".
+    /// The check is against the size the server states and not merely for existence: a
+    /// half-downloaded `weight.bin` is a file that exists, and all Core ML says about
+    /// it is "could not be loaded".
     func isComplete(_ expected: [String: Int64]) -> Bool {
         files.allSatisfy { file in
             guard let size = Self.fileSize(url(for: file)) else { return false }
@@ -71,12 +71,12 @@ struct RemoteModel: Sendable {
         case failed(String)
     }
 
-    /// Laedt, was fehlt, und setzt fort, was angefangen ist.
+    /// Downloads what is missing and resumes what has been begun.
     ///
-    /// Fortsetzbar, und das ist kein Luxus: 67 MB ueber Mobilfunk reissen ab, und ein
-    /// Verwalter, der dann bei null anfaengt, ist der Unterschied zwischen „geht" und
-    /// „geht nie". `URLSession.download(from:)` kann das nicht von sich aus — deshalb
-    /// ein Range-Kopf und ein Anhaengen an die Datei, die schon daliegt.
+    /// Resumable, and that is not a luxury: 67 MB over mobile data breaks off, and a
+    /// manager that then starts from zero is the difference between "works" and "never
+    /// works". `URLSession.download(from:)` cannot do it by itself — hence a range
+    /// header and an append to the file that is already there.
     func download(onProgress: @escaping @Sendable (Progress) -> Void) async {
         var sizes: [String: Int64] = [:]
         for file in files {
@@ -92,7 +92,7 @@ struct RemoteModel: Sendable {
             return
         }
 
-        /// Was schon auf der Platte liegt, zaehlt als erledigt.
+        /// Whatever is already on disk counts as done.
         var settled = files.reduce(Int64(0)) { sum, file in
             sum + min(Self.fileSize(url(for: file)) ?? 0, sizes[file] ?? 0)
         }
@@ -103,7 +103,7 @@ struct RemoteModel: Sendable {
             let want = sizes[file] ?? 0
             let have = Self.fileSize(target) ?? 0
             if have == want, want > 0 { continue }
-            // Groesser als erwartet heisst: kaputt. Noch einmal von vorn.
+            // Larger than expected means: broken. Once more from the top.
             if have > want { try? FileManager.default.removeItem(at: target) }
             let from = have > want ? 0 : have
 
@@ -134,11 +134,11 @@ struct RemoteModel: Sendable {
         return http.expectedContentLength
     }
 
-    /// Eine Datei, ab Byte `offset`, angehaengt an das, was schon daliegt.
+    /// One file, from byte `offset` onwards, appended to what is already there.
     ///
-    /// Mit einem `URLSessionDownloadTask` und nicht mit `bytes(for:)`: der
-    /// Byte-Datenstrom laesst sich zwar elegant durchlaufen, aber bei 67 MB sind das
-    /// 67 Millionen `await`. Das kostet mehr Zeit als die Leitung.
+    /// With a `URLSessionDownloadTask` and not with `bytes(for:)`: the byte stream can
+    /// be walked elegantly enough, but at 67 MB that is 67 million `await`s. It costs
+    /// more time than the connection does.
     private func fetch(_ file: String, to target: URL, from offset: Int64,
                               onProgress: @escaping @Sendable (Int64) -> Void) async throws {
         guard let url = URL(string: source + file) else { throw ModelError.notConfigured }
@@ -156,8 +156,8 @@ struct RemoteModel: Sendable {
         guard (200 ... 299).contains(status) else {
             throw ModelError.http(status: status, body: "")
         }
-        // Beantwortet der Server den Bereich nicht, faengt er bei null an — dann darf
-        // nicht angehaengt werden, sonst steht die Datei zweimal hintereinander.
+        // If the server does not honour the range it starts at zero — then nothing may
+        // be appended, or the file ends up written twice in a row.
         let appending = offset > 0 && status == 206
 
         if appending, FileManager.default.fileExists(atPath: target.path) {
@@ -172,17 +172,17 @@ struct RemoteModel: Sendable {
     }
 }
 
-/// Ein Download mit Fortschritt, in async/await verpackt.
+/// A download with progress, wrapped in async/await.
 ///
-/// Der Umweg ueber einen Delegierten ist der Preis fuer beides zugleich: eine Datei,
-/// die auf die Platte geschrieben wird statt in den Speicher, und eine Zahl, die
-/// dabei mitlaeuft. `URLSession.download(for:)` kann nur das Erste.
+/// The detour through a delegate is the price for having both at once: a file written
+/// to disk rather than into memory, and a number that runs along with it.
+/// `URLSession.download(for:)` can only do the first.
 private final class FileDownload: NSObject, URLSessionDownloadDelegate, @unchecked Sendable {
     private let onProgress: @Sendable (Int64) -> Void
     private var continuation: CheckedContinuation<(URL, Int), Error>?
     private var session: URLSession?
-    /// Damit die Fortsetzung genau einmal ausgeloest wird — beide Rueckrufe koennen
-    /// kommen, und ein zweites `resume` ist ein Absturz, kein Fehler.
+    /// So that the continuation is resumed exactly once — both callbacks can arrive,
+    /// and a second `resume` is a crash, not an error.
     private var settled = false
     private let lock = NSLock()
 
@@ -219,8 +219,8 @@ private final class FileDownload: NSObject, URLSessionDownloadDelegate, @uncheck
     func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask,
                     didFinishDownloadingTo location: URL) {
         let status = (downloadTask.response as? HTTPURLResponse)?.statusCode ?? 0
-        // Die Datei an `location` wird nach der Rueckkehr geloescht — also weg damit,
-        // bevor der Rueckruf endet.
+        // The file at `location` is deleted once this returns — so move it before the
+        // callback ends.
         let keep = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString)
         do {

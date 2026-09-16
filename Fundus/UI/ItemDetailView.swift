@@ -1,11 +1,11 @@
 import SwiftUI
 
-/// Ein Ding, von nahem.
+/// One thing, close up.
 ///
-/// Der auffälligste Knopf ist „Gesehen“ und nicht „Speichern“. Speichern passiert
-/// von selbst — Änderungen laufen beim Verlassen des Feldes in den Bestand. Eine
-/// Sichtung ist die eine Handlung, die niemand automatisch erledigen kann, und die
-/// ganze Verlässlichkeit dieser App hängt daran, dass sie leicht ist.
+/// The most prominent button is "seen" and not "save". Saving happens by itself —
+/// changes run into the inventory when a field loses focus. A sighting is the one act
+/// nobody can carry out automatically, and the entire reliability of this app hangs on
+/// its being easy.
 struct ItemDetailView: View {
     let itemID: UUID
     @Environment(AppModel.self) private var model
@@ -21,7 +21,7 @@ struct ItemDetailView: View {
                 if let item = draft {
                     content(item)
                 } else {
-                    // Der Eintrag wurde gelöscht, während diese Ansicht offen war.
+                    // The entry was deleted while this view was open.
                     EmptyNote(label: "Nicht mehr da",
                               text: "Dieser Eintrag ist gelöscht.")
                 }
@@ -88,13 +88,13 @@ struct ItemDetailView: View {
         .padding(.bottom, 40)
     }
 
-    /// Die Nummer am Ding, und was eine Suche daraus gemacht hat.
+    /// The number on the thing, and what a search made of it.
     ///
-    /// Beides nebeneinander und nicht ineinander: die Nummer ist das Einzige an
-    /// einem Eintrag, das sich nachpruefen laesst, ohne das Ding in die Hand zu
-    /// nehmen. Wer spaeter vor dem Regal steht und etwas anderes findet, als hier
-    /// steht, sieht hier sofort, worauf sich die Behauptung stuetzte — die Nummer,
-    /// die Suchanfrage, die Quelle und das Datum.
+    /// The two side by side and not inside one another: the number is the only thing
+    /// about an entry that can be checked without picking the thing up. Whoever stands
+    /// in front of the shelf later and finds something other than what stands here sees
+    /// at once what the claim rested on — the number, the query, the source and the
+    /// date.
     private func codeCard(_ code: ItemCode) -> some View {
         HairlineCard {
             VStack(alignment: .leading, spacing: 10) {
@@ -152,12 +152,12 @@ struct ItemDetailView: View {
         }
     }
 
-    /// Die Kette in einer Zeile: wonach gesucht wurde, wie nah der Treffer lag, ob
-    /// jemand ihn bestätigt hat, und wann das war.
+    /// The chain in one line: what was searched for, how near the hit lay, whether
+    /// somebody confirmed it, and when that was.
     ///
-    /// „Nicht übernommen“ steht ausdrücklich da und in Warnfarbe. Ein Vorschlag, den
-    /// niemand angetippt hat, sieht sonst genauso aus wie einer, den jemand geprüft
-    /// hat — und der Unterschied ist das Einzige, was diese Zeile wert macht.
+    /// "Not taken over" stands there explicitly and in the warning colour. A suggestion
+    /// nobody tapped otherwise looks exactly like one somebody checked — and that
+    /// difference is the only thing that makes this line worth having.
     private func lookupTrail(_ lookup: CodeLookup, best: CodeCandidate) -> String {
         var parts = ["gesucht nach \(lookup.query)"]
         if !best.codeSeen.isEmpty {
@@ -174,7 +174,7 @@ struct ItemDetailView: View {
         return parts.joined(separator: " · ")
     }
 
-    /// Die Sichtung, ganz oben und als Karte.
+    /// The sighting, right at the top and as a card.
     private func seenCard(_ item: Item) -> some View {
         HairlineCard(fill: Freshness.of(item) == .seen ? EH.surface : EH.surfaceSunk) {
             HStack(spacing: 14) {
@@ -237,9 +237,8 @@ struct ItemDetailView: View {
                 get: { draft?.note ?? "" },
                 set: { draft?.note = $0 }), placeholder: "Farbe, Größe, Zustand …", axis: .vertical)
         }
-        // Beim Verlassen des Feldes schreiben, nicht bei jedem Tastendruck: sonst
-        // wirft jede Buchstabe den Vektor weg und stellt die Einbettung neu in die
-        // Warteschlange.
+        // Write when the field loses focus, not on every keystroke: otherwise every
+        // letter throws the vector away and puts the embedding back in the queue.
         .onDisappear(perform: commit)
     }
 
@@ -304,7 +303,7 @@ struct ItemDetailView: View {
         }
     }
 
-    /// Wer diesen Eintrag geschrieben hat, und wann.
+    /// Who wrote this entry, and when.
     private func provenance(_ item: Item) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(item.provenance.label.prefix(1).uppercased() + item.provenance.label.dropFirst())
@@ -330,8 +329,8 @@ struct ItemDetailView: View {
         guard var item = draft else { return }
         item.name = item.name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !item.name.isEmpty else {
-            // Ein Eintrag ohne Namen ist kein Eintrag. Statt ihn zu löschen — was
-            // der Nutzer nicht verlangt hat — den vorigen Namen zurückholen.
+            // An entry without a name is not an entry. Rather than deleting it — which
+            // the user did not ask for — bring the previous name back.
             draft = model.inventory.item(itemID)
             return
         }

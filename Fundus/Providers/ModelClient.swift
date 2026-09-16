@@ -6,9 +6,9 @@ enum ModelError: LocalizedError {
     case http(status: Int, body: String)
     case transport(String)
     case emptyAnswer
-    /// Das Modell lief in die Token-Grenze, bevor Text kam.
+    /// The model ran into the token limit before any text arrived.
     case truncated(limit: Int, reasoningChars: Int)
-    /// Das Modell hat nur nachgedacht und nichts geschrieben.
+    /// The model only thought and wrote nothing.
     case reasoningOnly(chars: Int)
     case notJSON(String)
 
@@ -17,17 +17,17 @@ enum ModelError: LocalizedError {
         case .notConfigured: return String(localized: "Kein Modell eingerichtet. Endpoint, Schlüssel und Modellname fehlen.")
         case .missingKey:    return String(localized: "Kein Schlüssel im Schlüsselbund hinterlegt.")
         case .http(let s, _) where ModelClient.isBusy(s):
-            // Nach drei Versuchen mit Wartepausen. „HTTP 429" plus JSON waere hier
-            // richtig und nutzlos: der Leser kann nichts damit anfangen, ausser dem,
-            // was in diesem Satz steht.
+            // After three attempts with waits in between. "HTTP 429" plus JSON would
+            // be correct here and useless: the reader can do nothing with it beyond
+            // what this sentence already says.
             return String(localized: "Der Anbieter drosselt gerade (HTTP \(s)) — auch nach zwei Wartepausen noch. Kurz warten hilft. Kommt es oft vor, in den Einstellungen unter „Aufnahme“ weniger Fotos gleichzeitig lesen lassen.")
         case .http(let s, let b):
             return String(localized: "HTTP \(s)\n\(Self.readable(b))")
         case .transport(let m): return String(localized: "Verbindungsfehler: \(m)")
         case .emptyAnswer:   return String(localized: "Das Modell hat keinen Text geliefert.")
         case .truncated(let limit, let thinking):
-            // Zwei ganze Saetze statt eines zusammengesetzten: Ein Katalog kennt nur
-            // ganze Schluessel, und im Englischen steht der Einschub woanders.
+            // Two whole sentences instead of one assembled from parts: a catalogue
+            // only knows whole keys, and in English the clause sits elsewhere.
             if thinking > 0 {
                 return String(localized: "Die Antwort wurde bei \(limit) Token abgeschnitten, bevor Text kam. Das Modell hat vorher \(thinking) Zeichen nachgedacht — Reasoning-Modelle brauchen die Token doppelt. In den Einstellungen mehr Ausgabetoken erlauben.")
             }
@@ -38,8 +38,8 @@ enum ModelError: LocalizedError {
         }
     }
 
-    /// Fehlertexte sind oft JSON in JSON. Den innersten menschlichen Satz
-    /// herausholen, statt dem Leser eine Wand aus Klammern zu zeigen.
+    /// Error texts are often JSON inside JSON. Pull out the innermost human sentence
+    /// rather than showing the reader a wall of brackets.
     static func readable(_ body: String) -> String {
         var current = body
         for _ in 0 ..< 3 {
@@ -57,29 +57,29 @@ enum ModelError: LocalizedError {
     }
 }
 
-/// Der ganze Netzverkehr dieser App: ein Bild hin, JSON zurück — und Vektoren, wenn
-/// die Suche über den Endpoint statt über das Gerät laufen soll.
+/// The entire network traffic of this app: an image out, JSON back — and vectors, when
+/// the search is to run over the endpoint rather than over the device.
 ///
-/// Bewusst nicht Fadens Anbieterschicht: die kann zwei Wire-Formate, Werkzeugaufrufe,
-/// Gedankengang und Token-Zählung, und davon braucht Fundus nichts. Neunhundert
-/// Zeilen Maschinerie für zwei Aufrufe mitzuschleppen hieße, sie in zwei Apps
-/// pflegen zu müssen, damit eine davon einen Bruchteil benutzt.
+/// Deliberately not Faden's provider layer: that one speaks two wire formats, tool
+/// calls, reasoning traces and token counting, and Fundus needs none of it. Dragging
+/// nine hundred lines of machinery along for two calls would mean maintaining it in
+/// two apps so that one of them could use a fraction.
 ///
-/// Gestreamt, obwohl die Antwort klein ist. Der Grund steht in Fadens Erfahrung: ein
-/// getesteter Anbieter beantwortete gestreamte Aufrufe in Sekunden, während
-/// nicht-gestreamte derselben Größe überhaupt nicht zurückkamen. Für eine Aufnahme,
-/// die hinter einer Kamera hängt, ist das der Unterschied zwischen langsam und
-/// kaputt — und der Fortschritt lässt sich nebenbei anzeigen.
+/// Streamed, even though the answer is small. The reason lies in Faden's experience:
+/// one provider under test answered streamed calls in seconds while non-streamed ones
+/// of the same size never came back at all. For a shot hanging behind a camera that is
+/// the difference between slow and broken — and the progress can be shown along the
+/// way.
 struct ModelClient {
     let config: ModelConfig
     let apiKey: String
 
     // MARK: Ein Bild lesen
 
-    /// Schickt Bild und Frage und gibt den vollständigen Antworttext zurück.
+    /// Sends the image and the question and returns the complete answer text.
     ///
-    /// `onDelta` bekommt jedes Stück, sobald es ankommt — die Oberfläche kann damit
-    /// zeigen, dass etwas passiert, statt einen Kreis zu drehen.
+    /// `onDelta` gets every piece as soon as it arrives — the interface can use it to
+    /// show that something is happening instead of turning a spinner.
     func read(imageJPEG: Data, prompt: String, system: String,
               onDelta: (@Sendable (String) -> Void)? = nil) async throws -> String {
         guard let url = config.endpointURL, !config.model.isEmpty else {
@@ -99,8 +99,8 @@ struct ModelClient {
             "max_tokens": config.maxOutputTokens,
             "stream": true,
         ]
-        // Niedrig, nicht null: bei Temperatur 0 verweigern einige Anbieter, und für
-        // eine Bestandsaufnahme ist Erfindungsreichtum das Letzte, was man will.
+        // Low, not zero: at temperature 0 some providers refuse, and for taking stock
+        // inventiveness is the last thing you want.
         body["temperature"] = 0.2
 
         return try await stream(url: url, body: body, onDelta: onDelta)
@@ -108,22 +108,22 @@ struct ModelClient {
 
     // MARK: Eine Frage ohne Bild
 
-    /// Für den zweiten Durchgang: aus Suchtreffern einen Namen destillieren.
+    /// For the second pass: distilling a name out of search hits.
     ///
-    /// Knapper begrenzt als das Lesen eines Fotos, weil die Antwort drei Felder hat.
-    /// Ein Reasoning-Modell darf trotzdem nachdenken — daher nicht auf ein paar
-    /// hundert Token gedeckelt, sondern auf ein Achtel des Vorrats.
-    /// Das Ausgabebudget für einen Nebenaufruf wie das Nachschlagen einer Kennung.
+    /// Bounded more tightly than reading a photo, because the answer has three fields.
+    /// A reasoning model may still think — hence no cap at a few hundred tokens but at
+    /// an eighth of the budget.
+    /// The output budget for a side call such as looking up an identifier.
     ///
-    /// Hier stand `maxOutputTokens / 8` — eine Sparmaßnahme für einen Aufruf, dessen
-    /// Antwort kurz ist. Sie hat das Nachschlagen zuverlässig zerstört, und zwar so,
-    /// dass man es nicht sah: ein Modell, das erst nachdenkt, verbraucht die 4 000
-    /// Token im Gedankengang und kommt nie zum Text. Gemessen an einer echten
-    /// Aufnahme: 70 Sekunden, 277 kB Denkspur, `finish_reason: length`, null Inhalt.
+    /// This used to read `maxOutputTokens / 8` — an economy measure for a call whose
+    /// answer is short. It reliably destroyed the lookup, and in a way you could not
+    /// see: a model that thinks first spends the 4,000 tokens on its reasoning and
+    /// never gets to the text. Measured against a real shot: 70 seconds, 277 kB of
+    /// reasoning trace, `finish_reason: length`, zero content.
     ///
-    /// Gespart hat das nichts. Die Token werden abgerechnet, ob am Ende ein Satz
-    /// steht oder nicht — ein gedeckelter Aufruf kostet dasselbe und liefert nur
-    /// kein Ergebnis. Das Budget ist deshalb dasselbe wie beim Lesen des Fotos.
+    /// That saved nothing. The tokens are billed whether a sentence stands at the end
+    /// or not — a capped call costs the same and simply delivers no result. The budget
+    /// is therefore the same as for reading the photo.
     static func sideCallBudget(_ configured: Int) -> Int { max(1_000, configured) }
 
     func ask(prompt: String, system: String) async throws -> String {
@@ -143,26 +143,26 @@ struct ModelClient {
         return try await stream(url: url, body: body, onDelta: nil)
     }
 
-    // MARK: Warten, wenn der Anbieter drosselt
+    // MARK: Waiting when the provider throttles
 
-    /// Zustaende, bei denen ein zweiter Versuch etwas bringt.
+    /// States in which a second attempt is worth something.
     ///
-    /// 429 heisst „zu viele Anfragen", 503 und 529 heissen „gerade ueberlastet".
-    /// Das sind Wartezeiten, keine Defekte — und der Unterschied ist hier neu wichtig
-    /// geworden: seit die Aufnahme eine Reihe ist, laufen mehrere Aufrufe
-    /// nebeneinander, und wer die Gleichzeitigkeit hochstellt, laeuft schneller in
-    /// eine Drosselung. Vorher ging dabei die Aufnahme verloren.
+    /// 429 means "too many requests", 503 and 529 mean "overloaded right now". Those
+    /// are waits, not defects — and the difference has newly come to matter here: since
+    /// shots became a queue, several calls run side by side, and whoever turns the
+    /// concurrency up runs into a throttle sooner. Before, the shot was lost when that
+    /// happened.
     static func isBusy(_ status: Int) -> Bool { status == 429 || status == 503 || status == 529 }
 
-    /// Hoechstens zwei Wartepausen, dann gilt es als Fehlschlag. Drei Versuche und
-    /// sechs Sekunden sind die Grenze dessen, was man stillschweigend aussitzen darf.
+    /// Two waits at most, then it counts as a failure. Three attempts and six seconds
+    /// are the limit of what may be sat out in silence.
     static let maxWaits = 2
 
-    /// Wie lange gewartet wird.
+    /// How long the wait is.
     ///
-    /// `Retry-After` zuerst, weil der Anbieter es besser weiss als jede Formel —
-    /// gedeckelt, damit ein Kopf mit „3600" nicht die App fuer eine Stunde anhaelt.
-    /// Sonst 2, dann 4 Sekunden.
+    /// `Retry-After` first, because the provider knows better than any formula —
+    /// capped, so that a header saying "3600" does not stop the app for an hour.
+    /// Otherwise 2, then 4 seconds.
     static func pause(retryAfter header: String?, attempt: Int) -> Double {
         if let header, let seconds = Double(header.trimmingCharacters(in: .whitespaces)),
            seconds > 0 {
@@ -192,8 +192,8 @@ struct ModelClient {
                 errorBody += line
                 if errorBody.count > 2_000 { break }
             }
-            // Drosselung: warten und noch einmal — mit demselben Modell. Auf ein
-            // anderes auszuweichen waere die falsche Antwort auf eine Wartezeit.
+            // Throttled: wait and try again — with the same model. Falling back on a
+            // different one would be the wrong answer to a wait.
             if Self.isBusy(http.statusCode), attempt < Self.maxWaits {
                 let seconds = Self.pause(
                     retryAfter: http.value(forHTTPHeaderField: "Retry-After"), attempt: attempt)
@@ -205,9 +205,9 @@ struct ModelClient {
         }
 
         var text = ""
-        // Mitgezaehlt, nicht gesammelt: der Gedankengang gehoert nicht in den Bestand,
-        // aber ohne ihn ist "keine Antwort" nicht von "nur nachgedacht" zu trennen —
-        // und genau diese beiden Faelle brauchen entgegengesetzte Abhilfe.
+        // Counted, not collected: the reasoning trace does not belong in the inventory,
+        // but without it "no answer" cannot be told apart from "only thought about it"
+        // — and those two cases need opposite remedies.
         var thinkingChars = 0
         var finishReason: String?
 
@@ -225,8 +225,8 @@ struct ModelClient {
             if let reason = choice["finish_reason"] as? String { finishReason = reason }
             guard let delta = choice["delta"] as? [String: Any] else { continue }
 
-            // Anbieter benennen den Gedankengang unterschiedlich; beide Schreibweisen
-            // sind im Umlauf.
+            // Providers name the reasoning trace differently; both spellings are in
+            // circulation.
             for key in ["reasoning_content", "reasoning"] {
                 if let t = delta[key] as? String { thinkingChars += t.count }
             }
@@ -238,8 +238,8 @@ struct ModelClient {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard trimmed.isEmpty else { return trimmed }
 
-        // Ohne Text: sagen, warum. "Das Modell hat nichts geliefert" schickt den
-        // Nutzer sonst auf die Suche nach einem Fehler, den es nicht gibt.
+        // Without text: say why. "The model delivered nothing" would otherwise send the
+        // user looking for a fault that does not exist.
         if finishReason == "length" {
             throw ModelError.truncated(limit: config.maxOutputTokens,
                                        reasoningChars: thinkingChars)
@@ -248,7 +248,7 @@ struct ModelClient {
         throw ModelError.emptyAnswer
     }
 
-    // MARK: Vektoren über den Endpoint
+    // MARK: Vectors over the endpoint
 
     func embed(_ texts: [String], search: SearchConfig) async throws -> [[Float]] {
         guard !texts.isEmpty else { return [] }
@@ -257,7 +257,7 @@ struct ModelClient {
         else { throw ModelError.notConfigured }
 
         var out: [[Float]] = []
-        // In Häppchen, die jeder Endpoint annimmt.
+        // In helpings that every endpoint accepts.
         for chunk in texts.chunked(into: 32) {
             var request = URLRequest(url: url)
             request.httpMethod = "POST"
@@ -293,8 +293,8 @@ struct ModelClient {
     }
 }
 
-/// Gemeinsame URLSession mit großzügigen Zeitgrenzen — ein Modell, das ein Regalfoto
-/// liest, braucht länger als eine Textantwort.
+/// A shared URLSession with generous timeouts — a model reading a photo of a shelf
+/// takes longer than a text answer.
 enum Net {
     static let session: URLSession = {
         let c = URLSessionConfiguration.default
@@ -314,13 +314,11 @@ extension Array {
     }
 }
 
-/// Holt ein JSON-Objekt aus einer Antwort, die es in Prosa oder einen Codeblock
-/// gepackt hat.
+/// Pulls a JSON object out of an answer that has wrapped it in prose or a code block.
 ///
-/// Übernommen aus Faden, wo dieselbe Aufgabe bei der Wissensgraph-Extraktion steht:
-/// Modelle halten sich nicht zuverlässig an „antworte nur mit JSON“, und eine
-/// Aufnahme an einem `​```json` zu verlieren wäre ein bezahlter Modellaufruf für
-/// nichts.
+/// Taken over from Faden, where the same job stands at the knowledge-graph extraction:
+/// models do not reliably keep to "answer with JSON only", and losing a shot to a
+/// `​```json` would be a paid model call for nothing.
 enum JSONSnippet {
     static func firstObject(in s: String) -> [String: Any]? {
         if let data = s.data(using: .utf8),

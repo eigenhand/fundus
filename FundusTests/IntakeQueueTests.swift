@@ -1,19 +1,19 @@
 import XCTest
 @testable import Fundus
 
-/// Die Reihe und ihre Arbeiter.
+/// The queue and its workers.
 ///
-/// Geprüft wird hier fast nur eine Funktion, und die lohnt jede Zeile: an ihr hängt,
-/// wie viele bezahlte Aufrufe gleichzeitig unterwegs sind. Zu viele kosten Geld und
-/// holen eine Drosselung, zu wenige lassen den Nutzer warten — und ein Auftrag, der
-/// im Prüfschritt liegen bleibt, darf keinen Arbeiter festhalten, sonst blockiert ein
-/// Foto, das jemand liegen lässt, den ganzen Rest.
+/// What gets checked here is almost one single function, and it is worth every line:
+/// how many paid calls are in flight at once hangs on it. Too many cost money and earn
+/// a throttle, too few keep the user waiting — and a job left lying in the checking
+/// step must not hold on to a worker, or one photo somebody leaves lying blocks all the
+/// rest.
 @MainActor
 final class IntakeQueueTests: XCTestCase {
 
     private typealias Phase = IntakeJob.Phase
 
-    // MARK: Wer als Nächstes darf
+    // MARK: Who goes next
 
     func testStartsUpToTheConcurrency() {
         let waiting: [Phase] = [.waiting, .waiting, .waiting, .waiting]
@@ -29,9 +29,9 @@ final class IntakeQueueTests: XCTestCase {
         XCTAssertEqual(IntakeSchedule.startable(phases, concurrency: 3), [2])
     }
 
-    /// Der Kern der Sache: ein fertiger Auftrag wartet auf den Menschen, nicht auf
-    /// Rechenzeit. Hielte er einen Arbeiter, würde ein Foto, das jemand offen lässt,
-    /// die Reihe anhalten — und genau das soll die Reihe ja verhindern.
+    /// The heart of it: a finished job waits for the person, not for processing time.
+    /// If it held a worker, a photo somebody leaves open would stop the queue — which
+    /// is exactly what the queue is there to prevent.
     func testFinishedJobsDoNotHoldAWorker() {
         let phases: [Phase] = [.review, .failed("kaputt"), .empty, .waiting, .waiting]
         XCTAssertEqual(IntakeSchedule.startable(phases, concurrency: 2), [3, 4])
@@ -48,8 +48,8 @@ final class IntakeQueueTests: XCTestCase {
         XCTAssertTrue(IntakeSchedule.startable([.review, .review], concurrency: 4).isEmpty)
     }
 
-    /// Eine 0 aus einer kaputten Ablage hieße „nie wieder ein Foto lesen“, eine 99
-    /// wäre ein Schwarm auf den Anbieter.
+    /// A 0 out of a broken store would mean "never read a photo again", a 99 would be a
+    /// swarm against the provider.
     func testConcurrencyIsClamped() {
         let waiting: [Phase] = Array(repeating: .waiting, count: 10)
         XCTAssertEqual(IntakeSchedule.startable(waiting, concurrency: 0).count, 1)
@@ -69,9 +69,9 @@ final class IntakeQueueTests: XCTestCase {
         XCTAssertFalse(Phase.failed("x").isBusy)
     }
 
-    /// Ein Foto ohne Bestand ist kein Fehlschlag. Beides gleich zu zeigen bringt dem
-    /// Nutzer bei, das rote Zeichen zu übersehen — und dann sieht er den echten
-    /// Fehlschlag auch nicht mehr.
+    /// A photo with no inventory in it is not a failure. Showing both the same way
+    /// teaches the user to overlook the red mark — and then they stop seeing the real
+    /// failure too.
     func testAPhotoWithoutInventoryIsNotAFailure() {
         XCTAssertNotEqual(Phase.empty, Phase.failed("Auf dem Bild war nichts Bestandsfähiges zu erkennen."))
         let j = job()
@@ -92,8 +92,8 @@ final class IntakeQueueTests: XCTestCase {
         return IntakeJob(image: image, placeID: nil, hint: "")
     }
 
-    /// Zwölf Handyfotos in voller Auflösung sind einige hundert Megabyte, für Pixel,
-    /// die weder das Modell noch der Beleg je sieht.
+    /// Twelve phone photos at full resolution are several hundred megabytes, for pixels
+    /// that neither the model nor the evidence ever sees.
     func testImageIsScaledDownWhenQueued() {
         let j = job(3_000)
         XCTAssertLessThanOrEqual(max(j.image.size.width, j.image.size.height), 1_400)
@@ -117,8 +117,8 @@ final class IntakeQueueTests: XCTestCase {
         XCTAssertEqual(j.badge, "!")
     }
 
-    /// Der Knopf im Prüfschritt hiess „Nichts übernehmen" und war abgeschaltet. Wer
-    /// alles abwählte, um die Aufnahme loszuwerden, sass fest.
+    /// The button in the checking step read "take over nothing" and was disabled.
+    /// Whoever unticked everything to be rid of the shot was stuck.
     func testDeselectingEverythingOffersToDiscard() {
         let j = job()
         j.result.proposals = [Proposal(name: "a"), Proposal(name: "b")]
@@ -135,7 +135,7 @@ final class IntakeQueueTests: XCTestCase {
                        "Die Beschriftung muss sagen, was der Knopf tut.")
     }
 
-    /// Auch eine Aufnahme ganz ohne Vorschläge muss sich wegtippen lassen.
+    /// A shot with no suggestions at all has to be dismissible by tapping too.
     func testAnEmptyResultCanBeDiscarded() {
         let j = job()
         j.phase = .review
@@ -144,8 +144,8 @@ final class IntakeQueueTests: XCTestCase {
 
     // MARK: Der Sucher
 
-    /// Wer einen Keller abgeht, stellt einmal auf Doku und will das nicht bei jedem
-    /// Regal wieder tun.
+    /// Whoever walks through a cellar switches to documentation once and does not want
+    /// to do it again at every shelf.
     func testCaptureModeIsRemembered() throws {
         var settings = AppSettings()
         XCTAssertEqual(settings.captureMode, .single, "Das gewohnte Verhalten ist die Vorgabe.")
@@ -156,11 +156,11 @@ final class IntakeQueueTests: XCTestCase {
         XCTAssertEqual(back.captureMode, .doku)
     }
 
-    /// Ein Bestand aus der Zeit vor dem Sucher, und eine Ablage mit einem Modus, den
-    /// es nicht gibt — beides darf nicht dazu führen, dass die App nicht startet.
+    /// An inventory from before the viewfinder, and a store with a mode that does not
+    /// exist — neither may stop the app from starting.
     ///
-    /// Der zweite Fall war es, der den Fehler in `decodeIfPresent` ans Licht gebracht
-    /// hat: er warf, statt auf die Vorgabe zu fallen, und riss die ganze Datei mit.
+    /// It was the second case that brought the bug in `decodeIfPresent` to light: it
+    /// threw instead of falling back on the default, and took the whole file with it.
     func testUnknownOrMissingCaptureModeFallsBack() throws {
         func decode(_ json: String) throws -> AppSettings {
             try JSONDecoder().decode(AppSettings.self, from: Data(json.utf8))
@@ -168,7 +168,7 @@ final class IntakeQueueTests: XCTestCase {
         XCTAssertEqual(try decode("{}").captureMode, .single)
         XCTAssertEqual(try decode(#"{"captureMode":"zeitraffer"}"#).captureMode, .single)
 
-        // Und der eigentliche Punkt: der Rest der Datei überlebt es.
+        // And the actual point: the rest of the file survives it.
         let mixed = try decode(#"{"captureMode":"zeitraffer","intakeConcurrency":5}"#)
         XCTAssertEqual(mixed.intakeConcurrency, 5,
                        "Ein unbekannter Modus darf nicht die übrigen Einstellungen kosten.")

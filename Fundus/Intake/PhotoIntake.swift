@@ -1,30 +1,30 @@
 import UIKit
 
-/// Was aus einem Foto herauskam.
+/// What came out of a photo.
 struct IntakeResult: Equatable {
     var proposals: [Proposal] = []
-    /// Dinge, die das Modell gesehen, aber nicht bestimmen konnte. Steht dem Nutzer
-    /// im Prüfschritt vor Augen, damit er weiß, wo er selbst nachsehen muss.
+    /// Things the model saw but could not identify. It stands in front of the user in
+    /// the checking step so that they know where to look themselves.
     var unreadable: [String] = []
-    /// Welches Modell gelesen hat. Wandert in die Herkunft jedes angenommenen
-    /// Eintrags.
+    /// Which model did the reading. Travels into the provenance of every accepted
+    /// entry.
     var model: String = ""
-    /// Was das Gerät selbst aus Strichcodes entziffert hat. Steht im Prüfschritt
-    /// auch dann zur Verfügung, wenn das Modell keinen davon zugeordnet hat.
+    /// What the device itself deciphered from barcodes. Available in the checking step
+    /// even when the model assigned none of them.
     var scannedCodes: [ItemCode] = []
 
     var isEmpty: Bool { proposals.isEmpty && unreadable.isEmpty }
 }
 
-/// Ein Foto in Vorschläge verwandeln.
+/// Turning a photo into suggestions.
 ///
-/// Der Name des Typs sagt es schon: Vorschläge. Nichts aus dieser Datei landet im
-/// Bestand, ohne dass der Nutzer es bestätigt hat. Das ist die wichtigste
-/// Entscheidung der ganzen App und keine Höflichkeit — ein Modell, das ein Regal
-/// liest, verzählt sich, fasst zusammen und liest Etiketten falsch. Ein Bestand, der
-/// Modellausgabe stillschweigend aufnimmt, ist schlechter als keiner, weil man ihm
-/// glaubt. Der Prüfschritt ist der Preis dafür, dass man der App vertrauen kann, und
-/// er ist billig: eine Liste mit Häkchen, zehn Sekunden.
+/// The name of the type says it already: suggestions. Nothing from this file lands in
+/// the inventory without the user having confirmed it. That is the most important
+/// decision in the whole app and not a courtesy — a model reading a shelf miscounts,
+/// lumps things together and reads labels wrong. An inventory that silently takes in
+/// model output is worse than none, because it gets believed. The checking step is the
+/// price of being able to trust the app, and it is cheap: a list with ticks, ten
+/// seconds.
 struct PhotoIntake {
     let client: ModelClient
 
@@ -34,9 +34,8 @@ struct PhotoIntake {
             throw ModelError.transport("Das Bild ließ sich nicht aufbereiten.")
         }
 
-        // Vor dem bezahlten Aufruf: die Strichcodes entziffert das Gerät selbst.
-        // Kostet nichts, braucht keine Leitung, und das Ergebnis ist richtig statt
-        // wahrscheinlich.
+        // Before the paid call: the device deciphers the barcodes itself. Costs
+        // nothing, needs no connection, and the result is correct rather than likely.
         let scanned = await BarcodeScanner.scan(image)
 
         let reply = try await client.read(
@@ -55,13 +54,12 @@ struct PhotoIntake {
         return result
     }
 
-    /// Nachsichtig gelesen, weil die Antwort von einem beliebigen Modell kommt.
+    /// Read leniently, because the answer comes from an arbitrary model.
     ///
-    /// `quantity` kann als Zahl, als Zeichenkette („8“), als Fließkommazahl oder als
-    /// `null` erscheinen; Modelle sind da nicht einheitlich, und einen Fund an einem
-    /// Anführungszeichen zu verlieren wäre ein bezahlter Aufruf für nichts. Was
-    /// dagegen nicht nachsichtig behandelt wird, ist ein fehlender Name: ein Eintrag
-    /// ohne Namen ist kein Eintrag.
+    /// `quantity` can turn up as a number, as a string ("8"), as a floating-point value
+    /// or as `null`; models are not consistent about it, and losing a find to a
+    /// quotation mark would be a paid call for nothing. What is *not* treated leniently
+    /// is a missing name: an entry without a name is not an entry.
     static func parse(_ object: [String: Any],
                       scannedCodes: [ItemCode] = []) -> IntakeResult {
         var result = IntakeResult()
@@ -78,9 +76,9 @@ struct PhotoIntake {
             proposal.code = code(from: raw, scannedValues: scannedValues,
                                  scannedCodes: scannedCodes)
 
-            // Das Modell nennt dasselbe Ding manchmal zweimal — zwei Fächer, ein
-            // Blick. Zusammenlegen statt zwei Häkchen anbieten, die derselbe Eintrag
-            // sind: der Nutzer soll im Prüfschritt Dinge sehen, nicht Zeilen.
+            // The model sometimes names the same thing twice — two compartments, one
+            // glance. Merge rather than offering two ticks that are the same entry: in
+            // the checking step the user should see things, not rows.
             if let i = result.proposals.firstIndex(where: {
                 Item.normalise($0.name) == Item.normalise(name)
             }) {
@@ -104,14 +102,14 @@ struct PhotoIntake {
         return result
     }
 
-    /// Die Kennung eines Eintrags, mit dem Sicherheitsnetz gegen erfundene EANs.
+    /// The identifier of an entry, with the safety net against invented EANs.
     ///
-    /// Nennt das Modell eine Nummer, die das Gerät selbst dekodiert hat, gilt sie als
-    /// `scanned` — dann ist sie belegt. Nennt es eine EAN, die **nicht** unter den
-    /// dekodierten ist, ist das kein Fund, sondern eine erfundene Ziffernfolge: einen
-    /// Strichcode kann man nicht mit den Augen lesen. Solche werden verworfen.
-    /// Herstellernummern und Seriennummern dagegen stehen als Klartext auf dem Ding
-    /// und dürfen abgelesen werden — sie behalten `origin: .read`.
+    /// If the model names a number the device decoded itself, it counts as `scanned` —
+    /// then it is attested. If it names an EAN that is **not** among the decoded ones,
+    /// that is not a find but an invented row of digits: a barcode cannot be read by
+    /// eye. Those get discarded. Manufacturer part numbers and serial numbers, by
+    /// contrast, stand in plain text on the thing and may be read — they keep
+    /// `origin: .read`.
     static func code(from raw: [String: Any], scannedValues: Set<String>,
                      scannedCodes: [ItemCode]) -> ItemCode? {
         let value = string(raw["code"])
@@ -121,9 +119,9 @@ struct PhotoIntake {
 
         let kind = kind(from: string(raw["code_type"]))
         if kind == .ean || kind == .upc {
-            // Eine EAN, die der Dekoder nicht gesehen hat, hat das Modell erfunden
-            // oder von den Ziffern unter den Balken abgeschrieben — und gerade dort
-            // ist eine verwechselte Ziffer nicht zu bemerken.
+            // An EAN the decoder did not see was either invented by the model or copied
+            // from the digits under the bars — and it is precisely there that a
+            // confused digit goes unnoticed.
             guard scannedValues.contains(value) else { return nil }
         }
         return ItemCode(value: value, kind: kind, origin: .read)
@@ -147,9 +145,9 @@ struct PhotoIntake {
         switch any {
         case let n as Int: return n > 0 ? n : nil
         case let d as Double:
-            // Eine Kommazahl als Stückzahl ist ein Missverständnis des Modells, kein
-            // Wert. Abgeschnitten statt gerundet: aus 2,7 Dosen werden 2 sichere,
-            // nicht 3 behauptete.
+            // A decimal as a piece count is a misunderstanding on the model's part, not
+            // a value. Truncated rather than rounded: 2.7 tins become 2 certain ones,
+            // not 3 asserted ones.
             let i = Int(d)
             return i > 0 ? i : nil
         case let s as String:

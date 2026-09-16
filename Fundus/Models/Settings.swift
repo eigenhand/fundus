@@ -1,29 +1,29 @@
 import Foundation
 
-/// Alles, was Fundus braucht, um mit einem Modell zu sprechen.
+/// Everything Fundus needs in order to talk to a model.
 ///
-/// Dieselbe Prämisse wie bei Faden: die App bringt keine Infrastruktur mit. Endpoint,
-/// Schlüssel und Modellname kommen vom Nutzer. Anders als Faden braucht Fundus davon
-/// nur einen Bruchteil — ein Bild hin, JSON zurück — deshalb steht hier kein
-/// Wire-Format zur Wahl. Das OpenAI-kompatible Format spricht praktisch jeder
-/// Anbieter, und für den einen Aufruf, den diese App macht, wäre eine zweite
-/// Übersetzung Aufwand ohne Gegenwert.
+/// The same premise as in Faden: the app brings no infrastructure of its own.
+/// Endpoint, key and model name come from the user. Unlike Faden, Fundus needs only a
+/// fraction of that — an image out, JSON back — which is why there is no wire format
+/// to choose here. Practically every provider speaks the OpenAI-compatible format,
+/// and for the one call this app makes, a second translation would be effort without
+/// return.
 struct ModelConfig: Codable, Equatable {
     var baseURL: String = ""
     var path: String = "/v1/chat/completions"
     var model: String = ""
-    /// Nur der Verweis. Der Schlüssel selbst liegt im Schlüsselbund.
+    /// Only the reference. The key itself lives in the keychain.
     var keychainAccount: String = "fundus.model.key"
-    /// Grosszuegig, und das ist eine Lehre aus dem ersten Testflug.
+    /// Generous, and that is a lesson from the first test flight.
     ///
-    /// 4 000 waren zu wenig: ein Reasoning-Modell wie `glm-5.3-flash` denkt ueber ein
-    /// Foto mit vierzig Teilen laenger nach, als es danach zu schreiben hat, und lief
-    /// in die Grenze, bevor das erste JSON-Zeichen kam. Herausgekommen ist eine leere
-    /// Antwort — teuer bezahlt und nicht als Grenze erkennbar. Ausgabetoken werden
-    /// nur berechnet, wenn sie anfallen; ein hohes Limit kostet nichts, ein zu
-    /// niedriges kostet die ganze Aufnahme.
+    /// 4,000 was too little: a reasoning model like `glm-5.3-flash` thinks longer
+    /// about a photo with forty parts in it than it then has to write, and ran into
+    /// the limit before the first JSON character arrived. What came out was an empty
+    /// answer — paid for dearly and not recognisable as a limit. Output tokens are
+    /// only billed when they occur; a high limit costs nothing, one that is too low
+    /// costs the whole shot.
     var maxOutputTokens: Int = 32_000
-    /// Zusätzliche Kopfzeilen, etwa `HTTP-Referer` für OpenRouter.
+    /// Extra headers, such as `HTTP-Referer` for OpenRouter.
     var extraHeaders: [String: String] = [:]
 
     var endpointURL: URL? {
@@ -46,9 +46,9 @@ struct ModelConfig: Codable, Equatable {
         path            = try c.decodeIfPresent(String.self, forKey: .path) ?? d.path
         model           = try c.decodeIfPresent(String.self, forKey: .model) ?? ""
         keychainAccount = try c.decodeIfPresent(String.self, forKey: .keychainAccount) ?? d.keychainAccount
-        // Gespeicherte 4 000 stammen aus der ersten Fassung und waren nie eine Wahl,
-        // sondern eine zu knappe Voreinstellung. Wer sie noch liegen hat, bekaeme
-        // sonst denselben Fehlschlag nach jedem Update wieder.
+        // A stored 4,000 comes from the first version and was never a choice, only a
+        // default that was too tight. Anyone still carrying it would otherwise get the
+        // same failure back after every update.
         let storedTokens = try c.decodeIfPresent(Int.self, forKey: .maxOutputTokens)
         maxOutputTokens = (storedTokens == nil || storedTokens == 4000)
             ? d.maxOutputTokens : storedTokens!
@@ -56,16 +56,16 @@ struct ModelConfig: Codable, Equatable {
     }
 }
 
-/// Die Websuche, mit der Kennungen aufgelöst werden.
+/// The web search that resolves identifiers.
 ///
-/// Aus, solange nichts eingetragen ist. Das ist kein Vorsichtsgestus, sondern die
-/// Prämisse dieser App: sie bringt keine Infrastruktur mit, und eine Suche, die
-/// stillschweigend über einen fremden Dienst liefe, wäre genau das.
+/// Off as long as nothing has been entered. That is not a gesture of caution but the
+/// premise of this app: it brings no infrastructure of its own, and a search running
+/// silently over somebody else's service would be exactly that.
 struct LookupConfig: Codable, Equatable {
     var enabled: Bool = false
-    /// Voreingestellt auf Brave, weil Faden ihn schon spricht und ein Schlüssel im
-    /// Haushalt für beide reicht. Jeder Dienst, der JSON mit Titel, URL und
-    /// Beschreibung liefert, geht auch.
+    /// Preset to Brave because Faden already speaks it and one key in the household is
+    /// enough for both. Any service that returns JSON with title, URL and description
+    /// works too.
     var url: String = "https://api.search.brave.com/res/v1/web/search"
     var queryParam: String = "q"
     var keyHeader: String = "X-Subscription-Token"
@@ -89,39 +89,39 @@ struct LookupConfig: Codable, Equatable {
     }
 }
 
-/// Woher die Vektoren für die Suche kommen.
+/// Where the vectors for the search come from.
 struct SearchConfig: Codable, Equatable {
     enum Source: String, Codable, CaseIterable {
-        /// Apples Modell auf dem Gerät. Die Voreinstellung hier — anders als bei
-        /// Faden, und mit Grund: ein Bestand wird im Keller durchsucht, und ein
-        /// Suchfeld, das ohne Empfang nichts findet, ist in genau dem Moment kaputt,
-        /// in dem man es braucht. Die 108 MB sind der Preis dafür.
+        /// Apple's model on the device. The default here — unlike in Faden, and for a
+        /// reason: an inventory gets searched in the cellar, and a search field that
+        /// finds nothing without reception is broken at exactly the moment you need
+        /// it. The 108 MB are the price of that.
         case onDevice
-        /// Über den Endpoint des Nutzers. Genauer, kostet aber eine Leitung.
+        /// Over the user's endpoint. More accurate, but it costs a connection.
         case endpoint
     }
     var source: Source = .onDevice
 
     var embeddingPath: String = "/v1/embeddings"
     var embeddingModel: String = ""
-    /// Leer heißt: derselbe Endpoint und Schlüssel wie fürs Lesen der Fotos.
+    /// Empty means: the same endpoint and key as for reading the photos.
     var embeddingBaseURL: String = ""
 
-    /// Ab welcher Ähnlichkeit ein Treffer überhaupt gezeigt wird.
+    /// The similarity at which a hit is shown at all.
     ///
-    /// 0,18 nach dem Zentrieren. Vor dem Zentrieren liegen beim lokalen Modell alle
-    /// Werte über 0,95 und ein Schwellwert filtert nichts; nach dem Abzug des
-    /// Mittelvektors verteilen sie sich wieder über den Bereich, in dem eine Grenze
-    /// etwas bedeutet.
+    /// 0.18 after centring. Before centring, every value from the local model lies
+    /// above 0.95 and a threshold filters nothing; after the mean vector has been
+    /// subtracted they spread out again over the range in which a limit means
+    /// something.
     var minimumSimilarity: Double = 0.18
-    /// Wie viele Ähnlichkeitstreffer höchstens unter die Namenstreffer kommen.
+    /// How many similarity hits may appear below the name hits at most.
     var maxSemanticHits: Int = 12
 
-    /// Der Name, der als Herkunft an jedem Vektor steht.
+    /// The name that stands on every vector as its origin.
     ///
-    /// Nicht `embeddingModel`: auf dem Gerät gibt es kein Feld, in das jemand einen
-    /// Namen tippt, und der Stempel braucht trotzdem einen — sonst ließen sich die
-    /// beiden Quellen nicht auseinanderhalten, und genau dafür ist er da.
+    /// Not `embeddingModel`: on the device there is no field for anybody to type a
+    /// name into, and the stamp still needs one — otherwise the two sources could not
+    /// be told apart, and telling them apart is exactly what it is for.
     var effectiveModel: String {
         switch source {
         case .onDevice: return LocalEmbedder.modelIdentifier
@@ -129,13 +129,13 @@ struct SearchConfig: Codable, Equatable {
         }
     }
 
-    /// Ob die Ähnlichkeiten vor dem Vergleich zentriert werden müssen.
+    /// Whether the similarities have to be centred before they are compared.
     ///
-    /// Beim lokalen Modell liegen alle Kosinuswerte über 0,95 — gemessen in Faden:
-    /// Hund zu „Welches Haustier habe ich?“ 0,979, Auto zur selben Frage 0,970. Die
-    /// Rangfolge stimmt noch, aber ein Schwellwert filtert nichts mehr. Den
-    /// Mittelvektor des Bestands abzuziehen ist das übliche Mittel dagegen und
-    /// stellt die Bedeutung der Grenze wieder her.
+    /// With the local model every cosine value lies above 0.95 — measured in Faden:
+    /// dog against "which pet do I have?" 0.979, car against the same question 0.970.
+    /// The ranking is still right, but a threshold no longer filters anything.
+    /// Subtracting the mean vector of the inventory is the usual remedy and restores
+    /// the meaning of the limit.
     var needsCentering: Bool { source == .onDevice }
 
     func embeddingURL(fallbackBase: String) -> URL? {
@@ -161,19 +161,19 @@ struct SearchConfig: Codable, Equatable {
     }
 }
 
-/// Wie der Sucher sich verhält, wenn ein Bild im Kasten ist.
+/// How the viewfinder behaves once a picture is in the box.
 ///
-/// Zwei Modi und kein dritter, weil es zwei Arten gibt, diese App zu benutzen: man
-/// hält ein Ding in der Hand und will es eintragen, oder man geht einen Keller ab.
-/// Der erste Fall will den Sucher danach zu haben, der zweite will ihn offen —
-/// und für den zweiten gab es bisher nur den Weg über zwölfmal aufmachen.
+/// Two modes and no third, because there are two ways to use this app: you hold a
+/// thing in your hand and want to enter it, or you walk through a cellar. The first
+/// case wants the viewfinder closed afterwards, the second wants it open — and for
+/// the second there used to be only the route through opening it twelve times.
 enum CaptureMode: String, Codable, CaseIterable, Identifiable, Sendable {
-    /// Ein Bild, dann zurück zur Liste. Das Verhalten von vorher.
+    /// One picture, then back to the list. The behaviour from before.
     case single
-    /// Der Sucher bleibt offen, jedes Bild geht sofort in die Reihe.
+    /// The viewfinder stays open, every picture goes straight into the queue.
     case doku
-    /// Nach dem Auslösen zeigt das Gerät, was es als einzelne Gegenstände erkennt;
-    /// der Nutzer tippt an, was er davon will.
+    /// After the shutter the device shows what it recognises as individual objects;
+    /// the user taps whichever of them they want.
     case objects
 
     var id: String { rawValue }
@@ -199,30 +199,30 @@ struct AppSettings: Codable, Equatable {
     var model = ModelConfig()
     var search = SearchConfig()
     var lookup = LookupConfig()
-    /// Ob ein bestätigter Vorschlag automatisch eingebettet wird. Aus heißt: die
-    /// Suche findet das Ding über den Namen, aber nicht über die Bedeutung.
+    /// Whether a confirmed suggestion is embedded automatically. Off means: the search
+    /// finds the thing by name but not by meaning.
     var indexAutomatically: Bool = true
 
-    /// Wie viele Fotos gleichzeitig gelesen werden.
+    /// How many photos are read at once.
     ///
-    /// Einstellbar und nicht fest, weil die richtige Zahl nicht von der App abhängt,
-    /// sondern vom Anbieter: der eine nimmt sechs Aufrufe nebeneinander an, der
-    /// nächste drosselt ab zwei und schickt 429 zurück. Wer nach einem Regalgang
-    /// zwanzig Fotos einreiht, merkt den Unterschied zwischen „in zwei Minuten fertig“
-    /// und „in zwanzig“ — und wer in eine Drosselung läuft, merkt ihn auch.
+    /// Adjustable rather than fixed, because the right number does not depend on the
+    /// app but on the provider: one accepts six calls side by side, the next throttles
+    /// from two onwards and sends back 429. Whoever queues twenty photos after a walk
+    /// along a shelf notices the difference between "done in two minutes" and "in
+    /// twenty" — and whoever runs into a throttle notices it too.
     ///
-    /// Zwei als Vorgabe: spürbar schneller als nacheinander, und noch weit unter dem,
-    /// was ein Anbieter als Schwarm auffasst.
+    /// Two as the default: noticeably faster than one after another, and still far
+    /// below what a provider reads as a swarm.
     var intakeConcurrency: Int = 2
 
-    /// Welcher Modus im Sucher zuletzt eingestellt war.
+    /// Which mode the viewfinder was last set to.
     ///
-    /// Gemerkt und nicht jedes Mal zurückgesetzt: wer einen Keller abgeht, stellt
-    /// einmal auf Doku und will das nicht bei jedem Regal wieder tun. Einzelfoto ist
-    /// die Vorgabe, weil es das gewohnte Verhalten ist.
+    /// Remembered rather than reset each time: whoever walks through a cellar switches
+    /// to documentation once and does not want to do it again at every shelf. Single
+    /// photo is the default because it is the familiar behaviour.
     var captureMode: CaptureMode = .single
 
-    /// Die Sprache der Oberflaeche.
+    /// The language of the interface.
     var language: AppLanguage = .system
 
     /// Hell oder dunkel.
@@ -236,8 +236,8 @@ struct AppSettings: Codable, Equatable {
         search = try c.decodeIfPresent(SearchConfig.self, forKey: .search) ?? SearchConfig()
         lookup = try c.decodeIfPresent(LookupConfig.self, forKey: .lookup) ?? LookupConfig()
         indexAutomatically = try c.decodeIfPresent(Bool.self, forKey: .indexAutomatically) ?? true
-        // Begrenzt statt übernommen: eine Zahl von der Platte kann aus einer älteren
-        // oder kaputten Ablage kommen, und 0 hieße „nie wieder ein Foto lesen“.
+        // Clamped rather than taken as given: a number off the disk can come from an
+        // older or broken store, and 0 would mean "never read a photo again".
         intakeConcurrency = (try c.decodeIfPresent(Int.self, forKey: .intakeConcurrency) ?? 2)
             .clamped(to: IntakeSchedule.concurrencyRange)
         captureMode = c.decodeLenient(CaptureMode.self, forKey: .captureMode) ?? .single

@@ -2,22 +2,22 @@ import AVFoundation
 import XCTest
 @testable import Fundus
 
-/// Der Zoom — und vor allem die Umrechnung auf „×".
+/// The zoom — and above all the conversion to "×".
 ///
-/// Die ist der heikle Teil, und zwar aus einem Grund, den man nicht sieht:
-/// `videoZoomFactor` 1 ist die **weiteste** Linse, die das Geraet hat. Bei einem
-/// Telefon mit Ultraweitwinkel ist das, was der Nutzer 0,5× nennt. Bei einem ohne ist
-/// dieselbe 1 schon 1×. Wer das verwechselt, beschriftet jeden Knopf falsch — und
-/// zwar plausibel falsch, sodass es niemandem auffaellt ausser dem, der zoomt.
+/// That is the delicate part, for a reason you cannot see: `videoZoomFactor` 1 is the
+/// **widest** lens the device has. On a phone with an ultra-wide that is what the user
+/// calls 0.5×. On one without, the same 1 is already 1×. Confuse the two and every
+/// button is labelled wrong — plausibly wrong, so that nobody notices except the person
+/// zooming.
 final class ZoomTests: XCTestCase {
 
-    /// Drei Linsen: Ultraweitwinkel, Weitwinkel, Tele. Umschaltpunkte bei 2 und 6.
+    /// Three lenses: ultra-wide, wide, telephoto. Switch-over points at 2 and 6.
     private var triple: CameraSession.Zoom {
         CameraSession.zoomRange(switchOver: [2, 6], hasUltraWide: true,
                                 minimum: 1, maximum: 123)
     }
 
-    /// Zwei Linsen ohne Ultraweitwinkel: Weitwinkel und Tele.
+    /// Two lenses without an ultra-wide: wide and telephoto.
     private var wideAndTele: CameraSession.Zoom {
         CameraSession.zoomRange(switchOver: [3], hasUltraWide: false,
                                 minimum: 1, maximum: 60)
@@ -28,7 +28,7 @@ final class ZoomTests: XCTestCase {
         CameraSession.zoomRange(switchOver: [], hasUltraWide: false, minimum: 1, maximum: 16)
     }
 
-    // MARK: Wo „1×" liegt
+    // MARK: Where "1×" sits
 
     func testWithAnUltraWideTheBaselineIsTheFirstSwitchOver() {
         XCTAssertEqual(triple.baseline, 2, "Auf dem Ultraweitwinkel ist 1 gleich 0,5×.")
@@ -63,12 +63,12 @@ final class ZoomTests: XCTestCase {
         XCTAssertEqual(triple.stops.map { triple.label($0) }, ["0,5×", "1×", "3×"])
     }
 
-    /// Ohne Wahl keine Zeile: ein Knopf, der nichts umschaltet, ist keiner.
+    /// No choice, no row: a button that switches nothing is not one.
     func testASingleLensOffersNoButtons() {
         XCTAssertEqual(single.stops.count, 1)
     }
 
-    /// Ein Umschaltpunkt jenseits der Obergrenze gehoert nicht auf einen Knopf.
+    /// A switch-over point beyond the upper bound does not belong on a button.
     func testStopsBeyondTheCapAreDropped() {
         let z = CameraSession.zoomRange(switchOver: [2, 40], hasUltraWide: true,
                                         minimum: 1, maximum: 123)
@@ -83,7 +83,7 @@ final class ZoomTests: XCTestCase {
         XCTAssertEqual(wideAndTele.maximum, 8)
     }
 
-    /// Kann das Geraet weniger, gilt das Geraet.
+    /// If the device can do less, the device wins.
     func testAModestDeviceKeepsItsOwnLimit() {
         let z = CameraSession.zoomRange(switchOver: [], hasUltraWide: false,
                                         minimum: 1, maximum: 3)

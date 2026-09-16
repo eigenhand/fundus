@@ -1,20 +1,20 @@
 import XCTest
 @testable import Fundus
 
-/// Die Einstellungen, vor allem das Token-Limit.
+/// The settings, above all the token limit.
 ///
-/// Das ist die Stelle, die den ersten Testflug gekostet hat: 4 000 Ausgabetoken
-/// reichten einem Reasoning-Modell nicht, um über ein Foto nachzudenken *und*
-/// danach noch JSON zu schreiben. Herausgekommen ist eine leere Antwort.
+/// This is the spot that cost the first test flight: 4,000 output tokens were not
+/// enough for a reasoning model to think about a photo *and* write JSON afterwards.
+/// What came out was an empty answer.
 final class SettingsTests: XCTestCase {
 
     private func decode(_ json: String) throws -> ModelConfig {
         try JSONDecoder().decode(ModelConfig.self, from: Data(json.utf8))
     }
 
-    /// Wer die App vor der Korrektur benutzt hat, hat 4 000 gespeichert liegen. Ohne
-    /// Wanderung bekäme er nach dem Update denselben Fehlschlag wieder — die neue
-    /// Voreinstellung greift ja nur, wo gar nichts steht.
+    /// Whoever used the app before the fix has 4,000 stored. Without a migration they
+    /// would get the same failure back after the update — the new default only applies
+    /// where nothing stands at all.
     func testStoredOldDefaultIsRaised() throws {
         let config = try decode(#"{"maxOutputTokens":4000}"#)
         XCTAssertEqual(config.maxOutputTokens, 32_000)
@@ -24,8 +24,8 @@ final class SettingsTests: XCTestCase {
         XCTAssertEqual(try decode("{}").maxOutputTokens, 32_000)
     }
 
-    /// Eine selbst gesetzte Zahl bleibt, auch eine kleine — nur die eine alte
-    /// Voreinstellung wird angefasst.
+    /// A number set by hand stays, even a small one — only the one old default gets
+    /// touched.
     func testDeliberateValueSurvives() throws {
         XCTAssertEqual(try decode(#"{"maxOutputTokens":800}"#).maxOutputTokens, 800)
         XCTAssertEqual(try decode(#"{"maxOutputTokens":64000}"#).maxOutputTokens, 64_000)
@@ -44,20 +44,19 @@ final class SettingsTests: XCTestCase {
 
     // MARK: Fehlertexte
 
-    /// Der Unterschied, um den es geht: „leer" schickt den Nutzer auf Fehlersuche,
-    /// „abgeschnitten" sagt ihm, welche Zahl er ändern muss.
+    /// The difference that matters: "empty" sends the user hunting for a fault,
+    /// "truncated" tells them which number to change.
     ///
-    /// Geprüft werden die Zahlen und nicht der Wortlaut. Seit die Fehlertexte durch
-    /// den Stringkatalog gehen, hängt der Satz an der Sprache des Geräts — auf
-    /// einem englischen Simulator stand hier „output tokens", und der Test war rot,
-    /// obwohl der Code stimmte. Die Zahlen sind ohnehin das, worum es geht.
+    /// What gets checked are the numbers and not the wording. Since the error texts go
+    /// through the string catalogue, the sentence hangs on the language of the device —
+    /// on an English simulator it read "output tokens" here, and the test was red even
+    /// though the code was right. The numbers are what this is about anyway.
     func testTruncatedErrorNamesTheLimit() {
         let text = ModelError.truncated(limit: 4000, reasoningChars: 5200).errorDescription ?? ""
-        // `4000.formatted()` und nicht "4000": Seit die Meldung durch den
-        // Stringkatalog geht, setzt die Interpolation den Tausenderpunkt der
-        // Sprache — im Englischen „4,000", im Deutschen „4.000". Das ist richtige
-        // Prosa und kein Fehler, aber ein Test, der die nackte Ziffernfolge sucht,
-        // findet sie nicht mehr.
+        // `4000.formatted()` and not "4000": since the message goes through the string
+        // catalogue, the interpolation inserts the language's thousands separator — in
+        // English "4,000", in German "4.000". That is proper prose and not a bug, but a
+        // test looking for the bare row of digits no longer finds it.
         XCTAssertTrue(text.contains(4000.formatted()), text)
         XCTAssertTrue(text.contains(5200.formatted()), text)
     }

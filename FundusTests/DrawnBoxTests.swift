@@ -1,16 +1,16 @@
 import XCTest
 @testable import Fundus
 
-/// Der von Hand gezogene Kasten.
+/// The box dragged by hand.
 ///
-/// Drei Dinge stecken in der Rechnung, und jedes waere ein eigener kleiner Aerger:
-/// die Ecken koennen in beliebiger Reihenfolge kommen, sie koennen neben dem Bild
-/// liegen, und ein Strich ist kein Kasten. Nichts davon stuerzt ab — es liefert nur
-/// einen Ausschnitt an der falschen Stelle, und man haelt die Erkennung fuer schlecht.
+/// Three things sit inside the arithmetic, and each would be its own small annoyance:
+/// the corners can arrive in any order, they can lie beside the image, and a line is
+/// not a box. None of it crashes — it simply delivers a cut-out in the wrong place, and
+/// you take the detection to be poor.
 final class DrawnBoxTests: XCTestCase {
 
-    /// Das Bild fuellt das Fenster nicht aus: oben und unten bleibt Rand. Genau der
-    /// Fall, in dem eine Rechnung ohne Versatz gleichmaessig danebenliegt.
+    /// The image does not fill the window: a margin stays at the top and bottom.
+    /// Exactly the case in which arithmetic without an offset is evenly wrong.
     private let picture = CGRect(x: 0, y: 100, width: 400, height: 200)
 
     func testACornerDragBecomesANormalisedBox() throws {
@@ -22,7 +22,7 @@ final class DrawnBoxTests: XCTestCase {
         XCTAssertEqual(box.height, 0.5, accuracy: 0.001)
     }
 
-    /// Wer von rechts unten nach links oben zieht, meint denselben Kasten.
+    /// Dragging from bottom right to top left means the same box.
     func testTheDirectionOfTheDragDoesNotMatter() throws {
         let forward = try XCTUnwrap(ObjectPicker.box(
             from: CGPoint(x: 100, y: 150), to: CGPoint(x: 300, y: 250), picture: picture))
@@ -31,15 +31,14 @@ final class DrawnBoxTests: XCTestCase {
         XCTAssertEqual(forward, backward)
     }
 
-    /// Ueber den Rand hinaus gezogen heisst „bis zum Rand", nicht „nichts".
+    /// Dragged past the edge means "up to the edge", not "nothing".
     func testDraggingPastTheEdgeIsClipped() throws {
         let box = try XCTUnwrap(ObjectPicker.box(
             from: CGPoint(x: -500, y: -500), to: CGPoint(x: 900, y: 900), picture: picture))
         XCTAssertEqual(box, CGRect(x: 0, y: 0, width: 1, height: 1))
     }
 
-    /// Ein Strich ist kein Kasten, und ein Wisch beim Scrollen soll keine Auswahl
-    /// erzeugen.
+    /// A line is not a box, and a swipe while scrolling should not produce a selection.
     func testAThinStripeIsNoBox() {
         XCTAssertNil(ObjectPicker.box(from: CGPoint(x: 100, y: 150),
                                       to: CGPoint(x: 300, y: 152), picture: picture))
@@ -47,13 +46,13 @@ final class DrawnBoxTests: XCTestCase {
                                       to: CGPoint(x: 102, y: 250), picture: picture))
     }
 
-    // MARK: Was aus dem Kasten wird
+    // MARK: What becomes of the box
 
-    /// Der gezogene Kasten ist der Kasten — nicht die Anregung fuer ein Modell.
+    /// The dragged box is the box — not a suggestion for a model.
     ///
-    /// Er ersetzt, was an seiner Stelle schon gewaehlt war. Ohne das laegen zwei
-    /// Ausschnitte uebereinander: zwei bezahlte Aufnahmen fuer ein Ding, und auf der
-    /// einen fehlt die Haelfte, weil die Maske das Ding nicht ganz getroffen hat.
+    /// It replaces whatever was already picked at its spot. Without that, two cut-outs
+    /// would lie on top of each other: two paid shots for one thing, and half of it
+    /// missing on one of them because the mask did not quite hit the thing.
     func testADrawnBoxReplacesTheFindUnderneathIt() {
         let here = object(CGRect(x: 0.30, y: 0.30, width: 0.20, height: 0.20))
         let overThere = object(CGRect(x: 0.80, y: 0.80, width: 0.10, height: 0.10))
@@ -67,10 +66,10 @@ final class DrawnBoxTests: XCTestCase {
         XCTAssertNil(after.first(where: { $0.id == here.id }))
     }
 
-    /// Ein Kasten um mehrere Funde herum macht daraus **einen** Ausschnitt.
+    /// A box drawn around several finds turns them into **one** cut-out.
     ///
-    /// Genau der Fall, um den es geht: das Modell hat drei Dinge einzeln gefunden,
-    /// gemeint ist aber das eine, das sie zusammen bilden.
+    /// Exactly the case this is about: the model found three things separately, but
+    /// what is meant is the one thing they form together.
     func testABoxAroundSeveralFindsLeavesOnlyTheBox() {
         let bits = [object(CGRect(x: 0.20, y: 0.20, width: 0.10, height: 0.10)),
                     object(CGRect(x: 0.35, y: 0.25, width: 0.12, height: 0.14)),
@@ -88,16 +87,15 @@ final class DrawnBoxTests: XCTestCase {
 
     // MARK: Zu klein
 
-    /// Unter `ObjectFinder.minimumEdge` entsteht kein Ausschnitt mehr. Ohne diese
-    /// Pruefung verschwaende ein winziger Kasten stillschweigend und statt seiner
-    /// ginge das ganze Brett in die Reihe — gezogen, „1 Ausschnitt" gelesen, das
-    /// Regal bekommen.
+    /// Below `ObjectFinder.minimumEdge` no cut-out comes about any more. Without this
+    /// check a tiny box would vanish silently and the whole board would go into the
+    /// queue in its place — dragged, read "1 cut-out", got the shelf.
     func testATinyBoxIsRefusedBeforeItCanVanish() {
         let photo = CGSize(width: 1_400, height: 1_050)
         XCTAssertTrue(ObjectPicker.isUsable(CGRect(x: 0.4, y: 0.4, width: 0.2, height: 0.2),
                                             pixels: photo))
-        // 3 Prozent von 1050 sind 32 Pixel — hoch genug fuer den Kasten selbst und
-        // zu wenig fuer einen Ausschnitt.
+        // 3 per cent of 1050 is 32 pixels — tall enough for the box itself and too
+        // little for a cut-out.
         XCTAssertFalse(ObjectPicker.isUsable(CGRect(x: 0.4, y: 0.4, width: 0.2, height: 0.03),
                                              pixels: photo))
     }
@@ -110,8 +108,8 @@ final class DrawnBoxTests: XCTestCase {
         XCTAssertNil(ObjectPicker.box(from: .zero, to: CGPoint(x: 10, y: 10), picture: .zero))
     }
 
-    /// Der Versatz des eingepassten Bildes muss mit hinein: ein Zug am oberen Rand des
-    /// Bildes ist 0 und nicht 0,33.
+    /// The offset of the fitted image has to go in too: a drag at the top edge of the
+    /// image is 0 and not 0.33.
     func testTheLetterboxOffsetIsTakenOut() throws {
         let box = try XCTUnwrap(ObjectPicker.box(
             from: CGPoint(x: 0, y: 100), to: CGPoint(x: 200, y: 200), picture: picture))

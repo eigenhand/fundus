@@ -1,28 +1,27 @@
 import Foundation
 
-/// Ein Ding im Bestand.
+/// A thing in the inventory.
 ///
-/// Die Felder, die nicht offensichtlich sind, stehen hier nicht aus Vollständigkeit,
-/// sondern weil ein Bestand ohne sie eine Behauptung ist: `provenance` sagt, wer den
-/// Eintrag geschrieben hat, `lastSeenAt`, wann ihn zuletzt jemand mit eigenen Augen
-/// gesehen hat. Ein Lagerbestand veraltet, während die Datenbank gleich aussieht wie
-/// am ersten Tag — und das ist die eine Unwahrheit, die eine Inventarapp von sich aus
-/// erzeugt. Beide Felder sind dagegen gerichtet.
+/// The fields that are not obvious stand here not for completeness but because without
+/// them an inventory is an assertion: `provenance` says who wrote the entry,
+/// `lastSeenAt` when somebody last saw it with their own eyes. A stock of things goes
+/// stale while the database looks the same as on the first day — and that is the one
+/// untruth an inventory app produces all by itself. Both fields are aimed against it.
 struct Item: Identifiable, Codable, Equatable, Hashable {
     var id: UUID = UUID()
 
-    /// Kurz und suchbar: „USB-C-Kabel“, nicht „ein schwarzes USB-C-Kabel links“.
-    /// Alles Unterscheidende gehört in `note`.
+    /// Short and searchable: "USB-C cable", not "a black USB-C cable on the left".
+    /// Everything that distinguishes belongs in `note`.
     var name: String
-    /// `nil` heißt nicht null, sondern unzählbar oder ungezählt — ein Karton Schrauben,
-    /// eine Rolle Draht. Eine erfundene 1 wäre eine Zahl, die wie eine Zählung aussieht.
+    /// `nil` does not mean zero but uncountable or uncounted — a box of screws, a reel
+    /// of wire. An invented 1 would be a number that looks like a count.
     var quantity: Int?
     var unit: String = ""
     var note: String = ""
 
     var placeID: UUID?
-    /// Dateinamen im Bildspeicher. Das erste ist das Übersichtsfoto, aus dem der
-    /// Eintrag kam, sofern er aus einem kam.
+    /// File names in the photo store. The first is the overview photo the entry came
+    /// from, if it came from one.
     var photoIDs: [String] = []
     var tags: [String] = []
 
@@ -30,18 +29,17 @@ struct Item: Identifiable, Codable, Equatable, Hashable {
 
     var createdAt: Date = Date()
     var updatedAt: Date = Date()
-    /// Wann dieses Ding zuletzt bestätigt wurde. Beim Anlegen ist das jetzt, denn da
-    /// hat es jemand in der Hand gehabt oder fotografiert.
+    /// When this thing was last confirmed. On creation that is now, because somebody
+    /// then had it in their hand or photographed it.
     var lastSeenAt: Date = Date()
 
-    /// Was am Ding steht. Bleibt am Eintrag, auch wenn der Name inzwischen vom
-    /// Nutzer umgeschrieben wurde — die Nummer ist das Einzige hier, was sich
-    /// nachprüfen lässt.
+    /// What stands on the thing. Stays on the entry even once the user has rewritten
+    /// the name — the number is the only thing here that can be checked.
     var code: ItemCode?
 
     var embedding: [Float]?
-    /// Aus welchem Modell dieser Vektor stammt. `nil` heißt: unbekannte Herkunft und
-    /// damit unbrauchbar — derselbe Grund wie im Gedächtnis von Faden.
+    /// Which model this vector came from. `nil` means: unknown origin and therefore
+    /// unusable — the same reason as in Faden's memory.
     var embeddingStamp: EmbeddingStamp?
 
     init(name: String, quantity: Int? = nil, unit: String = "", note: String = "",
@@ -54,9 +52,9 @@ struct Item: Identifiable, Codable, Equatable, Hashable {
         self.provenance = provenance
     }
 
-    /// Nachsichtig dekodiert, wie überall in diesen Apps: ein neues Feld darf keine
-    /// bestehende Datei ungültig machen. Der synthetisierte Decoder wirft bei einem
-    /// fehlenden Schlüssel, und das hieße hier: Bestand weg.
+    /// Decoded leniently, as everywhere in these apps: a new field must not invalidate
+    /// an existing file. The synthesised decoder throws on a missing key, and here that
+    /// would mean: inventory gone.
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         id             = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
@@ -77,27 +75,27 @@ struct Item: Identifiable, Codable, Equatable, Hashable {
         embeddingStamp = try c.decodeIfPresent(EmbeddingStamp.self, forKey: .embeddingStamp)
     }
 
-    /// Der Text, der eingebettet wird. Name, Notiz und Schlagworte — nicht der Ort:
-    /// sonst rückt jedes Ding im Keller näher an jede Frage nach dem Keller, und die
-    /// Suche antwortet mit dem Regal statt mit dem Ding.
+    /// The text that gets embedded. Name, note and tags — not the place: otherwise
+    /// every thing in the cellar moves closer to every question about the cellar, and
+    /// the search answers with the shelf instead of the thing.
     var embeddableText: String {
         var parts = [name]
         if !note.isEmpty { parts.append(note) }
         if !tags.isEmpty { parts.append(tags.joined(separator: ", ")) }
-        // Die Nummer mit hinein: wer „MP1584EN“ ins Suchfeld tippt, sucht genau
-        // dieses Ding und nicht etwas Ähnliches.
+        // The number goes in too: whoever types "MP1584EN" into the search field is
+        // looking for exactly that thing and not something similar.
         if let code, !code.value.isEmpty { parts.append(code.value) }
         return parts.joined(separator: " — ")
     }
 
-    /// Menge und Einheit, wie sie in einer Zeile stehen.
+    /// Quantity and unit, as they stand on one line.
     var amountLabel: String? {
         guard let quantity else { return unit.isEmpty ? nil : unit }
         return unit.isEmpty ? "\(quantity)" : "\(quantity) \(unit)"
     }
 
-    /// Für Vergleiche zwischen getippten und erkannten Namen: Groß-/Kleinschreibung,
-    /// Akzente und Mehrfach-Leerzeichen sollen keinen zweiten Eintrag erzeugen.
+    /// For comparing typed names against recognised ones: capitalisation, accents and
+    /// repeated spaces must not produce a second entry.
     static func normalise(_ s: String) -> String {
         s.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
             .components(separatedBy: .whitespacesAndNewlines)
@@ -110,28 +108,28 @@ struct Item: Identifiable, Codable, Equatable, Hashable {
 
 // MARK: - Herkunft
 
-/// Wer diesen Eintrag geschrieben hat.
+/// Who wrote this entry.
 ///
-/// Bei den Einbettungen war die Frage „aus welchem Modell stammt dieser Vektor“,
-/// und ohne Antwort rechnete die Suche still zwischen zwei Räumen. Hier ist es
-/// dieselbe Frage an einen Bestandseintrag: hat den ein Mensch getippt oder ein
-/// Modell aus einem Foto gelesen? Das ist kein Detail. Ein Modell verzählt sich,
-/// erfindet Gegenstände und liest Etiketten falsch — wer später vor dem Regal steht
-/// und die Zahl nicht wiederfindet, muss wissen, wessen Zahl das war.
+/// For the embeddings the question was "which model does this vector come from", and
+/// without an answer the search quietly computed between two spaces. Here it is the
+/// same question asked of an inventory entry: did a person type it or did a model read
+/// it out of a photo? That is not a detail. A model miscounts, invents objects and
+/// reads labels wrong — whoever stands in front of the shelf later and cannot find the
+/// number again has to know whose number it was.
 struct Provenance: Codable, Equatable, Hashable {
     enum Origin: String, Codable {
         /// Von Hand angelegt.
         case manual
-        /// Aus einem Foto gelesen und vom Nutzer bestätigt. Unbestätigt wird nichts
-        /// gespeichert — deshalb gibt es dafür keinen Fall.
+        /// Read from a photo and confirmed by the user. Nothing unconfirmed is ever
+        /// stored — which is why there is no case for that.
         case photo
         /// Aus einer Datei eingelesen.
         case imported
     }
     var origin: Origin
-    /// Das Foto, aus dem der Eintrag kam. Der Beleg zum Eintrag.
+    /// The photo the entry came from. The evidence for the entry.
     var photoID: String?
-    /// Der Modellname, falls ein Modell beteiligt war.
+    /// The model name, if a model was involved.
     var model: String?
     var at: Date = Date()
 
@@ -161,14 +159,14 @@ struct Provenance: Codable, Equatable, Hashable {
 
 // MARK: - Alter einer Sichtung
 
-/// Wie belastbar der Eintrag heute noch ist.
+/// How much the entry can still be relied on today.
 ///
-/// Die beiden Grenzen sind gesetzt, nicht gemessen, und das soll hier auch so
-/// stehen: 30 Tage, weil ein Monat der Takt ist, in dem sich ein Haushaltsvorrat
-/// umschlägt, und 180 Tage, weil nach einem halben Jahr über den Inhalt einer
-/// Schublade nichts mehr zu sagen ist, was man nicht besser nachsieht. Sie sind
-/// bewusst nicht einstellbar — ein Regler hätte nur die Frage verschoben, und drei
-/// Stufen sind ehrlicher als eine Prozentzahl, die eine Messung vortäuscht.
+/// The two limits are set, not measured, and that should stand here as such: 30 days,
+/// because a month is the rhythm at which a household's supplies turn over, and 180
+/// days, because after half a year there is nothing left to say about the contents of
+/// a drawer that you would not do better to check. They are deliberately not
+/// adjustable — a slider would only have moved the question elsewhere, and three grades
+/// are more honest than a percentage that feigns a measurement.
 enum Freshness: String {
     case seen, assumed, stale
 
@@ -193,19 +191,18 @@ enum Freshness: String {
 
 // MARK: - Herkunftsstempel eines Vektors
 
-/// Woher ein Vektor stammt — dieselbe Struktur wie in Fadens Gedächtnis, aus
-/// demselben Grund.
+/// Where a vector comes from — the same structure as in Faden's memory, for the same
+/// reason.
 ///
-/// Zwei Einbettungen sind nur vergleichbar, wenn sie aus demselben Modell kommen.
-/// Ohne den Stempel stünde am Eintrag nur die Zahlenreihe: wer in den Einstellungen
-/// das Modell wechselt, behält die alten Vektoren, und die Suche rechnet danach
-/// zwischen zwei Räumen, die nichts miteinander zu tun haben. Das schlägt nicht
-/// fehl, es liefert still Unsinn.
+/// Two embeddings are only comparable when they come from the same model. Without the
+/// stamp, all that would stand on the entry is the row of numbers: whoever changes the
+/// model in the settings keeps the old vectors, and the search then computes between
+/// two spaces that have nothing to do with each other. That does not fail, it quietly
+/// delivers nonsense.
 ///
-/// Die Dimension steht dabei, weil der Name allein nicht reicht: derselbe
-/// Modellname liefert je nach Anbieter unterschiedlich lange Vektoren, und ein
-/// Kosinus zwischen verschieden langen Vektoren ist nicht falsch berechnet, sondern
-/// gar nicht definiert.
+/// The dimension stands beside it because the name alone is not enough: the same model
+/// name delivers vectors of different lengths depending on the provider, and a cosine
+/// between vectors of different lengths is not miscalculated but simply undefined.
 struct EmbeddingStamp: Codable, Equatable, Hashable {
     var model: String
     var dimension: Int

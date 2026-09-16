@@ -2,19 +2,18 @@ import CoreVideo
 import XCTest
 @testable import Fundus
 
-/// Die Umrechnung der Masken.
+/// Converting the masks.
 ///
-/// Die eine Stelle, an der hier ein Fehler sitzen kann, ohne dass es jemandem
-/// auffällt: CoreImage rechnet von unten links, SwiftUI von oben links. Ein
-/// vertauschtes Vorzeichen liefert Rahmen, die sauber aussehen und am falschen
-/// Gegenstand liegen — und wer dann auf den Motor tippt, bekommt die Spule.
+/// The one place where an error can sit here without anybody noticing: CoreImage
+/// reckons from the bottom left, SwiftUI from the top left. A swapped sign delivers
+/// frames that look clean and lie on the wrong object — and whoever then taps the
+/// motor gets the spool.
 ///
-/// Deshalb eine Maske, deren Fleck man kennt, statt einer Annahme über die
-/// Richtung.
+/// Hence a mask whose blob is known, rather than an assumption about the direction.
 final class ObjectFinderTests: XCTestCase {
 
-    /// Eine Maske mit einem weissen Fleck in den angegebenen Zeilen und Spalten.
-    /// Zeile 0 ist oben — so liegen die Bytes eines Pixelpuffers.
+    /// A mask with a white blob in the given rows and columns. Row 0 is at the top —
+    /// that is how the bytes of a pixel buffer lie.
     private func mask(size: Int = 100, rows: Range<Int>, cols: Range<Int>) throws -> CVPixelBuffer {
         var buffer: CVPixelBuffer?
         let status = CVPixelBufferCreate(nil, size, size, kCVPixelFormatType_OneComponent8,
@@ -34,7 +33,7 @@ final class ObjectFinderTests: XCTestCase {
         return pixels
     }
 
-    /// Ein Fleck oben links muss oben links herauskommen — nicht unten links.
+    /// A blob at the top left has to come out at the top left — not the bottom left.
     func testBoxUsesTopLeftOrigin() throws {
         let box = try XCTUnwrap(ObjectFinder.box(of: mask(rows: 0 ..< 25, cols: 0 ..< 25)))
         XCTAssertEqual(box.minX, 0, accuracy: 0.04)
@@ -57,8 +56,9 @@ final class ObjectFinderTests: XCTestCase {
 
     // MARK: Die Mitte
 
-    /// „Nur das mittlere Ding" ist der häufigste Fall: man hält etwas in der Hand und
-    /// zielt darauf. Deshalb ist es vorgewählt, und deshalb muss die Rechnung stimmen.
+    /// "Only the middle thing" is the commonest case: you hold something in your hand
+    /// and aim at it. That is why it is preselected, and why the arithmetic has to be
+    /// right.
     func testTheCentreObjectIsTheOneNearestTheMiddle() {
         let edge = FoundObject(id: 1, box: CGRect(x: 0.02, y: 0.02, width: 0.2, height: 0.2))
         let middle = FoundObject(id: 2, box: CGRect(x: 0.4, y: 0.42, width: 0.2, height: 0.2))
@@ -72,16 +72,16 @@ final class ObjectFinderTests: XCTestCase {
 
     // MARK: Die Drehung
 
-    /// Der Fehler, den man nur auf einem Gerät sieht.
+    /// The error you only see on a device.
     ///
-    /// Ein Kamerafoto steht aufrecht, weil ein Merker danebensteht, nicht weil die
-    /// Pixel so liegen. `UIImage.size` und jede Anzeige lesen den Merker; `cgImage`
-    /// liest ihn nicht und gibt die Sensordaten quer zurück. Wer beides mischt,
-    /// rechnet in zwei Rahmen, die neunzig Grad auseinanderliegen — und die Maske
-    /// liegt dann als grosser Block irgendwo im Bild statt auf dem Gegenstand.
+    /// A camera photo stands upright because a flag sits beside it, not because the
+    /// pixels lie that way. `UIImage.size` and every display read the flag; `cgImage`
+    /// does not and returns the sensor data sideways. Mixing the two means working in
+    /// two frames ninety degrees apart — and the mask then lies as a large block
+    /// somewhere in the picture instead of on the object.
     ///
-    /// `scaledDown` zeichnet die Drehung in die Pixel. Daran haengt jetzt alles:
-    /// Anzeige, Fingertipp, Kasten und Ausschnitt.
+    /// `scaledDown` bakes the rotation into the pixels. Everything now hangs on it:
+    /// display, tap, box and cut-out.
     func testScalingDownBakesTheOrientationIntoThePixels() throws {
         let format = UIGraphicsImageRendererFormat.default()
         format.scale = 1; format.opaque = true
@@ -107,8 +107,8 @@ final class ObjectFinderTests: XCTestCase {
         XCTAssertEqual(try XCTUnwrap(upright.cgImage).height, 200)
     }
 
-    /// Auch ein Bild, das klein genug ist, muss durch die Drehung gehen — sonst haengt
-    /// die Richtigkeit an der Groesse des Fotos.
+    /// An image that is already small enough has to go through the rotation too —
+    /// otherwise correctness hangs on the size of the photo.
     func testASmallImageIsStraightenedToo() throws {
         let format = UIGraphicsImageRendererFormat.default()
         format.scale = 1; format.opaque = true
@@ -122,13 +122,13 @@ final class ObjectFinderTests: XCTestCase {
         XCTAssertEqual(try XCTUnwrap(upright.cgImage).width, 30)
     }
 
-    // MARK: Die Rahmen im Bild
+    // MARK: The frames in the picture
 
-    /// `aspectRatio(.fit)` laesst einen Rand, den die umgebende Geometrie nicht kennt.
-    /// Ohne die Rechnung liegen alle Rahmen um denselben Betrag daneben — gleichmaessig
-    /// genug, dass es aussieht, als stimme die Erkennung nicht.
+    /// `aspectRatio(.fit)` leaves a margin that the surrounding geometry knows nothing
+    /// about. Without the arithmetic every frame is off by the same amount — evenly
+    /// enough that it looks as if the detection were wrong.
     func testBoxesLandInsideTheLetterboxedImage() {
-        // Ein Bild im Querformat in einem hohen Fenster: oben und unten bleibt Rand.
+        // A landscape picture in a tall window: a margin stays at the top and bottom.
         let area = CGSize(width: 400, height: 800)
         let picture = CGSize(width: 1_000, height: 500)   // Verhaeltnis 2:1
         let full = ObjectPicker.frame(for: CGRect(x: 0, y: 0, width: 1, height: 1),
@@ -151,7 +151,7 @@ final class ObjectFinderTests: XCTestCase {
         XCTAssertEqual(middle.height, 100, accuracy: 0.5)
     }
 
-    /// Hochformat im breiten Fenster — derselbe Fall, andere Achse.
+    /// Portrait in a wide window — the same case, the other axis.
     func testTallPictureInAWideWindow() {
         let full = ObjectPicker.frame(for: CGRect(x: 0, y: 0, width: 1, height: 1),
                                       image: CGSize(width: 500, height: 1_000),
@@ -170,14 +170,14 @@ final class ObjectFinderTests: XCTestCase {
 
     // MARK: Freistellen
 
-    /// Eine quadratische Maske mit einem Fleck an bekannter Stelle.
+    /// A square mask with a blob in a known place.
     private func bits(side: Int, rows: Range<Int>, cols: Range<Int>) -> [UInt8] {
         var out = [UInt8](repeating: 0, count: side * side)
         for y in rows { for x in cols { out[y * side + x] = 255 } }
         return out
     }
 
-    /// Ein runder Umriss — der Fall, in dem der Kasten Ecken hat, die nicht dazugehoeren.
+    /// A round outline — the case in which the box has corners that do not belong to it.
     private func disc(side: Int, centre: Int, radius: Int) -> [UInt8] {
         var out = [UInt8](repeating: 0, count: side * side)
         for y in 0 ..< side {
@@ -226,22 +226,22 @@ final class ObjectFinderTests: XCTestCase {
         XCTAssertNil(ObjectFinder.bounds(of: [UInt8](repeating: 0, count: 64), side: 8))
     }
 
-    /// Der Kern: was nicht zum Gegenstand gehoert, wird weiss — und der Gegenstand
-    /// bleibt, wie er war.
+    /// The core of it: whatever does not belong to the object turns white — and the
+    /// object stays as it was.
     func testEverythingOutsideTheObjectTurnsWhite() throws {
         let size = 400
         let format = UIGraphicsImageRendererFormat.default()
         format.scale = 1; format.opaque = true
-        // Roter Grund, in der Mitte ein blaues Quadrat von 0,4 bis 0,6.
+        // Red ground, in the middle a blue square from 0.4 to 0.6.
         let source = UIGraphicsImageRenderer(size: CGSize(width: size, height: size),
                                              format: format).image { ctx in
             UIColor.red.setFill();  ctx.fill(CGRect(x: 0, y: 0, width: size, height: size))
             UIColor.blue.setFill(); ctx.fill(CGRect(x: 160, y: 160, width: 80, height: 80))
         }
 
-        // Ein **runder** Umriss, und das ist der Punkt: bei einem rechteckigen ist der
-        // Ausschnitt genau die Maske, und es bliebe nichts weiss zu faerben. Erst die
-        // Ecken eines Kastens um einen Kreis zeigen, ob freigestellt wurde.
+        // A **round** outline, and that is the point: with a rectangular one the
+        // cut-out is exactly the mask and there would be nothing left to paint white.
+        // Only the corners of a box around a circle show whether it was cut free.
         let side = 100
         let object = SegmentedObject(
             id: UUID(),
@@ -253,20 +253,20 @@ final class ObjectFinderTests: XCTestCase {
         let piece = try XCTUnwrap(ObjectFinder.cutOut(source, object: object, margin: 0.02))
         let pixels = try XCTUnwrap(rgba(of: piece))
 
-        // In der Mitte des Ausschnitts steht der Gegenstand: blau, nicht weiss.
+        // At the centre of the cut-out stands the object: blue, not white.
         let middle = pixels.colour(atFraction: CGPoint(x: 0.5, y: 0.5))
         XCTAssertLessThan(middle.r, 60, "Die Mitte ist blau geblieben.")
         XCTAssertGreaterThan(middle.b, 190)
 
-        // In der Ecke des Ausschnitts stand rot — sie gehoert nicht zum Kreis. Jetzt
-        // steht dort weiss.
+        // In the corner of the cut-out there was red — it does not belong to the
+        // circle. Now there is white.
         let corner = pixels.colour(atFraction: CGPoint(x: 0.02, y: 0.02))
         XCTAssertGreaterThan(corner.r, 240, "Die Ecke ist weiss.")
         XCTAssertGreaterThan(corner.g, 240)
         XCTAssertGreaterThan(corner.b, 240)
     }
 
-    /// Der Rand ist kein Sicherheitsabstand, sondern Inhalt — er muss messbar da sein.
+    /// The margin is not a safety distance but content — it has to be measurably there.
     func testTheCutOutCarriesTheTwoPercentMargin() throws {
         let size = 400
         let format = UIGraphicsImageRendererFormat.default()
@@ -327,8 +327,8 @@ final class ObjectFinderTests: XCTestCase {
         }
     }
 
-    /// Mit Rand, und das ist nicht Kosmetik: der Aufdruck, an dem ein Bauteil erkennbar
-    /// ist, steht oft knapp neben dem Bauteil.
+    /// With a margin, and that is not cosmetic: the lettering by which a component can
+    /// be recognised often stands just beside the component.
     func testCropTakesAMarginAroundTheObject() throws {
         let source = image(1_000, 1_000)
         let box = CGRect(x: 0.4, y: 0.4, width: 0.2, height: 0.2)
@@ -345,7 +345,7 @@ final class ObjectFinderTests: XCTestCase {
         XCTAssertLessThanOrEqual(piece.size.height, 1_000)
     }
 
-    /// Aus einem Fleck von zwanzig Pixeln liest auch das Modell nichts mehr.
+    /// The model reads nothing from a blob of twenty pixels either.
     func testTinyCropIsRefused() {
         let source = image(1_000, 1_000)
         XCTAssertNil(ObjectFinder.crop(source, to: CGRect(x: 0.5, y: 0.5, width: 0.01, height: 0.01)))

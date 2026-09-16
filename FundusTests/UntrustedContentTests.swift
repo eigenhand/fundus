@@ -1,16 +1,16 @@
 import XCTest
 @testable import Fundus
 
-/// Die Einfassung fremder Inhalte beim Nachschlagen.
+/// The fencing of foreign content during a lookup.
 ///
-/// Fundus hat keine Werkzeuge, die ein Modell aufrufen koennte — der Hebel ist hier
-/// leiser. Wer eine Nummer nachschlaegt, bekommt Suchtreffer ins Modell geschoben,
-/// und was das Modell daraus macht, wird ein Vorschlag: Name, Hersteller, Notiz.
-/// Bestaetigt der Nutzer ihn, steht er im Bestand.
+/// Fundus has no tools a model could call — the lever here is quieter. Whoever looks a
+/// number up gets search hits pushed into the model, and what the model makes of them
+/// becomes a suggestion: name, manufacturer, note. Once the user confirms it, it stands
+/// in the inventory.
 ///
-/// Eine Seite, die auf eine gaengige Bauteilnummer optimiert ist, schreibt damit in
-/// fremde Inventare. Ein Eintragsname ist kurz, wird spaeter gesucht, und niemand
-/// liest ihn zweimal.
+/// A page optimised for a common part number thereby writes into other people's
+/// inventories. An entry name is short, gets searched for later, and nobody reads it
+/// twice.
 final class UntrustedContentTests: XCTestCase {
 
     func testTheHitsEndUpBetweenTheMarks() {
@@ -21,9 +21,9 @@ final class UntrustedContentTests: XCTestCase {
         XCTAssertTrue(out.contains("NEMA 17"))
     }
 
-    /// Der Kern: ein praeparierter Treffer darf seine eigene Schlussmarke nicht
-    /// setzen. Sonst stuende der Rest scheinbar ausserhalb — und das ist der
-    /// Unterschied zwischen „wird gelesen" und „wird befolgt".
+    /// The heart of it: a prepared hit must not set its own closing marker. Otherwise
+    /// the rest would appear to stand outside — and that is the difference between
+    /// "gets read" and "gets obeyed".
     func testAForgedClosingMarkDoesNotEscape() {
         let attack = """
         Schrittmotor 42BYGH.
@@ -42,8 +42,9 @@ final class UntrustedContentTests: XCTestCase {
         for t in tokens { XCTAssertEqual(t.count, 8) }
     }
 
-    /// Die Marken muessen tatsaechlich um die Treffer stehen, und die Regel muss in
-    /// der Systemanweisung dazu. Ohne eines von beidem ist das andere Dekoration.
+    /// The markers actually have to stand around the hits, and the rule has to be in
+    /// the system prompt to go with them. Without either of the two, the other is
+    /// decoration.
     func testTheLookupPromptFencesTheHitsAndExplainsWhy() {
         let code = ItemCode(value: "42BYGH3701", kind: .manufacturer, origin: .read)
         let hits = [SearchClient.Hit(title: "Schrittmotor 42BYGH3701",
@@ -58,8 +59,8 @@ final class UntrustedContentTests: XCTestCase {
                       "Die Grenze ohne die Regel sagt dem Modell nichts.")
     }
 
-    /// Ein Aufkleber im Bild ist Aufdruck, keine Anweisung — die zweite Haelfte
-    /// derselben Frage, und die einzige, die sich nicht einfassen laesst.
+    /// A sticker in the picture is lettering, not an instruction — the second half of
+    /// the same question, and the only one that cannot be fenced.
     func testThePhotoPromptSaysLabelsAreNotInstructions() {
         XCTAssertTrue(IntakePrompt.system.contains("Beschriftung"),
                       "Ein praeparierter Aufkleber ist der Weg ohne Netz.")

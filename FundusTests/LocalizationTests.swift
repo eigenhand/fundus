@@ -1,15 +1,15 @@
 import XCTest
 @testable import Fundus
 
-/// Die Sprachumschaltung.
+/// Switching the language.
 ///
-/// Geprueft wird der mechanische Teil: dass beide Sprachen im Bundle liegen und dass
-/// ein Schluessel in beiden etwas anderes ergibt. Ob jeder Satz uebersetzt *ist*,
-/// prueft `check-localizations.py` bei jedem Push — ein Test kann den Quellkatalog
-/// zur Laufzeit nicht sehen.
+/// What gets checked is the mechanical part: that both languages are in the bundle and
+/// that a key yields something different in each. Whether every sentence *is*
+/// translated is checked by `check-localizations.py` on every push — a test cannot see
+/// the source catalogue at runtime.
 final class LocalizationTests: XCTestCase {
 
-    /// Das App-Bundle, nicht das des Tests: die Kataloge gehoeren zur App.
+    /// The app bundle, not the test's: the catalogues belong to the app.
     private var app: Bundle {
         let here = Bundle(for: type(of: self))
         return Bundle(url: here.bundleURL.deletingLastPathComponent()
@@ -29,17 +29,16 @@ final class LocalizationTests: XCTestCase {
         }
     }
 
-    /// Ein Platzhalter muss die Uebersetzung ueberleben — faellt er weg, fehlt zur
-    /// Laufzeit die Zahl, und faellt ein zweiter hinein, stuerzt das Formatieren ab.
+    /// A placeholder has to survive the translation — lose one and the number is
+    /// missing at runtime, gain one and the formatting crashes.
     func testPlaceholdersSurviveTranslation() throws {
         XCTAssertEqual(try text("Fotos: %@", in: "en"), "Photos: %@")
         XCTAssertEqual(try text("Im Suchindex: %@, %@ Dimensionen", in: "en"),
                        "In the search index: %@, %@ dimensions")
     }
 
-    /// Ein unbekannter Schluessel gibt sich selbst zurueck. Das ist die Zusicherung,
-    /// auf der die Wahl deutscher Schluessel beruht: Wer einen Satz vergisst, sieht
-    /// Deutsch — und nicht eine leere Zeile.
+    /// An unknown key returns itself. That is the guarantee the choice of German keys
+    /// rests on: forget a sentence and you see German — not an empty line.
     func testAnUnknownKeyFallsBackToItself() throws {
         XCTAssertEqual(try text("Diesen Satz gibt es nicht", in: "en"),
                        "Diesen Satz gibt es nicht")
@@ -54,8 +53,8 @@ final class LocalizationTests: XCTestCase {
         XCTAssertEqual(AppLanguage.english.locale?.identifier, "en")
     }
 
-    /// Jede Sprache nennt sich in sich selbst — wer die Oberflaeche gerade nicht
-    /// versteht, findet trotzdem den Weg zurueck.
+    /// Every language names itself in itself — whoever does not currently understand
+    /// the interface still finds the way back.
     func testEachLanguageNamesItselfInItsOwnTongue() {
         XCTAssertEqual(AppLanguage.german.label, "Deutsch")
         XCTAssertEqual(AppLanguage.english.label, "English")
@@ -69,7 +68,7 @@ final class LocalizationTests: XCTestCase {
         XCTAssertEqual(back.language, .english)
     }
 
-    /// Eine Einstellung aus der Zeit vor dieser Funktion kennt das Feld nicht.
+    /// A settings file from before this feature does not know the field.
     func testAnOlderSettingsFileDefaultsToTheDevice() throws {
         let old = Data(#"{"indexAutomatically":true}"#.utf8)
         XCTAssertEqual(try JSONDecoder().decode(AppSettings.self, from: old).language,

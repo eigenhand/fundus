@@ -1,17 +1,18 @@
 import SwiftUI
 
-/// Die Orte.
+/// The places.
 ///
-/// Ein Baum, den man anlegen kann, während man davor steht: „Keller“ antippen, „Regal
-/// 2“ darunter, fertig. Das Umbenennen geht in der Zeile, weil ein Ort, der „Kiste“
-/// heißt, spätestens bei der zweiten Kiste einen besseren Namen braucht.
+/// A tree you can build while standing in front of it: tap "cellar", "shelf 2"
+/// underneath it, done. Renaming happens in the row, because a place called "box" needs
+/// a better name by the second box at the latest.
 struct PlacesView: View {
-    /// Aus dem Sucher gekommen: dann wird der neu angelegte Ort gleich der, in den
-    /// fotografiert wird.
+    /// Arrived from the viewfinder: then the newly created place becomes the one being
+    /// photographed into.
     ///
-    /// Ohne das wäre der Umweg zwar kurz, aber leer — man legt „Regal 4" an, geht
-    /// zurück in den Sucher und fotografiert nach „Regal 3", weil dort der Wähler
-    /// noch steht. Und zwar genau in dem Moment, in dem man am wenigsten nachsieht.
+    /// Without that the detour would be short but empty — you create "shelf 4", go back
+    /// into the viewfinder and photograph into "shelf 3", because that is where the
+    /// picker still stands. And at exactly the moment when you are least likely to
+    /// check.
     var adopt: ((UUID) -> Void)?
 
     @Environment(AppModel.self) private var model

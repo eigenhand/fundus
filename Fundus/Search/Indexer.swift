@@ -1,27 +1,26 @@
 import Foundation
 
-/// Der Zustand des Suchindex — und die Arbeit, ihn wieder gerade zu ziehen.
+/// The state of the search index — and the work of pulling it straight again.
 ///
-/// Dieselbe Klassifizierung wie in Fadens Gedächtnis, und aus demselben Grund: ein
-/// Vektor ohne Herkunft ist so gut wie ein falscher. Wer in den Einstellungen die
-/// Quelle von „auf dem Gerät“ auf einen Endpoint umstellt, hat damit jeden
-/// bestehenden Vektor unbrauchbar gemacht — nicht kaputt, sondern unvergleichbar,
-/// was schlimmer ist, weil es weiter Zahlen liefert. Der Stempel macht das sichtbar,
-/// diese Datei macht es zählbar.
+/// The same classification as in Faden's memory, and for the same reason: a vector
+/// without an origin is as good as a wrong one. Whoever switches the source in the
+/// settings from "on the device" to an endpoint has thereby made every existing vector
+/// unusable — not broken but incomparable, which is worse, because it keeps producing
+/// numbers. The stamp makes that visible, this file makes it countable.
 enum Indexer {
 
     struct Status: Equatable {
-        /// Vektor vorhanden und vom eingestellten Modell — nutzbar.
+        /// Vector present and from the configured model — usable.
         var usable = 0
-        /// Vektor vorhanden, aber aus einem anderen Modell oder mit anderer
-        /// Dimension. Rechnerisch unbrauchbar, muss neu eingebettet werden.
+        /// Vector present, but from a different model or with a different dimension.
+        /// Arithmetically unusable; has to be embedded again.
         var foreign = 0
-        /// Noch gar kein Vektor.
+        /// No vector at all yet.
         var missing = 0
-        /// Welche Modelle im Index stecken, mit Anzahl — damit sichtbar ist, *was*
-        /// da liegt, statt nur, dass etwas nicht passt.
+        /// Which models are in the index, with counts — so that it is visible *what* is
+        /// in there, rather than only that something does not fit.
         var byModel: [String: Int] = [:]
-        /// Die Dimension, auf die sich das eingestellte Modell eingependelt hat.
+        /// The dimension the configured model has settled on.
         var dimension: Int?
 
         var total: Int { usable + foreign + missing }
@@ -29,11 +28,11 @@ enum Indexer {
         var isClean: Bool { needsWork == 0 }
     }
 
-    /// Die Dimension, die das eingestellte Modell hier tatsächlich liefert.
+    /// The dimension the configured model actually delivers here.
     ///
-    /// Nicht aus einer Tabelle, sondern aus dem Bestand: Anbieter ändern die Länge
-    /// unter demselben Modellnamen. Die häufigste gewinnt; Ausreißer gelten damit
-    /// als fremd und werden neu geholt.
+    /// Not from a table but from the inventory: providers change the length under the
+    /// same model name. The commonest wins; outliers thereby count as foreign and get
+    /// fetched again.
     static func dominantDimension(_ items: [Item], model: String) -> Int? {
         let wanted = EmbeddingStamp.normalise(model)
         var counts: [Int: Int] = [:]
@@ -58,7 +57,7 @@ enum Indexer {
                     status.foreign += 1
                 }
             } else {
-                // Vektor ohne Stempel: aus einer Fassung vor dieser Kennzeichnung.
+                // Vector without a stamp: from a version predating this marking.
                 status.byModel["unbekannt", default: 0] += 1
                 status.foreign += 1
             }
@@ -71,11 +70,11 @@ enum Indexer {
         return stamp.matches(model: model, dimension: dimension)
     }
 
-    /// Alles, was für das eingestellte Modell noch einen Vektor braucht — fehlend
-    /// wie fremd. Die Warteschlange des Nachholens.
+    /// Everything that still needs a vector for the configured model — missing as well
+    /// as foreign. The queue of catching up.
     ///
-    /// Die ältesten zuerst, damit ein abgebrochener Durchlauf beim nächsten Mal da
-    /// weitermacht, wo er aufgehört hat, statt immer dieselben vorn zu finden.
+    /// Oldest first, so that an interrupted run carries on next time where it left off
+    /// instead of always finding the same ones at the front.
     static func needingEmbedding(_ items: [Item], model: String, limit: Int = .max) -> [Item] {
         let dimension = dominantDimension(items, model: model)
         return items
@@ -85,17 +84,17 @@ enum Indexer {
             .map { $0 }
     }
 
-    /// Der Mittelvektor der nutzbaren Einträge.
+    /// The mean vector of the usable entries.
     ///
-    /// Gegen die Anisotropie des lokalen Modells: dort liegen alle Kosinuswerte über
-    /// 0,95, weil die Vektoren in einem engen Kegel sitzen. Zieht man den
-    /// Mittelvektor ab, verteilen sich die Werte wieder über den Bereich, in dem ein
-    /// Schwellwert etwas bedeutet. Auf die Rangfolge wirkt es nicht — auch das in
-    /// Faden gemessen; es stellt nur die Bedeutung der Grenze wieder her.
+    /// Against the anisotropy of the local model: there every cosine value lies above
+    /// 0.95, because the vectors sit in a narrow cone. Subtract the mean vector and the
+    /// values spread out again over the range in which a threshold means something. It
+    /// does not affect the ranking — measured in Faden too; it only restores the
+    /// meaning of the limit.
     ///
-    /// Unter zehn Einträgen wird nicht zentriert: der Mittelvektor wäre dann
-    /// hauptsächlich der eine Eintrag, den man sucht, und das Abziehen würde genau
-    /// den Treffer wegrechnen.
+    /// Below ten entries nothing is centred: the mean vector would then mostly be the
+    /// one entry you are looking for, and subtracting it would compute away exactly the
+    /// hit you wanted.
     static let minimumForCentering = 10
 
     static func centroid(_ items: [Item], model: String) -> [Float]? {
@@ -115,8 +114,8 @@ enum Indexer {
         return sum.map { Float($0 / Double(counted)) }
     }
 
-    /// Zieht den Mittelvektor ab. Längen, die nicht passen, bleiben unangetastet —
-    /// ein halb zentrierter Vektor wäre schlimmer als ein unzentrierter.
+    /// Subtracts the mean vector. Lengths that do not match are left untouched — a
+    /// half-centred vector would be worse than an uncentred one.
     static func centered(_ vector: [Float], by centroid: [Float]?) -> [Float] {
         guard let centroid, centroid.count == vector.count else { return vector }
         return zip(vector, centroid).map(-)

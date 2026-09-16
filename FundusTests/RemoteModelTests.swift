@@ -1,14 +1,15 @@
 import XCTest
 @testable import Fundus
 
-/// Der Lader, gegen den echten Server.
+/// The downloader, against the real server.
 ///
-/// Langsam und vom Netz abhängig, und trotzdem hier: das Fortsetzen ist die eine
-/// Eigenschaft, an der dieser Lader hängt. 67 MB über Mobilfunk reissen ab, und ein
-/// Verwalter, der dann bei null anfängt, ist der Unterschied zwischen „geht" und
-/// „geht nie". Genau das lässt sich nicht denken, sondern nur messen.
+/// Slow and dependent on the network, and here all the same: resuming is the one
+/// property this downloader hangs on. 67 MB over mobile data breaks off, and a manager
+/// that then starts from zero is the difference between "works" and "never works".
+/// That is precisely the kind of thing that cannot be reasoned out, only measured.
 ///
-/// Geladen wird das kleinste der drei Pakete — 2,1 MB, dieselbe Maschinerie.
+/// What gets downloaded is the smallest of the three packages — 2.1 MB, the same
+/// machinery.
 final class RemoteModelTests: XCTestCase {
 
     private let model = RemoteModel(
@@ -26,8 +27,8 @@ final class RemoteModelTests: XCTestCase {
         super.tearDown()
     }
 
-    /// `download` kehrt zurueck, wenn es fertig ist — die Meldung davor ist das
-    /// Ergebnis. Kein Umweg ueber eine Fortsetzung noetig.
+    /// `download` returns when it is done — the report before it is the result. No
+    /// detour through a continuation needed.
     private func download() async -> RemoteModel.Progress? {
         let outcome = Outcome()
         await model.download { step in outcome.record(step) }
@@ -61,7 +62,7 @@ final class RemoteModelTests: XCTestCase {
         }
     }
 
-    /// Der Fall, um den es geht: die Verbindung riss bei der Hälfte ab.
+    /// The case this is about: the connection broke off halfway.
     func testResumesAHalfLoadedFile() async throws {
         model.remove()
         let first = await download()
@@ -71,7 +72,7 @@ final class RemoteModelTests: XCTestCase {
         let whole = try XCTUnwrap(RemoteModel.fileSize(weights))
         XCTAssertGreaterThan(whole, 1_000_000)
 
-        // Auf die Hälfte kürzen, wie ein Abbruch es hinterlässt.
+        // Truncate to half, the way a break-off leaves it.
         let handle = try FileHandle(forWritingTo: weights)
         try handle.truncate(atOffset: UInt64(whole / 2))
         try handle.close()
@@ -83,7 +84,7 @@ final class RemoteModelTests: XCTestCase {
                        "Fortgesetzt heisst: wieder ganz, und nicht anderthalb Mal.")
     }
 
-    /// Eine Datei, die groesser ist als erwartet, ist kaputt und nicht fertig.
+    /// A file larger than expected is broken, not finished.
     func testAnOversizedFileIsFetchedAgain() async throws {
         model.remove()
         let first = await download()
@@ -101,7 +102,7 @@ final class RemoteModelTests: XCTestCase {
         XCTAssertEqual(RemoteModel.fileSize(weights), whole)
     }
 
-    /// Was schon ganz daliegt, wird nicht noch einmal geholt.
+    /// Whatever is already there in full does not get fetched again.
     func testASecondRunChangesNothing() async throws {
         model.remove()
         let first = await download()

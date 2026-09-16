@@ -1,41 +1,41 @@
 import SwiftUI
 import UIKit
 
-/// Eine Aufnahme in der Schlange.
+/// One shot in the queue.
 ///
-/// Hieß einmal `IntakeState` und war genau eine: ein Foto belegte den ganzen
-/// Bildschirm, bis das Modell fertig gelesen hatte. Wer vor einem Regal steht, macht
-/// aber nicht ein Foto, sondern zwölf — und wartete dann zwölfmal eine halbe Minute,
-/// ohne etwas tun zu können.
+/// This was once called `IntakeState` and there was exactly one of it: a photo held
+/// the whole screen until the model had finished reading. But whoever stands in front
+/// of a shelf does not take one photo, they take twelve — and then waited half a
+/// minute twelve times over with nothing to do.
 ///
-/// Jetzt ist jedes Foto ein Auftrag mit eigenem Zustand, und die App arbeitet mehrere
-/// nebeneinander ab. Der Prüfschritt ist kein Zwang mehr, sondern ein Angebot: der
-/// Auftrag wartet in der Reihe, bis jemand ihn antippt.
+/// Now every photo is a job with its own state, and the app works several of them side
+/// by side. The checking step is no longer compulsory but an offer: the job waits in
+/// the queue until somebody taps it.
 @Observable @MainActor
 final class IntakeJob: Identifiable {
 
     enum Phase: Equatable {
-        /// In der Reihe, aber noch kein Arbeiter frei.
+        /// In the queue, but no worker free yet.
         case waiting
         case reading
-        /// Kennungen werden im Netz nachgeschlagen. Eigene Phase, weil der Schritt
-        /// Sekunden dauert und der Nutzer sonst vor einer halb fertigen Liste steht.
+        /// Identifiers are being looked up on the web. Its own phase, because the step
+        /// takes seconds and the user would otherwise face a half-finished list.
         case looking(done: Int, total: Int)
-        /// Fertig gelesen, wartet auf den Menschen.
+        /// Finished reading, waiting for the human.
         case review
-        /// Gelesen, und auf dem Foto war kein Bestand.
+        /// Read, and there was no inventory in the photo.
         ///
-        /// Eigene Phase und nicht `failed`, obwohl es zuerst dort lag. Ein Foto vom
-        /// Kellerfenster ist kein Fehler, sondern eine Antwort — und ein rotes
-        /// Ausrufezeichen dafür bringt dem Nutzer bei, rote Ausrufezeichen zu
-        /// übersehen. Dann sieht er auch den echten nicht mehr.
+        /// Its own phase and not `failed`, although it used to sit there. A photo of
+        /// the cellar window is not an error but an answer — and a red exclamation mark
+        /// for it teaches the user to overlook red exclamation marks. Then they stop
+        /// seeing the real one too.
         case empty
         case failed(String)
 
-        /// Ob dieser Auftrag gerade einen Arbeiter belegt.
+        /// Whether this job is currently occupying a worker.
         ///
-        /// `review` gehört ausdrücklich nicht dazu: ein fertiger Auftrag wartet auf
-        /// den Nutzer, nicht auf Rechenzeit, und darf den nächsten nicht aufhalten.
+        /// `review` explicitly does not count: a finished job is waiting for the user,
+        /// not for processing time, and must not hold up the next one.
         var isBusy: Bool {
             switch self {
             case .reading, .looking: return true
@@ -49,26 +49,26 @@ final class IntakeJob: Identifiable {
     let id = UUID()
     var phase: Phase = .waiting
 
-    /// Schon auf Sendegröße verkleinert.
+    /// Already scaled down to sending size.
     ///
-    /// Und zwar beim Einreihen, nicht erst beim Aufruf: eine Schlange aus zwölf
-    /// Handyfotos in voller Auflösung sind einige hundert Megabyte im Speicher, für
-    /// Pixel, die weder das Modell noch der Beleg je sieht — beide Wege verkleinern
-    /// ohnehin auf dieselbe Kantenlänge.
+    /// And at queuing time, not only at the call: a queue of twelve phone photos at
+    /// full resolution is several hundred megabytes in memory, for pixels that neither
+    /// the model nor the evidence ever sees — both routes scale down to the same edge
+    /// length anyway.
     let image: UIImage
-    /// Das Symbol in der Reihe.
+    /// The symbol in the queue.
     let thumbnail: UIImage
 
     var placeID: UUID?
     var hint: String
     var result = IntakeResult()
-    /// Was schon vom Modell angekommen ist — nur, damit sichtbar ist, dass etwas
-    /// passiert. Das rohe JSON zu zeigen wäre schlechter als ein Kreis; gezeigt wird
-    /// die Anzahl der Zeichen.
+    /// What has arrived from the model so far — only so that it is visible that
+    /// something is happening. Showing the raw JSON would be worse than a spinner;
+    /// what gets shown is the number of characters.
     var received = 0
     let queuedAt = Date()
 
-    /// Nicht beobachtet: die Aufgabe ist Verwaltung, kein Zustand für die Oberfläche.
+    /// Not observed: the task is bookkeeping, not state for the interface.
     @ObservationIgnored var task: Task<Void, Never>?
 
     init(image: UIImage, placeID: UUID?, hint: String) {
@@ -80,13 +80,13 @@ final class IntakeJob: Identifiable {
 
     var acceptedCount: Int { result.proposals.filter(\.accepted).count }
 
-    /// Was der grosse Knopf im Prüfschritt tut.
+    /// What the big button in the checking step does.
     ///
-    /// Als Regel hier und nicht als Fragezeichen in der Ansicht, weil genau daran
-    /// etwas kaputt war: der Knopf hiess „Nichts übernehmen" und war abgeschaltet.
-    /// Wer alles abwählte, um eine Aufnahme loszuwerden, sass fest — die Beschriftung
-    /// versprach eine Handlung, der Knopf verweigerte sie. Nichts anzuhaken heisst
-    /// nicht „keine Handlung", es heisst „diese Aufnahme soll weg".
+    /// As a rule here and not as a question mark in the view, because something was
+    /// broken about exactly this: the button read "take over nothing" and was disabled.
+    /// Whoever unticked everything in order to be rid of a shot was stuck — the label
+    /// promised an action, the button refused it. Ticking nothing does not mean "no
+    /// action", it means "this shot should go".
     enum CommitAction: Equatable {
         case take(Int)
         case discard
@@ -103,7 +103,7 @@ final class IntakeJob: Identifiable {
         acceptedCount == 0 ? .discard : .take(acceptedCount)
     }
 
-    /// Was auf dem Symbol steht.
+    /// What stands on the symbol.
     var badge: String? {
         switch phase {
         case .review: return result.proposals.isEmpty ? "0" : "\(result.proposals.count)"
@@ -114,26 +114,26 @@ final class IntakeJob: Identifiable {
     }
 }
 
-/// Wer als Nächstes darf.
+/// Who goes next.
 ///
-/// Eigener Typ und eine reine Funktion, weil genau hier der Fehler sitzen würde, den
-/// man nicht sieht: zu viele Aufrufe gleichzeitig kosten Geld und holen sich eine
-/// Drosselung, zu wenige lassen den Nutzer warten, und ein Auftrag, der im
-/// Prüfschritt hängt, darf keinen Arbeiter festhalten. Als Funktion über eine Liste
-/// von Phasen ist das prüfbar; als drei Bedingungen mitten in einer Schleife nicht.
+/// Its own type and a pure function, because this is exactly where the error you
+/// cannot see would sit: too many calls at once cost money and earn a throttle, too
+/// few keep the user waiting, and a job hanging in the checking step must not hold on
+/// to a worker. As a function over a list of phases that is testable; as three
+/// conditions in the middle of a loop it is not.
 enum IntakeSchedule {
 
-    /// Wie viele Aufträge überhaupt in der Reihe stehen dürfen.
+    /// How many jobs may stand in the queue at all.
     ///
-    /// Nicht wegen der Rechenzeit, sondern wegen des Speichers: jedes Foto liegt
-    /// verkleinert im Arbeitsspeicher, bis es übernommen oder verworfen ist.
+    /// Not because of processing time but because of memory: every photo sits in
+    /// memory, scaled down, until it is taken over or discarded.
     static let maxQueued = 24
 
-    /// In welchen Grenzen die Gleichzeitigkeit einstellbar ist.
+    /// The bounds within which the concurrency can be set.
     static let concurrencyRange = 1 ... 6
 
-    /// Die Plätze in der Reihe, die jetzt starten dürfen — in der Reihenfolge, in der
-    /// sie eingereiht wurden.
+    /// The places in the queue that may start now — in the order in which they were
+    /// queued.
     static func startable(_ phases: [IntakeJob.Phase], concurrency: Int) -> [Int] {
         var free = concurrency.clamped(to: concurrencyRange) - phases.filter(\.isBusy).count
         guard free > 0 else { return [] }

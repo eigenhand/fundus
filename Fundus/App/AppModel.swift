@@ -1,12 +1,11 @@
 import SwiftUI
 
-/// Der Zustand der App an einer Stelle.
+/// The state of the app in one place.
 ///
-/// Der Bestand ist ein Werttyp und liegt hier als eine Eigenschaft: laden, ändern,
-/// speichern. Was an Nebenläufigkeit nötig ist — Dateien, Netz, das lokale Modell —
-/// steckt hinter Aktoren, und alles, was die Oberfläche sieht, bleibt auf dem
-/// Hauptakteur. Das ist wenig Architektur für eine ganze App, und für einige hundert
-/// Dinge ist mehr auch nicht nötig.
+/// The inventory is a value type and sits here as a single property: load, change,
+/// save. What concurrency is needed — files, network, the local model — sits behind
+/// actors, and everything the interface sees stays on the main actor. That is little
+/// architecture for a whole app, and for a few hundred things more is not needed.
 @Observable @MainActor
 final class AppModel {
 
@@ -17,19 +16,19 @@ final class AppModel {
 
     var query = ""
     var hits: [ItemSearch.Hit] = []
-    /// Ob die Ähnlichkeitssuche zum letzten Ergebnis beigetragen hat. Steht in der
-    /// Fußzeile der Trefferliste, denn es ist ein Unterschied, ob die App gesucht
-    /// oder verstanden hat.
+    /// Whether the similarity search contributed to the last result. It stands in the
+    /// footer of the hit list, because there is a difference between the app having
+    /// searched and the app having understood.
     var semanticContributed = false
     private var searchTask: Task<Void, Never>?
 
     // MARK: Aufnahme
 
-    /// Läuft eine Aufnahme, steht hier ihr Zustand. `nil` heißt: keine.
-    /// Die Reihe der Aufnahmen — wartend, laufend und fertig zum Prüfen.
+    /// While a shot is running, its state stands here. `nil` means: none.
+    /// The queue of shots — waiting, running and ready to check.
     ///
-    /// Eine Liste statt einer Optionalen: hier stand `intake: IntakeState?`, und damit
-    /// war ein zweites Foto erst möglich, wenn das erste durch war.
+    /// A list rather than an optional: this used to read `intake: IntakeState?`, and
+    /// with that a second photo was only possible once the first was through.
     var jobs: [IntakeJob] = []
 
     // MARK: Index
@@ -40,8 +39,8 @@ final class AppModel {
 
     // MARK: Meldungen
 
-    /// Eine Zeile, die oben einläuft. Fehler gehören hierher und nicht in die
-    /// Konsole — was der Nutzer nicht sieht, ist für ihn nicht passiert.
+    /// A line that slides in at the top. Errors belong here and not in the console —
+    /// what the user does not see did not happen as far as they are concerned.
     var banner: Banner?
 
     struct Banner: Equatable {
@@ -52,28 +51,28 @@ final class AppModel {
 
     private var saveTask: Task<Void, Never>?
 
-    // MARK: Laden und Speichern
+    // MARK: Loading and saving
 
     func load() async {
         settings = await Store.shared.loadSettings()
         inventory = await Store.shared.loadInventory()
         adoptSharedEndpointIfNeeded()
         refreshIndexStatus()
-        // Was beim letzten Mal keinen Vektor bekam, bekommt ihn jetzt. Ohne Aufhebens
-        // und ohne die Oberfläche aufzuhalten.
+        // Whatever got no vector last time gets one now. Without fuss and without
+        // holding up the interface.
         if settings.indexAutomatically { Task { await indexPending() } }
     }
 
-    /// Nimmt einen Endpoint, den eine Schwester-App hinterlegt hat.
+    /// Takes over an endpoint that a sibling app has left behind.
     ///
-    /// Nur, wenn hier noch keiner steht — eine eingerichtete App soll sich nicht von
-    /// einer anderen umkonfigurieren lassen.
+    /// Only if none stands here yet — an app that has been set up should not let
+    /// itself be reconfigured by another.
     ///
-    /// Das ist seit heute der einzige Weg, auf dem Fundus zu einem Zugang kommt, ohne
-    /// dass jemand tippt. Vorher stand davor ein Zweig für Builds mit eingebautem
-    /// Schlüssel; der ist weg, und mit ihm der Schlüssel im Binary. Wer Faden auf
-    /// demselben Gerät eingerichtet hat, bekommt dessen Endpoint hier weiterhin
-    /// angeboten — die App Group teilt ihn, der Nutzer hat ihn selbst eingetragen.
+    /// As of today this is the only way Fundus comes by access without somebody
+    /// typing. Before it there was a branch for builds with a built-in key; that is
+    /// gone, and with it the key in the binary. Whoever has set up Faden on the same
+    /// device is still offered its endpoint here — the App Group shares it, and the
+    /// user entered it themselves.
     private func adoptSharedEndpointIfNeeded() {
         guard !settings.model.isComplete, let shared = SharedEndpoint.read() else { return }
         settings.model.baseURL = shared.baseURL
@@ -84,8 +83,8 @@ final class AppModel {
         banner = Banner(text: "Endpoint von \(shared.writtenBy) übernommen.")
     }
 
-    /// Speichert verzögert. Zwanzig Tastendrücke in einem Namensfeld sollen nicht
-    /// zwanzig Schreibvorgänge in eine Datei sein, die Spind synchronisiert.
+    /// Saves with a delay. Twenty keystrokes in a name field should not be twenty
+    /// writes to a file that Spind synchronises.
     func save() {
         saveTask?.cancel()
         let snapshot = inventory
@@ -98,8 +97,7 @@ final class AppModel {
         }
     }
 
-    /// Sofort und ohne Verzögerung — für den Moment, in dem die App in den
-    /// Hintergrund geht.
+    /// At once and without delay — for the moment the app goes into the background.
     func saveNow() async {
         saveTask?.cancel()
         await Store.shared.save(inventory)
@@ -133,8 +131,8 @@ final class AppModel {
         let before = inventory.item(item.id)
         inventory.update(item)
         save()
-        // Der Vektor gilt für den Text. Ändert sich der Text, ist der Vektor falsch —
-        // nicht kaputt, sondern zum vorigen Namen gehörend, was schlimmer ist.
+        // The vector belongs to the text. If the text changes, the vector is wrong —
+        // not broken, but belonging to the previous name, which is worse.
         if before?.embeddableText != item.embeddableText {
             invalidateEmbedding(of: item.id)
             if settings.indexAutomatically { Task { await indexPending() } }
@@ -147,7 +145,7 @@ final class AppModel {
         refreshIndexStatus()
     }
 
-    /// „Gesehen.“ Die Handlung, auf der die Verlässlichkeit dieser App beruht.
+    /// "Seen." The act on which the reliability of this app rests.
     func markSeen(_ id: UUID) {
         inventory.markSeen(id)
         save()
@@ -183,8 +181,8 @@ final class AppModel {
 
     // MARK: Suche
 
-    /// Sucht verzögert. Der Text läuft sofort durch — das kostet nichts —, die
-    /// Bedeutung erst, wenn das Tippen aufhört.
+    /// Searches with a delay. The text runs through at once — that costs nothing —
+    /// the meaning only once the typing stops.
     func searchSoon() {
         let text = ItemSearch.text(query, in: inventory.items)
         hits = ItemSearch.merge(text)
@@ -192,8 +190,8 @@ final class AppModel {
 
         searchTask?.cancel()
         let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        // Unter drei Zeichen findet Bedeutung nichts Sinnvolles, kostet aber bei
-        // einem Endpoint eine Anfrage pro Tastendruck.
+        // Below three characters, meaning finds nothing useful but costs one request
+        // per keystroke against an endpoint.
         guard q.count >= 3 else { return }
 
         searchTask = Task { [weak self] in
@@ -213,8 +211,8 @@ final class AppModel {
         do {
             vector = try await embedOne(q)
         } catch {
-            // Still. Die Textsuche hat schon geantwortet, und eine Fehlermeldung für
-            // etwas, das der Nutzer nicht angefordert hat, ist Lärm.
+            // Quietly. The text search has already answered, and an error message for
+            // something the user did not ask for is noise.
             return
         }
         guard !Task.isCancelled, q == query.trimmingCharacters(in: .whitespacesAndNewlines) else { return }
@@ -251,11 +249,11 @@ final class AppModel {
         indexStatus = Indexer.status(inventory.items, model: settings.search.effectiveModel)
     }
 
-    /// Holt nach, was noch keinen brauchbaren Vektor hat.
+    /// Catches up on whatever has no usable vector yet.
     ///
-    /// In Häppchen, damit ein großer Bestand die Oberfläche nicht blockiert, und mit
-    /// Zwischenspeichern: bricht es ab — kein Netz, App im Hintergrund, Modell nicht
-    /// geladen —, ist die Arbeit bis dahin nicht verloren.
+    /// In small helpings, so that a large inventory does not block the interface, and
+    /// saving as it goes: if it breaks off — no network, app in the background, model
+    /// not loaded — the work up to that point is not lost.
     func indexPending(batchSize: Int = 24) async {
         guard !isIndexing else { return }
         let model = settings.search.effectiveModel
@@ -284,8 +282,8 @@ final class AppModel {
 
             for (item, vector) in zip(pending, vectors) {
                 guard let i = inventory.items.firstIndex(where: { $0.id == item.id }) else { continue }
-                // Gegen den Text prüfen, der eingebettet wurde: wer während des
-                // Durchlaufs einen Namen ändert, bekäme sonst den Vektor des alten.
+                // Check against the text that was embedded: whoever changes a name
+                // during the run would otherwise get the vector of the old one.
                 guard inventory.items[i].embeddableText == item.embeddableText else { continue }
                 inventory.items[i].embedding = vector
                 inventory.items[i].embeddingStamp = EmbeddingStamp(model: model, dimension: vector.count)
@@ -295,7 +293,7 @@ final class AppModel {
         }
     }
 
-    /// Wirft alle Vektoren weg und baut neu. Für den Wechsel der Quelle.
+    /// Throws away every vector and rebuilds. For a change of source.
     func reindexAll() async {
         for i in inventory.items.indices {
             inventory.items[i].embedding = nil
@@ -306,8 +304,8 @@ final class AppModel {
         await indexPending()
     }
 
-    /// Löscht den Index, ohne neu zu bauen. Gibt Platz frei und macht die
-    /// Ähnlichkeitssuche aus, ohne einen Eintrag anzurühren.
+    /// Deletes the index without rebuilding. Frees space and turns the similarity
+    /// search off without touching a single entry.
     func dropIndex() {
         for i in inventory.items.indices {
             inventory.items[i].embedding = nil
@@ -320,17 +318,16 @@ final class AppModel {
 
     // MARK: Aufnahme
 
-    /// Reiht Fotos ein und lässt die Arbeiter los.
+    /// Queues photos and lets the workers loose.
     ///
-    /// Reihen statt starten, und das ist der ganze Unterschied zu vorher: wer vor
-    /// einem Regal steht, macht nicht ein Foto, sondern zwölf. Vorher belegte jedes
-    /// den Bildschirm, bis das Modell fertig gelesen hatte. Jetzt kommt es in die
-    /// Reihe, die Ansicht bleibt stehen, und das nächste Foto ist einen Tipp entfernt.
+    /// Queuing rather than starting, and that is the whole difference to before:
+    /// whoever stands in front of a shelf does not take one photo but twelve. Before,
+    /// each one held the screen until the model had finished reading. Now it goes into
+    /// the queue, the view stays where it is, and the next photo is one tap away.
     ///
-    /// Das Bild wird *vor* dem Aufruf behalten, nicht erst nach der Bestätigung. Es
-    /// ist der Beleg zur Aufnahme, und es soll auch dann noch da sein, wenn der
-    /// Aufruf fehlschlägt — dann kann man es nochmal versuchen, ohne noch einmal in
-    /// den Keller zu gehen.
+    /// The image is kept *before* the call, not only after confirmation. It is the
+    /// evidence for the shot, and it should still be there if the call fails — then
+    /// you can try again without walking down to the cellar a second time.
     func enqueue(_ images: [UIImage], placeID: UUID?, hint: String = "") {
         guard client != nil else {
             banner = Banner(text: "Kein Modell eingerichtet — ohne Endpoint kann niemand das Foto lesen.",
@@ -349,11 +346,11 @@ final class AppModel {
         pump()
     }
 
-    /// Startet so viele wartende Aufträge, wie Arbeiter frei sind.
+    /// Starts as many waiting jobs as there are free workers.
     ///
-    /// Wird nach jedem Einreihen und nach jedem fertigen Auftrag gerufen. Ein Auftrag
-    /// im Prüfschritt hält keinen Arbeiter — sonst würde ein Foto, das jemand liegen
-    /// lässt, die ganze Reihe blockieren.
+    /// Called after every queuing and after every finished job. A job at the checking
+    /// stage holds no worker — otherwise a photo that somebody leaves lying would
+    /// block the whole queue.
     private func pump() {
         for index in IntakeSchedule.startable(jobs.map(\.phase),
                                               concurrency: settings.intakeConcurrency) {
@@ -372,8 +369,8 @@ final class AppModel {
         let image = job.image
         let hint = job.hint
 
-        // Der Rumpf läuft auf dem Hauptakteur, weil `start` es tut — deshalb genügt
-        // hier ein `defer` und kein zweiter Sprung dorthin.
+        // The body runs on the main actor because `start` does — which is why a
+        // `defer` is enough here and not a second hop over to it.
         job.task = Task { [weak self, weak job] in
             defer { self?.pump() }
             do {
@@ -391,10 +388,10 @@ final class AppModel {
                     return
                 }
 
-                // Kennungen nachschlagen, falls eingerichtet und welche da sind. Die
-                // Aufnahme ist an dieser Stelle schon bezahlt und gültig — ein
-                // Fehlschlag beim Nachschlagen darf sie deshalb nicht kosten, und
-                // `resolve` schlägt einzeln fehl statt im Ganzen.
+                // Look identifiers up, if that is set up and there are any. At this
+                // point the shot has already been paid for and is valid — a failed
+                // lookup must therefore not cost it, and `resolve` fails one at a time
+                // rather than as a whole.
                 if let lookup = self.lookupClient,
                    result.proposals.contains(where: { $0.code?.isSearchable == true }) {
                     job.phase = .looking(done: 0, total: 0)
@@ -414,12 +411,12 @@ final class AppModel {
         }
     }
 
-    /// Sagt Bescheid, dass ein Auftrag fertig ist.
+    /// Says that a job is done.
     ///
-    /// Nötig geworden mit der Reihe: vorher sprang der Prüfschritt von selbst auf, und
-    /// dass etwas fertig war, konnte man nicht übersehen. Wer jetzt weiterfotografiert,
-    /// würde es übersehen — das Symbol in der Reihe allein reicht nicht, wenn man
-    /// gerade auf den Auslöser schaut.
+    /// Became necessary with the queue: before, the checking step opened by itself and
+    /// you could not miss that something was finished. Whoever keeps taking photos now
+    /// would miss it — the symbol in the queue alone is not enough when you are
+    /// looking at the shutter.
     private func announce(_ job: IntakeJob) {
         switch job.phase {
         case .review:
@@ -434,10 +431,10 @@ final class AppModel {
         }
     }
 
-    /// Übernimmt, was der Nutzer angehakt hat.
+    /// Takes over whatever the user has ticked.
     ///
-    /// Erst hier entsteht ein Eintrag. Alles davor waren Vorschläge, und der
-    /// Unterschied ist der Grund, warum man diesem Bestand glauben kann.
+    /// Only here does an entry come into being. Everything before it was a suggestion,
+    /// and that difference is the reason this inventory can be believed.
     @discardableResult
     func commit(_ job: IntakeJob) -> (added: Int, increased: Int) {
         let photoID = PhotoStore.save(job.image)
@@ -465,15 +462,15 @@ final class AppModel {
         return (added, increased)
     }
 
-    /// Wirft einen Auftrag weg — auch einen, der gerade läuft.
+    /// Throws a job away — including one that is currently running.
     func discard(_ job: IntakeJob) {
         job.task?.cancel()
         remove(job)
         pump()
     }
 
-    /// Noch einmal, von vorn. Für einen Auftrag, dessen Aufruf gescheitert ist: das
-    /// Foto ist noch da, und ein zweiter Versuch kostet keinen Gang in den Keller.
+    /// Once more, from the top. For a job whose call failed: the photo is still there,
+    /// and a second attempt costs no walk down to the cellar.
     func retry(_ job: IntakeJob) {
         switch job.phase {
         case .failed, .empty: break
@@ -490,17 +487,16 @@ final class AppModel {
 
     // MARK: Das Erkennungsmodell
 
-    /// Wie weit der Download ist. `nil` heisst: laeuft gerade keiner.
+    /// How far the download has got. `nil` means: none is running.
     var segmentDownload: RemoteModel.Progress?
 
     var segmenterInstalled: Bool { SegmentAssets.looksInstalled }
     var segmenterBytes: Int64 { SegmentAssets.model.bytesOnDisk }
 
-    /// Laedt das Modell fuer den Fingertipp im Objekte-Modus.
+    /// Loads the model for tapping in object mode.
     ///
-    /// Im Hintergrund und nicht im Blatt: die Einstellungen lassen sich zumachen,
-    /// waehrend geladen wird, und achtzig Megabyte sind nichts, wovor man sitzen
-    /// bleiben sollte.
+    /// In the background and not in the sheet: the settings can be closed while it
+    /// downloads, and eighty megabytes are nothing to sit in front of.
     func downloadSegmenter() {
         guard segmentDownload == nil else { return }
         segmentDownload = .downloading(done: 0, total: SegmentAssets.model.approximateBytes)
@@ -561,9 +557,9 @@ final class AppModel {
         save()
     }
 
-    /// Wechselt die Vektorquelle. Der bestehende Index wird dabei nicht heimlich
-    /// weggeworfen — was er ist, steht in den Einstellungen, und was damit passiert,
-    /// entscheidet der Nutzer.
+    /// Switches the vector source. The existing index is not quietly thrown away in
+    /// the process — what it is stands in the settings, and what happens to it is the
+    /// user's decision.
     func setSearchSource(_ source: SearchConfig.Source) {
         settings.search.source = source
         save()

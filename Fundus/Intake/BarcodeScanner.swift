@@ -1,34 +1,34 @@
 import UIKit
 import Vision
 
-/// Barcodes aus einem Foto lesen — mit Vision, nicht mit dem Modell.
+/// Reading barcodes out of a photo — with Vision, not with the model.
 ///
-/// Das ist Absicht und kein Umweg. Ein Sprachmodell, dem man Balken zeigt, rät: es
-/// sieht eine Ziffernfolge unter dem Code und schreibt sie ab, und wenn sie unscharf
-/// ist, schreibt es etwas Plausibles. Vision dekodiert stattdessen die Balken selbst
-/// und prüft die Prüfziffer — eine EAN, die hier herauskommt, ist die EAN, die auf
-/// dem Ding steht, oder es kommt gar keine heraus.
+/// That is deliberate and not a detour. A language model shown bars guesses: it sees a
+/// row of digits under the code and copies it out, and when that is blurred it writes
+/// something plausible. Vision instead decodes the bars themselves and checks the check
+/// digit — an EAN that comes out here is the EAN that stands on the thing, or nothing
+/// comes out at all.
 ///
-/// Kostet nichts, braucht keine Leitung und läuft, bevor überhaupt ein bezahlter
-/// Aufruf stattfindet. Die gefundenen Codes gehen in den Prompt, damit das Modell
-/// sie dem richtigen Gegenstand zuordnen kann, statt sie selbst lesen zu müssen.
+/// Costs nothing, needs no connection and runs before any paid call takes place at all.
+/// The codes it finds go into the prompt so that the model can assign them to the right
+/// object instead of having to read them itself.
 enum BarcodeScanner {
 
-    /// Alle im Bild dekodierbaren Codes, doppelte entfernt.
+    /// Every code in the picture that can be decoded, duplicates removed.
     ///
-    /// Ohne Abschlussblock und ohne Continuation, und das ist eine Korrektur, kein
-    /// Geschmack. `VNImageRequestHandler.perform` arbeitet ohnehin synchron: wenn es
-    /// zurückkommt, stehen die Ergebnisse an der Anfrage. Die frühere Fassung nahm
-    /// trotzdem den Abschlussblock **und** fing daneben den Fehler von `perform` ab —
-    /// und Vision ruft den Block auch dann, wenn es danach wirft. Beide Wege lösten
-    /// dieselbe Continuation aus:
+    /// Without a completion block and without a continuation, and that is a correction,
+    /// not taste. `VNImageRequestHandler.perform` works synchronously anyway: by the
+    /// time it returns, the results stand on the request. The earlier version took the
+    /// completion block all the same **and** caught `perform`'s error beside it — and
+    /// Vision calls the block even when it throws afterwards. Both routes resumed the
+    /// same continuation:
     ///
     ///     Fatal error: SWIFT TASK CONTINUATION MISUSE:
     ///     scan(_:) tried to resume its continuation more than once
     ///
-    /// Kein Fehlerpfad, sondern ein Absturz, und zwar vor dem bezahlten Aufruf: die
-    /// Aufnahme war weg, bevor sie begonnen hatte. Ausgelöst hat es im Simulator ein
-    /// „Could not create inference context“; auf einem Gerät genügt Speicherdruck.
+    /// Not an error path but a crash, and one before the paid call: the shot was gone
+    /// before it had begun. In the simulator a "Could not create inference context" set
+    /// it off; on a device memory pressure is enough.
     static func scan(_ image: UIImage) async -> [ItemCode] {
         guard let cg = image.cgImage else { return [] }
 
@@ -37,8 +37,8 @@ enum BarcodeScanner {
         do {
             try handler.perform([request])
         } catch {
-            // Ein Bild ohne lesbaren Code ist der Normalfall, kein Fehler — und wenn
-            // Vision gar nicht erst anläuft, läuft die Aufnahme eben ohne Codes weiter.
+            // A picture without a readable code is the normal case, not an error — and
+            // if Vision does not even start, the shot simply carries on without codes.
             return []
         }
 
@@ -53,8 +53,8 @@ enum BarcodeScanner {
                                 origin: .scanned)
             }
 
-        // Derselbe Code kann mehrfach im Bild stehen — etwa auf Schachtel und
-        // Beipackzettel. Einmal reicht.
+        // The same code can stand in the picture several times — on the box and on the
+        // leaflet, say. Once is enough.
         var seen = Set<String>()
         return found.filter { seen.insert($0.value).inserted }
     }
@@ -70,8 +70,8 @@ enum BarcodeScanner {
         }
     }
 
-    /// Vision rechnet auf dem rohen Pixelraster, `UIImage` trägt die Drehung daneben.
-    /// Ohne diese Übersetzung findet ein hochkant fotografierter Code nichts.
+    /// Vision works on the raw pixel grid, `UIImage` carries the rotation beside it.
+    /// Without this translation a code photographed upright finds nothing.
     private static func orientation(_ image: UIImage) -> CGImagePropertyOrientation {
         switch image.imageOrientation {
         case .up:            return .up

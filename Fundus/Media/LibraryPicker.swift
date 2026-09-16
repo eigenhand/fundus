@@ -1,16 +1,17 @@
 import PhotosUI
 import SwiftUI
 
-/// Bilder aus der Galerie.
+/// Pictures from the photo library.
 ///
-/// `PHPickerViewController` und nicht `UIImagePickerController`: der Picker läuft in
-/// einem eigenen Prozess und braucht deshalb keinen Zugriff auf die Fotobibliothek —
-/// die App bekommt genau die Bilder, die der Nutzer antippt, und sonst nichts. Für
-/// eine App, die ohnehin nichts sammeln will, ist das der passende Weg.
+/// `PHPickerViewController` and not `UIImagePickerController`: the picker runs in its
+/// own process and therefore needs no access to the photo library — the app gets
+/// exactly the pictures the user taps and nothing else. For an app that does not want
+/// to collect anything anyway, that is the fitting route.
 ///
-/// Mehrfachauswahl, seit die Aufnahme eine Reihe ist. Vorher wäre sie sinnlos gewesen:
-/// das zweite Bild hätte warten müssen, bis das erste durch den Prüfschritt war. Jetzt
-/// ist ein Regalgang ein Griff — zwanzig Fotos markieren, einreihen, weiterarbeiten.
+/// Multiple selection, since shots became a queue. Before it would have been pointless:
+/// the second picture would have had to wait until the first was through the checking
+/// step. Now a walk along a shelf is one gesture — mark twenty photos, queue them, get
+/// on with something else.
 struct LibraryPicker: UIViewControllerRepresentable {
     var onImages: ([UIImage]) -> Void
 
@@ -19,9 +20,8 @@ struct LibraryPicker: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> PHPickerViewController {
         var config = PHPickerConfiguration()
         config.filter = .images
-        // Nicht unbegrenzt: die Reihe fasst eine feste Zahl, und eine Auswahl, von der
-        // die Hälfte stillschweigend wegfällt, ist schlechter als eine Grenze, die der
-        // Picker selbst anzeigt.
+        // Not unlimited: the queue holds a fixed number, and a selection half of which
+        // silently falls away is worse than a limit the picker itself displays.
         config.selectionLimit = IntakeSchedule.maxQueued
         config.preferredAssetRepresentationMode = .current
         let picker = PHPickerViewController(configuration: config)
@@ -37,14 +37,13 @@ struct LibraryPicker: UIViewControllerRepresentable {
         private let parent: LibraryPicker
         init(_ parent: LibraryPicker) { self.parent = parent }
 
-        /// Lädt alle ausgewählten Bilder und gibt sie in der Reihenfolge weiter, in
-        /// der sie ausgewählt wurden.
+        /// Loads every selected picture and passes them on in the order in which they
+        /// were selected.
         ///
-        /// Die Reihenfolge ist nicht Geschmack: der Nutzer hat sein Regal von links
-        /// nach rechts fotografiert, und die Reihe soll so aussehen. `loadObject`
-        /// antwortet aber, wann es fertig ist — ein großes Bild nach einem kleinen.
-        /// Deshalb wird in ein Feld fester Länge geschrieben und erst am Ende
-        /// eingesammelt.
+        /// The order is not taste: the user photographed their shelf from left to right,
+        /// and the queue should look that way. `loadObject`, however, answers when it is
+        /// done — a large picture after a small one. Which is why the results are
+        /// written into a fixed-length array and only collected at the end.
         func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
             let usable = results.map(\.itemProvider)
                 .filter { $0.canLoadObject(ofClass: UIImage.self) }
@@ -67,11 +66,11 @@ struct LibraryPicker: UIViewControllerRepresentable {
             }
         }
 
-        /// Ein Feld fester Länge mit einem Zähler, unter einem Schloss.
+        /// A fixed-length array with a counter, under a lock.
         ///
-        /// `loadObject` ruft aus einem beliebigen Faden zurück, und zwar für jedes
-        /// Bild aus einem anderen. Ohne Schloss wäre das ein Wettlauf auf demselben
-        /// Feld — und der Zähler entscheidet, wer der Letzte ist und weitergeben darf.
+        /// `loadObject` calls back from an arbitrary thread, and from a different one
+        /// for each picture. Without a lock that would be a race on the same array —
+        /// and the counter decides who is last and may pass the result on.
         private final class Slots: @unchecked Sendable {
             private let lock = NSLock()
             private var images: [UIImage?]
@@ -82,7 +81,7 @@ struct LibraryPicker: UIViewControllerRepresentable {
                 remaining = count
             }
 
-            /// Legt ein Bild ab und sagt, ob damit alle da sind.
+            /// Stores one picture and says whether that makes the set complete.
             func put(_ image: UIImage?, at index: Int) -> Bool {
                 lock.lock()
                 defer { lock.unlock() }

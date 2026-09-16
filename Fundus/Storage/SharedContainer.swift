@@ -1,24 +1,25 @@
 import Foundation
 
-/// Wo die Daten liegen: im gemeinsamen Container der eigenhand-Apps, wenn er da ist.
+/// Where the data lives: in the shared container of the eigenhand apps, when there is
+/// one.
 ///
-/// `group.dev.eigenhand.shared` ist der Ort, an dem Spind, Faden und Fundus sich
-/// treffen. Für Spind heißt das, dass es diesen Bestand mitsynchronisieren kann, ohne
-/// Fundus zu kennen; für Faden, dass es ihn lesen könnte, ohne ihn zu kopieren.
+/// `group.dev.eigenhand.shared` is the place where Spind, Faden and Fundus meet. For
+/// Spind that means it can synchronise this inventory along with everything else
+/// without knowing Fundus; for Faden, that it could read it without copying it.
 ///
-/// Der Rückfall ist nicht Kosmetik. Eine App Group gilt nur, wenn das Bereitstellungs-
-/// profil sie enthält — im Simulator mit automatischer Signierung, in einem Fork mit
-/// fremder Team-ID und in einem Build ohne dieses Recht liefert
-/// `containerURL(forSecurityApplicationGroupIdentifier:)` einfach `nil`. Ohne Rückfall
-/// startete die App dann ohne Speicher, und zwar lautlos.
+/// The fallback is not cosmetic. An App Group only applies when the provisioning
+/// profile contains it — in the simulator with automatic signing, in a fork with
+/// somebody else's team ID and in a build without this entitlement,
+/// `containerURL(forSecurityApplicationGroupIdentifier:)` simply returns `nil`. Without
+/// a fallback the app would then start with no storage, and silently at that.
 ///
-/// Deshalb steht `isShared` hier und in den Einstellungen: welcher der beiden Orte
-/// benutzt wird, entscheidet darüber, ob Spind diesen Bestand überhaupt sieht. Das
-/// ist keine Kleinigkeit, die man erraten sollte.
+/// That is why `isShared` stands here and in the settings: which of the two places is
+/// used decides whether Spind sees this inventory at all. That is not a small thing to
+/// be left to guesswork.
 enum SharedContainer {
     static let groupIdentifier = "group.dev.eigenhand.shared"
 
-    /// Das Verzeichnis, in dem Fundus arbeitet.
+    /// The directory Fundus works in.
     static let directory: URL = {
         let base = groupURL ?? FileManager.default
             .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -27,7 +28,7 @@ enum SharedContainer {
         return dir
     }()
 
-    /// Für alles, was sich die Apps teilen — nicht unter „Fundus“, sondern daneben.
+    /// For everything the apps share — not under "Fundus" but beside it.
     static let sharedDirectory: URL? = {
         guard let groupURL else { return nil }
         let dir = groupURL.appendingPathComponent("eigenhand", isDirectory: true)
@@ -40,7 +41,7 @@ enum SharedContainer {
 
     static var isShared: Bool { groupURL != nil }
 
-    /// Was in den Einstellungen stehen soll — ohne Vermutung, mit dem echten Pfad.
+    /// What the settings should say — no guesswork, with the real path.
     static var describe: String {
         isShared
             ? "Gemeinsamer Ordner der eigenhand-Apps (\(groupIdentifier))"
@@ -48,25 +49,24 @@ enum SharedContainer {
     }
 }
 
-/// Der Endpoint, den sich die Apps teilen können.
+/// The endpoint the apps can share.
 ///
-/// Die kleinste ehrliche Fassung eines Konnektors: eine Datei im gemeinsamen Ordner
-/// mit Adresse, Pfad und Modellname, und der Schlüssel daneben in der gemeinsamen
-/// Schlüsselbundgruppe. Wer eine der drei Apps einrichtet, hat damit alle drei
-/// eingerichtet.
+/// The smallest honest version of a connector: a file in the shared folder with
+/// address, path and model name, and the key beside it in the shared keychain group.
+/// Whoever sets up one of the three apps has thereby set up all three.
 ///
-/// Kein Austausch von Daten, nur von Zugang. Das ist die Grenze, die diese Datei
-/// absichtlich zieht: den Bestand teilen die Apps über den Container, und wer welchen
-/// Bestand sehen darf, entscheidet nicht diese Datei.
+/// No exchange of data, only of access. That is the line this file deliberately draws:
+/// the apps share the inventory through the container, and who may see which inventory
+/// is not something this file decides.
 ///
-/// Faden schreibt sie noch nicht — heute ist Fundus die App, die sie anlegt. Sobald
-/// Faden dasselbe tut, ist die Einrichtung in beiden Richtungen erledigt.
+/// Faden does not write it yet — today Fundus is the app that creates it. As soon as
+/// Faden does the same, setting up works in both directions.
 struct SharedEndpoint: Codable, Equatable {
     var baseURL: String
     var path: String
     var model: String
-    /// Immer `Keychain.sharedAccount`. Steht mit in der Datei, damit sie für sich
-    /// verständlich ist und ein späterer Wechsel nichts stillschweigend bricht.
+    /// Always `Keychain.sharedAccount`. It stands in the file so that the file makes
+    /// sense on its own and a later change breaks nothing silently.
     var keychainAccount: String
     var writtenBy: String
     var writtenAt: Date

@@ -1,12 +1,12 @@
 import Foundation
 
-/// Bestand und Einstellungen als zwei Dateien. Klein genug, dass eine Datenbank
-/// nur Abhängigkeit ohne Gegenwert wäre — ein Haushaltsbestand sind einige hundert
-/// Zeilen, und die werden einmal geladen und danach im Speicher gehalten.
+/// Inventory and settings as two files. Small enough that a database would be a
+/// dependency without return — a household inventory is a few hundred lines, and those
+/// are loaded once and then kept in memory.
 ///
-/// Als Klartext-JSON und nicht in einem eigenen Format, weil der Bestand dem Nutzer
-/// gehört: er liegt im gemeinsamen Ordner, Spind kann ihn synchronisieren, und wer
-/// ihn woanders braucht, kann ihn lesen, ohne diese App zu besitzen.
+/// As plain-text JSON and not in a format of its own, because the inventory belongs to
+/// the user: it lies in the shared folder, Spind can synchronise it, and whoever needs
+/// it elsewhere can read it without owning this app.
 actor Store {
     static let shared = Store()
 
@@ -22,10 +22,9 @@ actor Store {
     private var encoder: JSONEncoder {
         let e = JSONEncoder()
         e.dateEncodingStrategy = .iso8601
-        // Sortiert und eingerückt: damit zwei Fassungen derselben Datei sich in
-        // einem Diff unterscheiden lassen. Spind synchronisiert sie, und eine
-        // Zeilenordnung, die sich bei jedem Speichern dreht, macht aus einer
-        // Änderung an einem Ding eine Änderung an allem.
+        // Sorted and indented, so that two versions of the same file can be told apart
+        // in a diff. Spind synchronises it, and a line order that shuffles on every save
+        // turns a change to one thing into a change to everything.
         e.outputFormatting = [.prettyPrinted, .sortedKeys]
         return e
     }
@@ -59,8 +58,8 @@ actor Store {
         try? data.write(to: settingsURL, options: .atomic)
     }
 
-    /// Der Bestand als Datei zum Weitergeben. Dasselbe JSON, nur woanders — es gibt
-    /// keinen Grund, für einen Export ein zweites Format zu erfinden.
+    /// The inventory as a file to pass on. The same JSON, only elsewhere — there is no
+    /// reason to invent a second format for an export.
     func exportInventory(_ inventory: Inventory) -> URL? {
         guard let data = try? encoder.encode(inventory) else { return nil }
         let name = "Fundus-\(Self.stamp()).json"

@@ -1,11 +1,11 @@
 import Foundation
 
-/// Der Bestand: Dinge und Orte in einem Dokument.
+/// The inventory: things and places in one document.
 ///
-/// Ein Werttyp mit reinen Funktionen darauf, nicht ein Speicher mit Zustand. Der
-/// Grund ist Prüfbarkeit: „ein zweites Foto derselben Schublade darf keine Dubletten
-/// anlegen“ ist eine Aussage über `absorb`, und die will man in einem Test schreiben
-/// können, ohne eine Datei, einen Endpoint oder eine Oberfläche zu haben.
+/// A value type with pure functions on it, not a store with state. The reason is
+/// testability: "a second photo of the same drawer must not create duplicates" is a
+/// statement about `absorb`, and you want to be able to write it in a test without
+/// having a file, an endpoint or an interface.
 struct Inventory: Codable, Equatable {
     var items: [Item] = []
     var places: [Place] = []
@@ -25,19 +25,19 @@ struct Inventory: Codable, Equatable {
     func item(_ id: UUID) -> Item? { items.first { $0.id == id } }
     func place(_ id: UUID?) -> Place? { id.flatMap { pid in places.first { $0.id == pid } } }
 
-    /// Dinge an diesem Ort — mit `includingBelow` auch alles in den Unterorten.
+    /// Things in this place — with `includingBelow`, everything in the sub-places too.
     func items(at placeID: UUID, includingBelow: Bool = true) -> [Item] {
         let ids = includingBelow ? tree.subtree(of: placeID) : [placeID]
         return items.filter { $0.placeID.map(ids.contains) ?? false }
     }
 
-    /// Dinge ohne Ort. Kein Sonderfall, sondern der Normalfall beim schnellen
-    /// Eintragen — den Ort trägt man nach, wenn man das Ding wegräumt.
+    /// Things without a place. Not a special case but the normal one when entering
+    /// quickly — the place gets filled in when you put the thing away.
     var unplaced: [Item] { items.filter { $0.placeID == nil } }
 
-    /// Ein Ding gleichen Namens am selben Ort. Der Vergleich ist unempfindlich gegen
-    /// Groß-/Kleinschreibung und Akzente, weil das Modell „USB-C-Kabel“ und ein
-    /// getippter Eintrag „USB-C Kabel“ dasselbe Ding meinen.
+    /// A thing of the same name in the same place. The comparison ignores
+    /// capitalisation and accents, because the model's "USB-C-Kabel" and a typed
+    /// "USB-C Kabel" mean the same thing.
     func existing(named name: String, at placeID: UUID?) -> Item? {
         let wanted = Item.normalise(name)
         guard !wanted.isEmpty else { return nil }
@@ -63,34 +63,34 @@ struct Inventory: Codable, Equatable {
         items.removeAll { $0.id == id }
     }
 
-    /// „Gesehen“: das Datum, auf dem die ganze Verlässlichkeit dieser App beruht.
+    /// "Seen": the date on which the entire reliability of this app rests.
     ///
-    /// Rührt den Vektor nicht an. Eine Sichtung ändert nichts am Text und damit
-    /// nichts an der Einbettung — den Index deswegen neu zu rechnen wäre Arbeit
-    /// ohne Wirkung.
+    /// Does not touch the vector. A sighting changes nothing about the text and
+    /// therefore nothing about the embedding — recomputing the index over it would be
+    /// work without effect.
     mutating func markSeen(_ id: UUID, at date: Date = Date()) {
         guard let i = items.firstIndex(where: { $0.id == id }) else { return }
         items[i].lastSeenAt = date
         items[i].updatedAt = date
     }
 
-    /// Nimmt einen bestätigten Vorschlag auf — entweder als neues Ding oder als
-    /// Zuwachs auf einem, das schon dasteht.
+    /// Takes in a confirmed suggestion — either as a new thing or as an increase on one
+    /// that is already there.
     ///
-    /// Das ist die Stelle, an der sich entscheidet, ob die App das zweite Foto
-    /// derselben Schublade überlebt. Ohne sie stünden nach zwei Aufnahmen zwei
-    /// „USB-C-Kabel“ am selben Ort, und ab da ist der Bestand nicht mehr ein
-    /// Bestand, sondern eine Liste von Beobachtungen.
+    /// This is the place where it is decided whether the app survives the second photo
+    /// of the same drawer. Without it, two shots would leave two "USB-C cables" in the
+    /// same place, and from then on the inventory is no longer an inventory but a list
+    /// of observations.
     ///
-    /// Bei einem Treffer wird die Menge addiert und nicht ersetzt: das Foto zeigt,
-    /// was zu sehen war, nicht was vorhanden ist. Ersetzen würde ein halb verdecktes
-    /// Regal zu einer Bestandskorrektur nach unten machen.
+    /// On a match the quantity is added and not replaced: the photo shows what was
+    /// visible, not what is there. Replacing would turn a half-obscured shelf into a
+    /// downward correction of the stock.
     @discardableResult
     mutating func absorb(_ proposal: Proposal, at placeID: UUID?, photoID: String?,
                          model: String?) -> Outcome {
-        // `effectiveName`, nicht `name`: hat der Nutzer einen Vorschlag aus der
-        // Websuche angetippt, ist dessen Titel der Name — sonst der, den das Modell
-        // im Bild gelesen hat.
+        // `effectiveName`, not `name`: if the user tapped a suggestion from the web
+        // search, its title is the name — otherwise the one the model read in the
+        // picture.
         let clean = proposal.effectiveName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !clean.isEmpty else { return .skipped }
 
@@ -102,9 +102,9 @@ struct Inventory: Codable, Equatable {
                 found.note = found.note.isEmpty ? proposal.note : found.note + "; " + proposal.note
             }
             if let photoID, !found.photoIDs.contains(photoID) { found.photoIDs.append(photoID) }
-            // Eine Kennung am bestehenden Eintrag wird nicht überschrieben: die erste
-            // stand da, als jemand sie bestätigt hat. Eine fehlende wird ergänzt —
-            // das zweite Foto zeigt das Typenschild vielleicht schärfer.
+            // An identifier on the existing entry is not overwritten: the first one was
+            // there when somebody confirmed it. A missing one is filled in — the second
+            // photo may show the rating plate more sharply.
             if found.code == nil { found.code = proposal.resolvedCode }
             found.lastSeenAt = Date()
             update(found)
@@ -135,8 +135,8 @@ struct Inventory: Codable, Equatable {
         places[i].name = name
     }
 
-    /// Verschiebt einen Ort. Ein Zug in den eigenen Unterbaum wird abgelehnt, statt
-    /// den Baum in einen Ring zu verwandeln — aus dem käme kein Pfad mehr zurück.
+    /// Moves a place. A move into its own subtree is refused rather than turning the
+    /// tree into a ring — no path would come back out of that.
     @discardableResult
     mutating func movePlace(_ id: UUID, under parent: UUID?) -> Bool {
         guard let i = places.firstIndex(where: { $0.id == id }) else { return false }
@@ -147,9 +147,9 @@ struct Inventory: Codable, Equatable {
         return true
     }
 
-    /// Löscht einen Ort und alles darunter. Die Dinge bleiben — sie liegen dann
-    /// nirgends, was stimmt und sichtbar ist. Sie mitzulöschen würde einen Bestand
-    /// vernichten, weil jemand ein Regal umbenennen wollte.
+    /// Deletes a place and everything under it. The things stay — they then lie
+    /// nowhere, which is true and visible. Deleting them along with it would destroy an
+    /// inventory because somebody wanted to rename a shelf.
     mutating func removePlace(_ id: UUID) {
         let gone = tree.subtree(of: id)
         places.removeAll { gone.contains($0.id) }
@@ -160,34 +160,33 @@ struct Inventory: Codable, Equatable {
     }
 }
 
-/// Ein Vorschlag, wie er aus einem Foto kommt — noch kein Eintrag.
+/// A suggestion as it comes out of a photo — not yet an entry.
 ///
-/// Eigener Typ und nicht ein halbfertiges `Item`: ein Vorschlag hat keine ID, keine
-/// Herkunft und kein Sichtungsdatum, und ein `Item`, das im Speicher liegt, ohne
-/// bestätigt zu sein, ist genau die Vermischung, die diese App nicht haben soll.
+/// Its own type and not a half-finished `Item`: a suggestion has no ID, no provenance
+/// and no sighting date, and an `Item` sitting in memory without having been confirmed
+/// is exactly the blurring this app is meant not to have.
 struct Proposal: Identifiable, Equatable, Hashable {
     var id = UUID()
     var name: String
     var quantity: Int?
     var unit: String = ""
     var note: String = ""
-    /// Eine Nummer, die am Ding steht — dekodiert oder abgelesen, siehe `ItemCode`.
+    /// A number that stands on the thing — decoded or read by eye, see `ItemCode`.
     var code: ItemCode?
-    /// Vom Nutzer im Prüfschritt abgewählt.
+    /// Unticked by the user in the checking step.
     var accepted: Bool = true
-    /// Welchen Vorschlag aus der Websuche der Nutzer angetippt hat.
+    /// Which suggestion from the web search the user tapped.
     ///
-    /// Getrennt von `accepted`, und das ist der Kern der Absicherung: man kann den
-    /// Fund behalten und die Deutung verwerfen. Startet auf `nil` — keiner —, anders
-    /// als `accepted`. Eine Kette aus drei fehlbaren Gliedern bekommt nicht dieselbe
-    /// Vorleistung wie das, was das Modell mit eigenen Augen im Bild gesehen hat.
+    /// Kept apart from `accepted`, and that is the core of the safeguard: you can keep
+    /// the find and discard the interpretation. Starts at `nil` — none — unlike
+    /// `accepted`. A chain of three fallible links does not get the same benefit of the
+    /// doubt as what the model saw with its own eyes in the picture.
     ///
-    /// `nil` ist hier nicht „noch nicht entschieden“, sondern eine gültige Antwort:
-    /// keiner der Vorschläge ist es. Dann bleibt der Name stehen, den das Modell
-    /// gelesen hat.
+    /// `nil` here does not mean "not yet decided" but is a valid answer: none of the
+    /// suggestions is it. Then the name the model read stays.
     var chosenCandidate: Int?
 
-    /// Der Name, der beim Annehmen wirklich gespeichert wird.
+    /// The name that actually gets stored on acceptance.
     var effectiveName: String {
         if let i = chosenCandidate, let list = code?.lookup?.candidates,
            list.indices.contains(i), !list[i].title.isEmpty {
@@ -196,12 +195,13 @@ struct Proposal: Identifiable, Equatable, Hashable {
         return name
     }
 
-    /// Die Kennung, wie sie an den Eintrag geht: mit der getroffenen Wahl darin.
+    /// The identifier as it goes onto the entry: with the choice that was made inside
+    /// it.
     ///
-    /// Die Wahl gehört an den Bestand und nicht nur an diesen Prüfschritt. Wer in
-    /// einem halben Jahr vor dem Regal steht, sieht dann nicht nur, was die Suche
-    /// vorgeschlagen hat, sondern auch, welchen davon jemand bestätigt hat — und ob
-    /// überhaupt einer.
+    /// The choice belongs to the inventory and not only to this checking step. Whoever
+    /// stands in front of the shelf in half a year's time then sees not only what the
+    /// search suggested but also which of those somebody confirmed — and whether
+    /// anybody did.
     var resolvedCode: ItemCode? {
         guard var c = code else { return nil }
         c.lookup?.chosen = chosenCandidate

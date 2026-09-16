@@ -1,11 +1,11 @@
 import XCTest
 @testable import Fundus
 
-/// Die Suche und der Index.
+/// The search and the index.
 ///
-/// Der Kern ist eine Rangfolge: ein Namenstreffer ist eine Gewissheit, ein Kosinus
-/// eine Vermutung. Und die Klassifizierung der Vektoren, denn ein Vektor aus dem
-/// falschen Modell liefert keinen Fehler, sondern still Unsinn.
+/// The heart of it is a ranking: a name hit is a certainty, a cosine a guess. And the
+/// classification of the vectors, because a vector from the wrong model produces no
+/// error but quiet nonsense.
 final class SearchTests: XCTestCase {
 
     private func item(_ name: String, note: String = "", tags: [String] = [],
@@ -31,7 +31,8 @@ final class SearchTests: XCTestCase {
         XCTAssertEqual(hits[1].kind, .nameContains)
     }
 
-    /// Niemand tippt „Lötzinn“ mit dem richtigen Umlaut, wenn er es schnell sucht.
+    /// Nobody types "Lötzinn" with the right umlaut when they are looking for it in a
+    /// hurry.
     func testDiacriticAndCaseInsensitive() {
         let items = [item("Lötzinn")]
         XCTAssertEqual(ItemSearch.text("lotzinn", in: items).count, 1)
@@ -52,9 +53,9 @@ final class SearchTests: XCTestCase {
 
     // MARK: Zusammenlegen
 
-    /// Ein Ding, das auf beiden Wegen kommt, behält den besseren. Sonst stünde ein
-    /// Namenstreffer unter „Bedeutung“, und der Nutzer würde lesen, die App habe
-    /// geraten, wo sie gewusst hat.
+    /// A thing that arrives by both routes keeps the better one. Otherwise a name hit
+    /// would stand under "meaning", and the user would read that the app had guessed
+    /// where it knew.
     func testNameHitWinsOverSemanticForSameItem() {
         let kabel = item("Kabel")
         let byName = [ItemSearch.Hit(item: kabel, kind: .nameContains)]
@@ -74,8 +75,8 @@ final class SearchTests: XCTestCase {
         XCTAssertEqual(merged.map(\.item.name), ["B", "A"])
     }
 
-    /// Eine Reihenfolge aus einem Dictionary ist zufällig, und eine Trefferliste, die
-    /// bei jedem Tastendruck springt, ist unbenutzbar.
+    /// An order coming out of a dictionary is arbitrary, and a hit list that jumps on
+    /// every keystroke is unusable.
     func testEqualRankIsOrderedStably() {
         let items = [item("Zange"), item("Ahle"), item("Meißel")]
         let hits = items.map { ItemSearch.Hit(item: $0, kind: .namePrefix) }
@@ -87,7 +88,7 @@ final class SearchTests: XCTestCase {
         XCTAssertEqual(first, ["Ahle", "Meißel", "Zange"])
     }
 
-    // MARK: Ähnlichkeitssuche
+    // MARK: Similarity search
 
     func testSemanticIgnoresForeignVectors() {
         let items = [
@@ -110,9 +111,8 @@ final class SearchTests: XCTestCase {
         XCTAssertEqual(hits.map(\.item.name), ["nah"])
     }
 
-    /// Ein Vektor anderer Länge ist nicht falsch berechnet, sondern gar nicht
-    /// vergleichbar. Er darf nicht als Nichttreffer durchgehen, sondern muss
-    /// draußen bleiben.
+    /// A vector of a different length is not miscalculated but not comparable at all.
+    /// It must not pass as a non-hit; it has to stay out.
     func testMismatchedDimensionIsExcluded() {
         let items = [item("kurz", vector: [1, 0], model: "m")]
         let hits = ItemSearch.semantic([1, 0, 0], in: items, model: "m", centroid: nil,
@@ -145,8 +145,8 @@ final class SearchTests: XCTestCase {
         XCTAssertTrue(Indexer.status(items, model: "m").isClean)
     }
 
-    /// Anbieter ändern die Vektorlänge unter demselben Modellnamen. Die häufigste
-    /// gewinnt; Ausreißer gelten als fremd und werden neu geholt.
+    /// Providers change the vector length under the same model name. The commonest
+    /// wins; outliers count as foreign and get fetched again.
     func testDominantDimensionWins() {
         let items = [
             item("a", vector: [1, 0], model: "m"),
@@ -174,8 +174,8 @@ final class SearchTests: XCTestCase {
 
     // MARK: Zentrieren
 
-    /// Unter zehn Einträgen wäre der Mittelvektor hauptsächlich der eine Eintrag, den
-    /// man sucht — das Abziehen würde genau den Treffer wegrechnen.
+    /// Below ten entries the mean vector would mostly be the one entry you are looking
+    /// for — subtracting it would compute away exactly that hit.
     func testCentroidNeedsEnoughItems() {
         let few = (0 ..< 9).map { item("i\($0)", vector: [Float($0), 1], model: "m") }
         XCTAssertNil(Indexer.centroid(few, model: "m"))
@@ -191,7 +191,7 @@ final class SearchTests: XCTestCase {
         XCTAssertEqual(centroid?[1], 4)
     }
 
-    /// Ein halb zentrierter Vektor wäre schlimmer als ein unzentrierter.
+    /// A half-centred vector would be worse than an uncentred one.
     func testCenteringLeavesMismatchedLengthsAlone() {
         let vector: [Float] = [1, 2, 3]
         XCTAssertEqual(Indexer.centered(vector, by: [1, 1]), vector)

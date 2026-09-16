@@ -1,23 +1,22 @@
 import UIKit
 
-/// Findet heraus, ob das eingerichtete Modell wirklich Bilder liest.
+/// Finds out whether the configured model really reads images.
 ///
-/// Übernommen aus Faden, und für Fundus wichtiger als dort: in Faden waren Bilder
-/// eine Zutat, hier sind sie der Weg, auf dem der Bestand entsteht. Ein Modell, das
-/// keine Bilder annimmt, macht diese App zu einem Formular.
+/// Taken over from Faden, and more important for Fundus than it was there: in Faden
+/// images were one ingredient, here they are the route by which the inventory comes
+/// into being. A model that does not accept images turns this app into a form.
 ///
-/// Es gibt keine verlässliche Möglichkeit, einen beliebigen Endpoint danach zu
-/// fragen — Modelllisten sagen es selten, und Fähigkeitsfelder sehen bei jedem
-/// Anbieter anders aus. Also probiert die App es: ein winziges Zweifarbenbild und
-/// die Frage, was darauf ist. Eine Ablehnung heißt nein, eine Antwort, die beide
-/// Farben nennt, heißt ja. Geraten wird nichts.
+/// There is no reliable way of asking an arbitrary endpoint about it — model lists
+/// rarely say, and capability fields look different at every provider. So the app tries
+/// it: a tiny two-colour image and the question of what is on it. A refusal means no,
+/// an answer naming both colours means yes. Nothing is guessed.
 enum VisionProbe {
 
     enum Outcome: Equatable {
-        /// Der Endpoint nahm das Bild und das Modell hat es richtig beschrieben.
+        /// The endpoint took the image and the model described it correctly.
         case supported
-        /// Das Bild wurde angenommen, aber die Antwort nannte die Farben nicht —
-        /// wahrscheinlich in Ordnung, nur unbestätigt.
+        /// The image was accepted, but the answer did not name the colours — probably
+        /// fine, just unconfirmed.
         case acceptedButUnconfirmed(String)
         case notSupported(String)
         case inconclusive(String)
@@ -43,8 +42,8 @@ enum VisionProbe {
         }
     }
 
-    /// Gezeichnet statt eingebettet: eine base64-Konstante wären Kilobytes Quelltext
-    /// für etwas, das zwei Zeichenbefehle erzeugen.
+    /// Drawn rather than embedded: a base64 constant would be kilobytes of source for
+    /// something two drawing calls produce.
     static func probeImage() -> Data? {
         let side: CGFloat = 64
         let format = UIGraphicsImageRendererFormat.default()
@@ -75,8 +74,8 @@ enum VisionProbe {
                                           system: "Du antwortest knapp.")
         } catch let error as ModelError {
             if case .http(let status, let body) = error {
-                // 4xx heißt hier: der Endpoint kann keine Bilder annehmen.
-                // 5xx und der Rest sagen nichts über Bilder aus.
+                // 4xx here means: the endpoint cannot accept images. 5xx and the rest
+                // say nothing about images.
                 if (400 ... 499).contains(status) {
                     return .notSupported("Der Endpoint hat das Bild abgelehnt (HTTP \(status)). "
                                          + ModelError.readable(body))

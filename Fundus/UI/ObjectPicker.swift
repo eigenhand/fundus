@@ -1,52 +1,51 @@
 import SwiftUI
 
-/// Das stehende Bild, auf dem der Nutzer antippt, was er meint.
+/// The still image on which the user taps what they mean.
 ///
-/// Der Grund, warum das mehr ist als Bequemlichkeit: ein Ausschnitt liest sich besser
-/// als ein Regal. Schickt man dem Modell ein breites Brett mit zwölf Dingen, zählt es
-/// zwölf Dinge und beschreibt jedes halb. Schickt man ihm einen Motor, liest es den
-/// Aufdruck. Wer hier drei Gegenstände antippt, bekommt drei Aufnahmen statt einer —
-/// und drei brauchbare Einträge statt einer Sammelzeile.
+/// Why this is more than convenience: a cut-out reads better than a shelf. Send the
+/// model a wide board with twelve things on it and it counts twelve things and
+/// describes each one halfway. Send it a motor and it reads the lettering. Whoever
+/// taps three objects here gets three shots instead of one — and three usable entries
+/// instead of one collective line.
 ///
-/// Wie die Kante gefunden wird, hängt davon ab, was auf dem Gerät liegt:
+/// How the edge is found depends on what is on the device:
 ///
-///  - **Mit SAM 2.1**: der Fingertipp *ist* die Frage. Das Modell antwortet, wo das
-///    Ding aufhört, auf das gezeigt wurde. Keine Vorauswahl, kein Raten.
-///  - **Ohne**: Apples Instanzmaske sucht sich selbst aus, was ein Gegenstand ist.
-///    Bei einem Portrait trifft sie; bei einer Werkbank liegt sie daneben, und das
-///    ist kein Zufall — sie ist für Motive gebaut, nicht für Bauteile.
+///  - **With SAM 2.1**: the tap *is* the question. The model answers where the thing
+///    that was pointed at stops. No preselection, no guessing.
+///  - **Without**: Apple's instance mask picks out for itself what counts as an
+///    object. On a portrait it hits; on a workbench it misses, and that is no
+///    accident — it is built for subjects, not for parts.
 ///
-/// Über beidem steht der gezogene Kasten: wer einen Rahmen zieht, hat die Frage
-/// selbst beantwortet, und dann wird auch keine gestellt. Was darin liegt, geht
-/// vollständig in die Aufnahme — kein Umriss, keine weissen Stellen, kein zweiter
-/// Ausschnitt über demselben Ding.
+/// Above both stands the drawn box: whoever drags a frame has answered the question
+/// themselves, and then none is asked. What lies inside goes into the shot whole — no
+/// outline, no white patches, no second cut-out over the same thing.
 ///
-/// Vorgewählt ist beide Male die Mitte. Das ist der häufigste Fall: man hält etwas in
-/// der Hand und zielt darauf.
+/// Preselected in both cases is the centre. That is the commonest case: you hold
+/// something in your hand and aim at it.
 struct ObjectPicker: View {
     @Environment(AppModel.self) private var model
 
-    /// Das Foto — **mit eingezeichneter Drehung**, siehe `CameraScreen.shoot`.
+    /// The photo — **with the rotation baked in**, see `CameraScreen.shoot`.
     ///
-    /// Ein Kamerafoto steht aufrecht, weil ein Merker danebensteht, nicht weil die
-    /// Pixel so liegen. Wer es anzeigt, sieht den Merker; wer `cgImage` nimmt, sieht
-    /// ihn nicht. Anzeige, Fingertipp, Kasten und Ausschnitt müssen denselben Rahmen
-    /// meinen, sonst zeigt die Maske woandershin als der Finger — und genau so sah es
-    /// auf dem Gerät aus.
+    /// A camera photo stands upright because a flag sits beside it, not because the
+    /// pixels lie that way. Whoever displays it sees the flag; whoever takes `cgImage`
+    /// does not. Display, tap, box and cut-out have to mean the same frame, otherwise
+    /// the mask points somewhere other than the finger — and that is exactly how it
+    /// looked on the device.
     ///
-    /// Gedreht wird deshalb einmal an der Quelle und nicht hier: eine Ansicht wird bei
-    /// jeder Änderung neu gebaut, und ein Bild bei jedem Neubau neu zu zeichnen wäre
-    /// eine Korrektur, die man am Ruckeln merkt.
+    /// The rotation therefore happens once at the source and not here: a view is
+    /// rebuilt on every change, and redrawing an image on every rebuild would be a
+    /// correction you notice as stutter.
     let image: UIImage
     let placeID: UUID?
-    /// Zurück zum Sucher, ohne etwas einzureihen.
+    /// Back to the viewfinder without queuing anything.
     let onDiscard: () -> Void
-    /// Eingereiht. Der Sucher macht danach weiter.
+    /// Queued. The viewfinder carries on afterwards.
     let onTaken: () -> Void
 
-    /// Was der Nutzer angetippt hat — mit SAM als Maske, sonst als Kasten.
+    /// What the user tapped — as a mask with SAM, otherwise as a box.
     @State private var picked: [SegmentedObject] = []
-    /// Der Rückfall ohne SAM: was Apple von sich aus findet.
+    /// The fallback without SAM: what Apple finds by itself.
     @State private var offered: [FoundObject] = []
     @State private var chosenOffers: Set<Int> = []
 
@@ -55,7 +54,7 @@ struct ObjectPicker: View {
     @State private var working = false
     @State private var trouble: String?
 
-    /// Der aufgezogene Kasten, solange der Finger liegt. In Ansichtskoordinaten.
+    /// The box being dragged, while the finger is down. In view coordinates.
     @State private var band: (from: CGPoint, to: CGPoint)?
 
     private var usingSam: Bool { segmenter != nil }
@@ -76,14 +75,14 @@ struct ObjectPicker: View {
             do {
                 try await engine.encode(image)
                 segmenter = engine
-                // Die Mitte vorwählen: wer zielt, meint eins.
+                // Preselect the centre: whoever aims means one thing.
                 if let middle = try await engine.object(at: CGPoint(x: 0.5, y: 0.5)) {
                     picked = [middle]
                 }
                 preparing = false
                 return
             } catch {
-                // Kein Grund, hier stehen zu bleiben — der Rückfall tut es auch.
+                // No reason to stop here — the fallback will do.
                 trouble = (error as? Segmenter.Failure).map(Self.reason) ?? error.localizedDescription
             }
         }
@@ -111,8 +110,8 @@ struct ObjectPicker: View {
                     .aspectRatio(contentMode: .fit)
                     .frame(width: geo.size.width, height: geo.size.height)
 
-                // Mit SAM: die Umrisse liegen über dem ganzen Bild, jeder in seiner
-                // eigenen Ebene. Der Kasten daneben zeigt, was geschnitten wird.
+                // With SAM: the outlines lie over the whole image, each in its own
+                // layer. The box beside it shows what will be cut.
                 ForEach(picked) { object in
                     let rect = frame(for: CGRect(x: 0, y: 0, width: 1, height: 1), in: geo.size)
                     if let mask = object.mask {
@@ -130,7 +129,7 @@ struct ObjectPicker: View {
                         .allowsHitTesting(false)
                 }
 
-                // Ohne SAM: die Vorschläge als antippbare Rahmen.
+                // Without SAM: the suggestions as tappable frames.
                 ForEach(offered) { object in
                     let rect = frame(for: object.box, in: geo.size)
                     offerOutline(object)
@@ -152,14 +151,14 @@ struct ObjectPicker: View {
             }
             .overlay { rubberBand(in: geo.size) }
             .contentShape(Rectangle())
-            // Der Fingertipp ist die Frage. Nur mit SAM — ohne es gibt es nichts zu
-            // fragen, da stehen die Antworten schon als Rahmen da.
+            // The tap is the question. Only with SAM — without it there is nothing to
+            // ask, the answers already stand there as frames.
             .onTapGesture { location in
                 guard !preparing, !working else { return }
                 guard let point = normalised(location, in: geo.size) else { return }
-                // Abwählen geht immer — auch ohne Modell, denn gezogen werden kann
-                // auch dort. Ein Kasten, den man nicht mehr loswird, waere schlimmer
-                // als gar keiner.
+                // Deselecting always works — even without a model, because dragging
+                // works there too. A box you cannot get rid of again would be worse
+                // than no box at all.
                 if let hit = picked.first(where: { $0.box.contains(point) }) {
                     picked.removeAll { $0.id == hit.id }
                     trouble = nil
@@ -168,13 +167,13 @@ struct ObjectPicker: View {
                 guard usingSam else { return }
                 Task { await tap(point) }
             }
-            // Ziehen statt tippen: den Gegenstand selbst einkreisen. Für den Fall,
-            // dass ein Tipp das Falsche trifft — ein Ding vor unruhigem Hintergrund,
-            // oder eines, das ein anderes halb verdeckt.
+            // Drag instead of tap: circle the object yourself. For the case where a
+            // tap hits the wrong thing — something against a busy background, or one
+            // that half covers another.
             //
-            // Zehn Punkte Mindestweg, damit ein Tipp ein Tipp bleibt: bei null
-            // Mindestweg schluckt das Ziehen jede Berührung, und die Rahmen im
-            // Rückfallmodus wären nicht mehr antippbar.
+            // Ten points of minimum travel, so a tap stays a tap: at zero minimum
+            // travel the drag swallows every touch, and the frames in fallback mode
+            // would no longer be tappable.
             .gesture(
                 DragGesture(minimumDistance: 10)
                     .onChanged { value in
@@ -216,7 +215,7 @@ struct ObjectPicker: View {
             .accessibilityLabel(isPicked ? "Gewählt" : "Gegenstand")
     }
 
-    /// Der Kasten, solange gezogen wird.
+    /// The box while it is being dragged.
     @ViewBuilder
     private func rubberBand(in size: CGSize) -> some View {
         if let band {
@@ -233,7 +232,7 @@ struct ObjectPicker: View {
         }
     }
 
-    /// Ein Punkt der Ansicht in Bildkoordinaten, oder nil, wenn er neben dem Bild liegt.
+    /// A view point in image coordinates, or nil if it lies beside the image.
     private func normalised(_ point: CGPoint, in size: CGSize) -> CGPoint? {
         let rect = frame(for: CGRect(x: 0, y: 0, width: 1, height: 1), in: size)
         guard rect.contains(point) else { return nil }
@@ -241,22 +240,22 @@ struct ObjectPicker: View {
                        y: (point.y - rect.minY) / rect.height)
     }
 
-    /// Zwei Ecken in einen Kasten in Bildkoordinaten.
+    /// Two corners into a box in image coordinates.
     ///
-    /// Beschnitten statt verworfen: wer über den Rand hinauszieht, meint das Ding bis
-    /// zum Rand und nicht „nichts".
+    /// Clipped rather than discarded: whoever drags past the edge means the thing up
+    /// to the edge and not "nothing".
     private func normalisedBox(from: CGPoint, to: CGPoint, in size: CGSize) -> CGRect? {
         Self.box(from: from, to: to,
                  picture: Self.frame(for: CGRect(x: 0, y: 0, width: 1, height: 1),
                                      image: image.size, in: size))
     }
 
-    /// Dieselbe Rechnung ohne Ansicht, damit sie prüfbar ist.
+    /// The same arithmetic without a view, so that it can be tested.
     ///
-    /// Drei Dinge stecken darin, und jedes wäre ein eigener kleiner Ärger: die Ecken
-    /// können in beliebiger Reihenfolge kommen (wer von rechts unten nach links oben
-    /// zieht, meint denselben Kasten), sie können neben dem Bild liegen (dann gilt
-    /// der Rand, nicht „nichts"), und ein Strich ist kein Kasten.
+    /// Three things sit inside it, and each would be its own small annoyance: the
+    /// corners can arrive in any order (dragging from bottom right to top left means
+    /// the same box), they can lie beside the image (then the edge applies, not
+    /// "nothing"), and a line is not a box.
     nonisolated static func box(from: CGPoint, to: CGPoint, picture: CGRect) -> CGRect? {
         guard picture.width > 0, picture.height > 0 else { return nil }
         func place(_ p: CGPoint) -> CGPoint {
@@ -269,18 +268,18 @@ struct ObjectPicker: View {
         return box.width > 0.02 && box.height > 0.02 ? box : nil
     }
 
-    /// Ein aufgezogener Kasten ist der Kasten. Kein Modell dazwischen.
+    /// A dragged box is the box. No model in between.
     ///
-    /// SAM könnte hier gefragt werden, und es antwortete auch: Apples Umsetzung kennt
-    /// den Kastenprompt, zwei Punkte mit den Marken 2 und 3, und auf dem Mac liefert
-    /// er die Kante des Dings im Rahmen auf zwei Promille genau. Auf einem Regalfoto
-    /// ist genau das aber die falsche Antwort. Es sucht sich **ein** Ding im Kasten,
-    /// und der freigestellte Ausschnitt bekommt weisse Stellen überall dort, wo die
-    /// Maske das Ding nicht ganz getroffen hat oder ein zweites daneben lag.
+    /// SAM could be asked here, and it would answer: Apple's implementation knows the
+    /// box prompt, two points with the labels 2 and 3, and on the Mac it delivers the
+    /// edge of the thing in the frame to within two parts per thousand. On a shelf
+    /// photo that is exactly the wrong answer. It picks **one** thing inside the box,
+    /// and the cut-out gets white patches everywhere the mask did not quite hit the
+    /// thing or a second one lay beside it.
     ///
-    /// Wer von Hand einen Rahmen zieht, hat schon gesagt, was er meint. Ein Modell,
-    /// das dieselbe Frage noch einmal stellt und anders beantwortet, ist dann kein
-    /// Zugewinn, sondern ein Widerspruch.
+    /// Whoever drags a frame by hand has already said what they mean. A model that
+    /// asks the same question again and answers it differently is then not a gain but
+    /// a contradiction.
     private func circle(_ box: CGRect) {
         guard Self.isUsable(box, pixels: pixels) else {
             trouble = String(localized: "Der Kasten ist zu klein — daraus liest auch das Modell nichts.")
@@ -290,45 +289,44 @@ struct ObjectPicker: View {
         picked = Self.replacing(picked, by: box)
     }
 
-    /// Der gezogene Kasten überschreibt, was an dieser Stelle schon gewählt war.
+    /// The dragged box overwrites whatever was already picked at that spot.
     ///
-    /// Sonst läge ein Ausschnitt über dem anderen: zwei bezahlte Aufnahmen für ein
-    /// Ding, und auf der einen fehlt die Hälfte. Was daneben liegt, bleibt — wer
-    /// vorher zwei Sachen angetippt hat und dann eine dritte einkreist, meint drei.
+    /// Otherwise one cut-out would lie over another: two paid shots for one thing,
+    /// and half of it missing on one of them. What lies elsewhere stays — whoever
+    /// tapped two things first and then circles a third means three.
     ///
-    /// Statisch, damit die Regel prüfbar ist: dass ein Kasten den alten Fund an
-    /// seiner Stelle ersetzt und den am anderen Bildrand nicht, sieht man einem
-    /// Screenshot nicht an.
+    /// Static, so the rule can be tested: that a box replaces the old find at its own
+    /// spot and not the one at the other edge of the image is not something you can
+    /// see in a screenshot.
     nonisolated static func replacing(_ picked: [SegmentedObject], by box: CGRect) -> [SegmentedObject] {
         picked.filter { !overlaps($0.box, box) }
             + [SegmentedObject(id: UUID(), box: box, mask: nil, bits: [], side: 0)]
     }
 
-    /// Die Pixel des Bildes, nicht seine Punkte.
+    /// The pixels of the image, not its points.
     ///
-    /// `size` einer `UIImage` ist in Punkten, und bei einem Bild mit Massstab 2 wäre
-    /// das die halbe Wahrheit. `ObjectFinder` schneidet in Pixeln, also wird hier auch
-    /// in Pixeln gemessen.
+    /// `size` of a `UIImage` is in points, and for an image at scale 2 that would be
+    /// half the truth. `ObjectFinder` cuts in pixels, so the measuring here happens in
+    /// pixels too.
     private var pixels: CGSize {
         guard let cg = image.cgImage else { return image.size }
         return CGSize(width: cg.width, height: cg.height)
     }
 
-    /// Ob aus diesem Kasten überhaupt ein Ausschnitt werden kann.
+    /// Whether this box can become a cut-out at all.
     ///
-    /// Der Kasten steht in Bildanteilen, die Grenze in Pixeln — deshalb braucht die
-    /// Frage die Grösse des Bildes. Ohne sie verschwände ein zu kleiner Kasten
-    /// stillschweigend: `ObjectFinder` gibt unter `minimumEdge` nichts zurück, die
-    /// Leiste hätte „1 Ausschnitt" versprochen, und in die Reihe ginge das ganze
-    /// Brett. Lieber gleich sagen, dass der Rahmen zu klein war.
+    /// The box is in fractions of the image, the limit is in pixels — which is why the
+    /// question needs the size of the image. Without it a box that is too small would
+    /// vanish silently: `ObjectFinder` returns nothing below `minimumEdge`, the bar
+    /// would have promised "1 cut-out", and the whole board would go into the queue.
+    /// Better to say straight away that the frame was too small.
     nonisolated static func isUsable(_ box: CGRect, pixels: CGSize) -> Bool {
         let floor = CGFloat(ObjectFinder.minimumEdge)
         return (box.width * pixels.width).rounded() >= floor
             && (box.height * pixels.height).rounded() >= floor
     }
 
-    /// Ein Tipp: entweder ein schon gewähltes Ding wieder abwählen, oder ein neues
-    /// dazunehmen.
+    /// A tap: either deselect a thing that was already picked, or add a new one.
     private func tap(_ point: CGPoint) async {
         guard let segmenter else { return }
         working = true
@@ -336,13 +334,13 @@ struct ObjectPicker: View {
         defer { working = false }
         do {
             guard let object = try await segmenter.object(at: point) else {
-                // Stillschweigen waere hier das Schlechteste: der Nutzer hat getippt
-                // und nichts ist passiert, und er weiss nicht, ob die App ihn gehoert
-                // hat oder das Modell nichts gefunden hat.
+                // Saying nothing would be the worst thing here: the user tapped and
+                // nothing happened, and they cannot tell whether the app heard them or
+                // the model found nothing.
                 trouble = String(localized: "Da war keine Kante zu finden. Tippe mitten auf das Ding.")
                 return
             }
-            // Zweimal auf dasselbe zu tippen soll es nicht verdoppeln.
+            // Tapping the same thing twice should not double it.
             guard !picked.contains(where: { Self.overlaps($0.box, object.box) }) else { return }
             picked.append(object)
         } catch {
@@ -350,8 +348,8 @@ struct ObjectPicker: View {
         }
     }
 
-    /// Ob zwei Kästen dasselbe Ding meinen: mehr als sechzig Prozent des kleineren
-    /// liegen im anderen.
+    /// Whether two boxes mean the same thing: more than sixty per cent of the smaller
+    /// one lies inside the other.
     nonisolated static func overlaps(_ a: CGRect, _ b: CGRect) -> Bool {
         let cut = a.intersection(b)
         guard !cut.isNull else { return false }
@@ -363,16 +361,16 @@ struct ObjectPicker: View {
         Self.frame(for: box, image: image.size, in: size)
     }
 
-    /// Wohin ein Kasten in 0…1 auf dem eingepassten Bild fällt.
+    /// Where a box in 0…1 falls on the fitted image.
     ///
-    /// Von Hand gerechnet und nicht von SwiftUI abgefragt: `aspectRatio(.fit)` lässt
-    /// oben und unten — oder links und rechts — einen Rand, den die Geometrie der
-    /// umgebenden Ansicht nicht kennt. Ohne diese Rechnung liegen alle Rahmen um
-    /// denselben Betrag daneben, und zwar gleichmäßig genug, dass es aussieht, als
-    /// stimme die Erkennung nicht statt die Rechnung.
+    /// Worked out by hand rather than asked of SwiftUI: `aspectRatio(.fit)` leaves a
+    /// margin at the top and bottom — or left and right — that the geometry of the
+    /// surrounding view knows nothing about. Without this arithmetic every frame is
+    /// off by the same amount, and evenly enough that it looks as if the detection
+    /// were wrong rather than the arithmetic.
     ///
-    /// Statisch, damit sie prüfbar ist: ein Screenshot zeigt, dass Rahmen irgendwo
-    /// liegen, nicht dass sie richtig liegen.
+    /// Static, so that it can be tested: a screenshot shows that frames lie somewhere,
+    /// not that they lie in the right place.
     nonisolated static func frame(for box: CGRect, image: CGSize, in size: CGSize) -> CGRect {
         guard image.width > 0, image.height > 0, size.width > 0, size.height > 0
         else { return .zero }
@@ -433,10 +431,10 @@ struct ObjectPicker: View {
         }
     }
 
-    /// Was der Knopf kostet, bevor er gedrückt wird, und woran die Kante gefunden wird.
+    /// What the button costs before it is pressed, and what finds the edge.
     ///
-    /// Jeder Ausschnitt ist eine eigene Aufnahme und damit ein eigener bezahlter
-    /// Aufruf. Das gehört sichtbar daneben und nicht in eine Abrechnung hinterher.
+    /// Every cut-out is its own shot and therefore its own paid call. That belongs
+    /// visibly beside it and not in a bill afterwards.
     private var note: String {
         if preparing { return "Das Gerät sieht sich das Bild an." }
         if let trouble { return trouble }
@@ -457,12 +455,12 @@ struct ObjectPicker: View {
     }
 
     private func take() {
-        // Mit Umriss wird freigestellt: der Gegenstand bleibt, der Rest wird weiss.
-        // Ohne Umriss — also bei einem von Hand gezogenen Kasten — bleibt alles
-        // stehen, was darin liegt, und zwar **ohne Rand**: bei den Vorschlägen unten
-        // sitzt der Rahmen maschinell auf der Kante und der Aufdruck daneben fällt
-        // sonst weg, hier hat ihn ein Mensch gezogen und dabei mitgemeint, wo er
-        // aufhören soll.
+        // With an outline the object is cut free: the thing stays, the rest turns
+        // white. Without an outline — that is, for a box dragged by hand — everything
+        // inside it stays, and **without padding**: in the suggestions below, the
+        // frame sits on the edge by machine and the lettering beside it would
+        // otherwise be lost; here a person dragged it and meant, in doing so, where it
+        // should stop.
         let fromPicked = picked.compactMap { object in
             object.bits.isEmpty
                 ? ObjectFinder.crop(image, to: object.box, margin: 0)
@@ -473,9 +471,9 @@ struct ObjectPicker: View {
             .compactMap { ObjectFinder.crop(image, to: $0.box) }
         let pieces = fromPicked + fromOffers
 
-        // Nichts angetippt, oder kein Ausschnitt brauchbar: dann eben das ganze Bild.
-        // Mit leeren Händen aus diesem Bildschirm zu gehen wäre der falsche Ausgang —
-        // das Foto ist gemacht, und es soll irgendwo landen.
+        // Nothing tapped, or no cut-out usable: then the whole image it is. Leaving
+        // this screen empty-handed would be the wrong way out — the photo has been
+        // taken, and it should end up somewhere.
         let images = pieces.isEmpty ? [image] : pieces
         model.enqueue(images, placeID: placeID)
         onTaken()

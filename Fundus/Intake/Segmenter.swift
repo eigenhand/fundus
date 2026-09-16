@@ -3,43 +3,43 @@ import CoreML
 import UIKit
 import Vision
 
-/// Ein Gegenstand, den der Nutzer im Bild angetippt hat.
+/// An object the user tapped in the picture.
 struct SegmentedObject: Identifiable, Equatable, Sendable {
     let id: UUID
     /// In Bildkoordinaten, 0…1, Ursprung oben links.
     let box: CGRect
     /// Der Umriss zum Anzeigen.
     let mask: UIImage?
-    /// Derselbe Umriss als Rohdaten, quadratisch mit `side` Kantenlänge: 0 heisst
-    /// aussen, 255 heisst dazu.
+    /// The same outline as raw data, square with an edge length of `side`: 0 means
+    /// outside, 255 means part of it.
     ///
-    /// Getrennt vom Bild, weil daraus etwas anderes wird als eine Anzeige — der
-    /// Ausschnitt, der ans Modell geht, wird daran freigestellt. Aus einem `UIImage`
-    /// die Bits zurückzulesen ginge auch und wäre ein Umweg über zwei Umrechnungen,
-    /// bei dem man Interpolation und Alphakanal wieder auseinandersortieren müsste.
+    /// Kept apart from the image because something other than a display is made from
+    /// it — the cut-out that goes to the model is freed along it. Reading the bits back
+    /// out of a `UIImage` would work too and would be a detour through two conversions,
+    /// in which interpolation and alpha channel would have to be sorted apart again.
     let bits: [UInt8]
     let side: Int
 }
 
-/// Segment Anything 2.1 auf dem Gerät.
+/// Segment Anything 2.1 on the device.
 ///
-/// Der Unterschied zu Apples Instanzmaske ist nicht die Genauigkeit, sondern wer
-/// entscheidet. `VNGenerateForegroundInstanceMaskRequest` sucht sich selbst aus, was
-/// im Bild ein Gegenstand ist, und liegt bei einer Werkbank regelmaessig daneben — es
-/// ist ein Modell fuer Portraits und Haustiere. SAM fragt nicht, sondern antwortet:
-/// der Nutzer tippt auf ein Ding, und es sagt, wo dieses Ding aufhoert.
+/// The difference from Apple's instance mask is not accuracy but who decides.
+/// `VNGenerateForegroundInstanceMaskRequest` picks out for itself what counts as an
+/// object in the picture, and regularly misses on a workbench — it is a model for
+/// portraits and pets. SAM does not ask, it answers: the user taps a thing, and it says
+/// where that thing stops.
 ///
-/// Das passt hier besser, weil der Mensch ohnehin danebensteht. Er weiss, was er
-/// meint; gebraucht wird nur die Kante.
+/// That fits better here, because the person is standing right there anyway. They know
+/// what they mean; all that is needed is the edge.
 ///
-/// Drei Modelle, und die Aufteilung ist der Grund, warum das ueberhaupt fluessig geht:
-/// der Bildkodierer ist der teure Teil und laeuft **einmal je Foto**. Jeder weitere
-/// Fingertipp kostet nur den Prompt-Kodierer und den Maskendekodierer — zusammen
-/// zwoelf Megabyte und ein Bruchteil der Zeit.
+/// Three models, and the split is the reason this flows at all: the image encoder is
+/// the expensive part and runs **once per photo**. Every further tap costs only the
+/// prompt encoder and the mask decoder — twelve megabytes between them and a fraction
+/// of the time.
 actor Segmenter {
 
-    /// Das Modell erwartet ein Quadrat. Gestreckt, nicht beschnitten — dann bleibt die
-    /// Umrechnung der Koordinaten eine Multiplikation.
+    /// The model expects a square. Stretched, not cropped — then converting the
+    /// coordinates stays a multiplication.
     static let side = 1_024
 
     enum Failure: Error, Equatable {
@@ -71,10 +71,10 @@ actor Segmenter {
         }
     }
 
-    /// Uebersetzt ein `.mlpackage` einmal und behaelt das Ergebnis.
+    /// Compiles an `.mlpackage` once and keeps the result.
     ///
-    /// Core ML uebersetzt ein Paket beim Laden, und das dauert bei 67 MB spuerbar. Das
-    /// Ergebnis landet neben den Gewichten, damit es beim zweiten Foto schon dasteht.
+    /// Core ML compiles a package on load, and at 67 MB that takes noticeably long. The
+    /// result lands beside the weights so that it is already there for the second photo.
     private func model(_ package: URL, named name: String) throws -> MLModel {
         let compiled = SegmentAssets.compiledDirectory
             .appendingPathComponent(name).appendingPathExtension("mlmodelc")
@@ -90,14 +90,14 @@ actor Segmenter {
 
     // MARK: Ein Foto vorbereiten
 
-    /// Der teure Schritt, einmal je Foto.
+    /// The expensive step, once per photo.
     ///
-    /// `scaledDown` zuerst, und das ist keine Sparmassnahme, sondern die Korrektur
-    /// eines Fehlers, den man nur auf einem Geraet sieht: ein Kamerafoto traegt seine
-    /// Drehung als Merker neben den Pixeln, und `cgImage` gibt die **ungedrehten**
-    /// Sensordaten zurueck. SwiftUI zeigt das Bild aufrecht, das Modell bekam es quer
-    /// — Maske und Anzeige lagen in zwei verschiedenen Rahmen, und die Maske sah aus
-    /// wie ein grosser Block irgendwo im Bild. `scaledDown` zeichnet die Drehung ein.
+    /// `scaledDown` first, and that is not an economy measure but the correction of an
+    /// error you only see on a device: a camera photo carries its rotation as a flag
+    /// beside the pixels, and `cgImage` returns the **unrotated** sensor data. SwiftUI
+    /// showed the picture upright, the model got it sideways — mask and display lay in
+    /// two different frames, and the mask looked like a large block somewhere in the
+    /// picture. `scaledDown` bakes the rotation in.
     func encode(_ image: UIImage) throws {
         try load()
         guard let encoder, let cg = image.scaledDown(maxEdge: 1_400).cgImage else {
@@ -108,8 +108,8 @@ actor Segmenter {
             throw Failure.broken("Der Bildkodierer nennt keine Bildgroesse.")
         }
 
-        // Gestreckt statt beschnitten: sonst faende der Fingertipp an einer anderen
-        // Stelle statt und die Maske laege daneben.
+        // Stretched rather than cropped: otherwise the tap would land somewhere else
+        // and the mask would lie beside it.
         let value = try MLFeatureValue(
             cgImage: cg, constraint: constraint,
             options: [.cropAndScale: VNImageCropAndScaleOption.scaleFill.rawValue])
@@ -128,18 +128,18 @@ actor Segmenter {
 
     // MARK: Ein Fingertipp
 
-    /// Was an dieser Stelle liegt. Der Punkt in 0…1, Ursprung oben links.
+    /// What lies at this spot. The point in 0…1, origin top left.
     func object(at point: CGPoint) throws -> SegmentedObject? {
-        // 1 heisst: dieser Punkt gehoert zum Ding. 0 hiesse: er gehoert ausdruecklich
-        // nicht dazu — das waere die Verfeinerung, die es hier noch nicht gibt.
+        // 1 means: this point belongs to the thing. 0 would mean: it explicitly does
+        // not — that would be the refinement that does not exist here yet.
         try predict([(point, 1)])
     }
 
-    /// Marke 1 heisst Vordergrund. SAM kennt auch 0 („nicht das"), 2 und 3 (die
-    /// beiden Ecken eines Kastens) — beides steht hier nicht, weil es nichts ruft.
-    /// Der Kasten ist gemessen worden und funktioniert; er ist trotzdem draussen,
-    /// denn ein von Hand gezogener Rahmen soll gerade **nicht** noch einmal
-    /// befragt werden, siehe `ObjectPicker.circle`.
+    /// Label 1 means foreground. SAM also knows 0 ("not that"), 2 and 3 (the two
+    /// corners of a box) — neither stands here, because nothing calls for it. The box
+    /// has been measured and works; it stays out all the same, because a frame dragged
+    /// by hand is precisely **not** meant to be asked about a second time, see
+    /// `ObjectPicker.circle`.
     private func predict(_ prompts: [(point: CGPoint, label: Int32)]) throws -> SegmentedObject? {
         guard let promptEncoder, let decoder, let embedding else {
             throw Failure.broken("Es ist kein Foto kodiert.")
@@ -175,13 +175,13 @@ actor Segmenter {
             throw Failure.broken("Der Maskendekodierer lieferte nichts.")
         }
 
-        // Drei Vorschlaege je Tipp — ganzes Ding, Teil davon, Teil des Teils. Genommen
-        // wird der, dem das Modell selbst am meisten zutraut.
+        // Three proposals per tap — the whole thing, part of it, part of the part. The
+        // one taken is the one the model itself trusts most.
         let best = Self.argmax(scores)
         return Self.object(from: masks, channel: best)
     }
 
-    // MARK: Aus der Maske einen Kasten machen
+    // MARK: Turning the mask into a box
 
     static func argmax(_ scores: MLMultiArray) -> Int {
         var best = 0
@@ -193,14 +193,14 @@ actor Segmenter {
         return best
     }
 
-    /// Der Kasten und der Umriss aus einer Maske der Form [1, 3, H, B].
+    /// The box and the outline from a mask of shape [1, 3, H, W].
     ///
-    /// Die Werte sind Logits: groesser als null heisst „gehoert dazu". Kein
-    /// Schwellenwert zum Einstellen, weil das Modell genau so trainiert ist.
+    /// The values are logits: greater than zero means "belongs to it". No threshold to
+    /// adjust, because the model is trained exactly that way.
     ///
-    /// `internal` und ohne Core ML im Kopf, damit es prüfbar bleibt: hier steckt
-    /// dieselbe Falle wie bei der Instanzmaske — eine vertauschte Achse liefert Kaesten,
-    /// die plausibel aussehen und am falschen Ding liegen.
+    /// `internal` and with no Core ML in its head, so that it stays testable: the same
+    /// trap sits here as with the instance mask — a swapped axis delivers boxes that
+    /// look plausible and lie on the wrong thing.
     static func object(from masks: MLMultiArray, channel: Int) -> SegmentedObject? {
         let shape = masks.shape.map(\.intValue)
         guard shape.count == 4, channel < shape[1] else { return nil }
@@ -210,9 +210,9 @@ actor Segmenter {
         var minX = width, minY = height, maxX = -1, maxY = -1
         var inside = [UInt8](repeating: 0, count: width * height)
 
-        /// Beide Fliesskommabreiten, weil das Modell in float16 umgesetzt ist, die
-        /// Ausgabe aber nicht zwingend. Die falsche anzunehmen liest keinen Fehler,
-        /// sondern Unsinn — und Unsinn sieht wie eine Maske aus.
+        /// Both floating-point widths, because the model is converted to float16 but
+        /// its output is not necessarily. Assuming the wrong one does not read an error
+        /// but nonsense — and nonsense looks like a mask.
         func scan(_ value: (Int) -> Float) {
             let plane = channel * height * width
             for y in 0 ..< height {
@@ -254,7 +254,7 @@ actor Segmenter {
                                bits: inside, side: width)
     }
 
-    /// Der Umriss als Bild mit Alphakanal, zum Darueberlegen.
+    /// The outline as an image with an alpha channel, for overlaying.
     private static func image(from pixels: [UInt8], width: Int, height: Int) -> UIImage? {
         var data = [UInt8](repeating: 0, count: width * height * 4)
         for i in 0 ..< width * height where pixels[i] > 0 {

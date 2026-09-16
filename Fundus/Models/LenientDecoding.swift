@@ -2,20 +2,19 @@ import Foundation
 
 extension KeyedDecodingContainer {
 
-    /// Wie `decodeIfPresent`, aber ein unbekannter Wert ist kein Fehler.
+    /// Like `decodeIfPresent`, but an unknown value is not an error.
     ///
-    /// `decodeIfPresent` wirft bei einer Aufzählung, deren Rohwert sie nicht kennt —
-    /// und das `?? standard`, das überall daneben steht, läuft dann nie. Der Schaden
-    /// trifft nicht das eine Feld, sondern die ganze Datei: ein einziges
-    /// `"kind": "nfc"` aus einer neueren Fassung der App, und der gesamte Bestand
-    /// gilt als unlesbar.
+    /// `decodeIfPresent` throws on an enum whose raw value it does not know — and the
+    /// `?? standard` that stands beside it everywhere then never runs. The damage does
+    /// not hit the one field but the whole file: a single `"kind": "nfc"` from a newer
+    /// version of the app, and the entire inventory counts as unreadable.
     ///
-    /// Das ist der falsche Tausch. Eine Kennung, deren Art diese Fassung nicht kennt,
-    /// ist eine Kennung mit unbekannter Art — nicht Grund, hundert Einträge zu
-    /// verlieren. Dieselbe Überlegung wie bei `origin` und `match`: was nicht lesbar
-    /// ist, fällt auf die Vorgabe zurück und steht weiter da.
+    /// That is the wrong trade. An identifier whose kind this version does not know is
+    /// an identifier of unknown kind — not a reason to lose a hundred entries. The same
+    /// reasoning as for `origin` and `match`: what cannot be read falls back on the
+    /// default and stays there.
     ///
-    /// Gefunden durch einen Test, der eine ausgedachte Einstellung einlas.
+    /// Found by a test that read in an invented settings file.
     func decodeLenient<T>(_ type: T.Type, forKey key: Key) -> T?
     where T: RawRepresentable & Decodable, T.RawValue: Decodable {
         guard let raw = try? decodeIfPresent(T.RawValue.self, forKey: key) else { return nil }

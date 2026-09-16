@@ -1,24 +1,24 @@
 import XCTest
 @testable import Fundus
 
-/// Kennungen und ihre Auflösung.
+/// Identifiers and how they get resolved.
 ///
-/// Eine Websuche auf eine Nummer erzeugt einen präzisen, technisch klingenden
-/// Produktnamen, der verlässlicher aussieht als alles andere im Bestand — und am Ende
-/// einer Kette aus unscharfem Aufkleber, verwechselbaren Zeichen und einer
-/// Suchmaschine steht, die auf jede Zeichenfolge irgendetwas antwortet.
+/// A web search on a number produces a precise, technical-sounding product name that
+/// looks more reliable than anything else in the inventory — and stands at the end of
+/// a chain made of a blurred sticker, confusable characters and a search engine that
+/// answers something to every string.
 ///
-/// Die Antwort darauf war einmal Schweigen: im Zweifel gar kein Ergebnis. Sie ist
-/// jetzt eine Auswahl — bis zu drei Möglichkeiten, und der Nutzer tippt eine an oder
-/// keine. Die Prüfungen hier hängen deshalb an zwei Stellen: dass nichts ohne diesen
-/// Fingertipp in den Bestand kommt, und dass jeder Vorschlag ehrlich beschriftet ist,
-/// wie weit er von der gelesenen Nummer entfernt liegt.
+/// The answer to that used to be silence: no result at all when in doubt. It is now a
+/// choice — up to three possibilities, and the user taps one or none. The checks here
+/// therefore hang on two things: that nothing gets into the inventory without that
+/// tap, and that every suggestion is honestly labelled with how far it lies from the
+/// number that was read.
 final class LookupTests: XCTestCase {
 
-    // MARK: Was überhaupt gesucht wird
+    // MARK: What gets searched for in the first place
 
-    /// „M8“, „A4“, „12“ stehen auf tausend Dingen. Eine Suche darauf kostet einen
-    /// Aufruf und liefert Rauschen, das danach wie ein Befund aussieht.
+    /// "M8", "A4", "12" stand on a thousand things. A search on those costs a call and
+    /// returns noise that afterwards looks like a finding.
     func testShortOrDigitlessCodesAreNotSearched() {
         XCTAssertFalse(ItemCode(value: "M8").isSearchable)
         XCTAssertFalse(ItemCode(value: "A4").isSearchable)
@@ -28,17 +28,17 @@ final class LookupTests: XCTestCase {
         XCTAssertTrue(ItemCode(value: "4006381333931").isSearchable)
     }
 
-    /// Eine dekodierte EAN ist zeichengenau: in Anführungszeichen, damit die
-    /// Suchmaschine nicht auf ein ähnliches Produkt ausweicht.
+    /// A decoded EAN is exact to the character: in quotation marks, so the search
+    /// engine does not fall back on a similar product.
     func testScannedCodeIsQuotedVerbatim() {
         let ean = ItemCode(value: "4006381333931", kind: .ean, origin: .scanned)
         XCTAssertEqual(IdentityLookup.query(for: ean, itemName: "Stift"), "\"4006381333931\"")
     }
 
-    /// Eine abgelesene Nummer **nicht**, und das war die Ursache des alten Verhaltens:
-    /// `"42BYGH3701-B-89S80"` in Anführungszeichen findet nichts, wenn auf dem Motor
-    /// `…-B-80S80` steht. Ohne sie findet die Suche die Baureihe, und der Nutzer sucht
-    /// seine Ausführung selbst heraus.
+    /// A number read off by eye is **not**, and that was the cause of the old
+    /// behaviour: `"42BYGH3701-B-89S80"` in quotation marks finds nothing when the
+    /// motor says `…-B-80S80`. Without them the search finds the series, and the user
+    /// picks out their own variant.
     func testReadCodeIsNotQuoted() {
         let mpn = ItemCode(value: "42BYGH3701-B-89S80", kind: .manufacturer, origin: .read)
         XCTAssertEqual(IdentityLookup.query(for: mpn, itemName: "Schrittmotor"),
@@ -50,10 +50,9 @@ final class LookupTests: XCTestCase {
 
     // MARK: Das Sicherheitsnetz gegen erfundene Strichcodes
 
-    /// Einen Strichcode kann man nicht mit den Augen lesen. Nennt das Modell eine
-    /// EAN, die der Dekoder nicht gesehen hat, hat es sie erfunden oder von den
-    /// Ziffern darunter abgeschrieben — und dort ist eine verwechselte Ziffer nicht
-    /// zu bemerken.
+    /// A barcode cannot be read by eye. If the model names an EAN that the decoder did
+    /// not see, it either invented it or copied it from the digits underneath — and
+    /// there a confused digit goes unnoticed.
     func testUnscannedEANIsRejected() {
         let code = PhotoIntake.code(
             from: ["code": "4006381333931", "code_type": "ean"],
@@ -71,8 +70,8 @@ final class LookupTests: XCTestCase {
         XCTAssertEqual(code?.origin, .scanned, "Was der Dekoder gesehen hat, ist belegt.")
     }
 
-    /// Herstellernummern stehen als Klartext auf dem Bauteil. Die darf das Modell
-    /// ablesen — sie bleiben aber als `read` markiert und damit als fehlbar.
+    /// Manufacturer part numbers stand in plain text on the component. The model may
+    /// read those — but they stay marked as `read` and therefore as fallible.
     func testManufacturerNumberMayBeRead() {
         let code = PhotoIntake.code(
             from: ["code": "MP1584EN", "code_type": "mpn"],
@@ -88,12 +87,12 @@ final class LookupTests: XCTestCase {
         XCTAssertNil(PhotoIntake.code(from: ["code": "  "], scannedValues: [], scannedCodes: []))
     }
 
-    // MARK: Wann das Nachschlagen schweigt
+    // MARK: When the lookup stays silent
 
     private let mpn = ItemCode(value: "MP1584EN", kind: .manufacturer, origin: .read)
 
-    /// Eine leere Liste ist die richtige Antwort, wenn die Treffer von etwas ganz
-    /// anderem handeln — und darf nicht zu einem Vorschlag aufgefüllt werden.
+    /// An empty list is the right answer when the hits are about something else
+    /// entirely — and must not be padded out into a suggestion.
     func testEmptyOrTitlelessCandidatesProduceNoLookup() {
         let hits = [SearchClient.Hit(title: "Irgendwas", url: "https://x", snippet: "", source: "x")]
         func parse(_ o: [String: Any]) -> CodeLookup? {
@@ -126,9 +125,9 @@ final class LookupTests: XCTestCase {
         XCTAssertNil(lookup?.chosen, "Ausgewählt hat noch niemand etwas.")
     }
 
-    /// Die eine Prüfung, die die App selbst macht, statt sie zu glauben: `exact`
-    /// heißt „steht wörtlich in einem Treffer“, und das lässt sich nachsehen. Ein
-    /// Modell, das gefällig sein will, stuft sonst jeden Treffer als Volltreffer ein.
+    /// The one check the app makes itself rather than taking on trust: `exact` means
+    /// "appears verbatim in a hit", and that can be looked up. A model that wants to
+    /// please otherwise grades every hit as a direct hit.
     func testExactIsDowngradedWhenTheCodeIsNowhereInTheHits() {
         let hits = [SearchClient.Hit(title: "Schrittmotor 42BYGH3701-B-80S80",
                                      url: "https://shop.example/motor",
@@ -145,8 +144,8 @@ final class LookupTests: XCTestCase {
                        "Die abweichende Nummer ist das, woran der Nutzer sein Teil erkennt.")
     }
 
-    /// Ohne Angabe gilt die schwächste Stufe. Die Oberfläche beschriftet den
-    /// Vorschlag dann entsprechend.
+    /// With nothing stated, the weakest grade applies. The interface then labels the
+    /// suggestion accordingly.
     func testMatchDefaultsToFamily() {
         let hits = [SearchClient.Hit(title: "t", url: "u", snippet: "", source: "s")]
         let lookup = IdentityLookup.parse(["candidates": [["title": "Etwas"]]],
@@ -154,8 +153,7 @@ final class LookupTests: XCTestCase {
         XCTAssertEqual(lookup?.candidates.first?.match, .family)
     }
 
-    /// Höchstens drei. Eine längere Liste ist keine Hilfe mehr, sondern eine zweite
-    /// Aufgabe.
+    /// Three at most. A longer list stops being help and becomes a second task.
     func testCandidatesAreCappedAtThree() {
         let hits = [SearchClient.Hit(title: "t", url: "u", snippet: "", source: "s")]
         let five = (1 ... 5).map { ["title": "Teil \($0)"] }
@@ -164,7 +162,7 @@ final class LookupTests: XCTestCase {
         XCTAssertEqual(lookup?.candidates.last?.title, "Teil 3", "Die vorderen zuerst.")
     }
 
-    /// Dieselbe Nummer noch einmal danebenzuschreiben ist Lärm.
+    /// Writing the same number out again beside it is noise.
     func testIdenticalCodeSeenIsDropped() {
         let hits = [SearchClient.Hit(title: "MP1584EN", url: "u", snippet: "", source: "s")]
         let lookup = IdentityLookup.parse(
@@ -173,8 +171,8 @@ final class LookupTests: XCTestCase {
         XCTAssertEqual(lookup?.candidates.first?.codeSeen, "")
     }
 
-    /// Antwortet das Modell in der alten, einzelnen Form, wird daraus ein Vorschlag —
-    /// statt gar nichts.
+    /// If the model answers in the old, singular form, that becomes one suggestion —
+    /// rather than nothing at all.
     func testSingleObjectAnswerStillWorks() {
         let hits = [SearchClient.Hit(title: "MP1584EN", url: "https://a", snippet: "", source: "a")]
         let lookup = IdentityLookup.parse(["title": "Abwärtswandler"],
@@ -195,9 +193,8 @@ final class LookupTests: XCTestCase {
         return proposal
     }
 
-    /// Das Kernversprechen: ein aufgelöster Name wird nur übernommen, wenn der Nutzer
-    /// ihn angetippt hat. Ohne Fingertipp bleibt der Name stehen, den das Modell im
-    /// Bild gelesen hat.
+    /// The core promise: a resolved name is only taken over when the user has tapped
+    /// it. Without a tap, the name the model read in the picture stays.
     func testLookupNameNeedsTheTap() {
         var proposal = proposalWithThree()
         XCTAssertEqual(proposal.effectiveName, "Platine", "Ohne Wahl gilt der eigene Befund.")
@@ -217,8 +214,8 @@ final class LookupTests: XCTestCase {
         XCTAssertNil(proposalWithThree().chosenCandidate)
     }
 
-    /// Ein Index, der ins Leere zeigt, darf keinen Absturz und keinen leeren Namen
-    /// erzeugen — das kann passieren, wenn ein Vorschlag verschwindet.
+    /// An index pointing into nothing must produce neither a crash nor an empty name —
+    /// which can happen when a suggestion disappears.
     func testOutOfRangeChoiceFallsBackToTheOwnName() {
         var proposal = proposalWithThree()
         proposal.chosenCandidate = 7
@@ -240,8 +237,8 @@ final class LookupTests: XCTestCase {
                        "Die verworfenen bleiben stehen: sie zeigen, was zur Wahl stand.")
     }
 
-    /// Wurde keiner angetippt, steht das am Eintrag — und nicht ein Vorschlag, der
-    /// aussieht, als hätte ihn jemand geprüft.
+    /// If none was tapped, that stands on the entry — and not a suggestion that looks
+    /// as if somebody had checked it.
     func testUnchosenLookupIsStoredAsUnchosen() {
         var inv = Inventory()
         _ = inv.absorb(proposalWithThree(), at: nil, photoID: nil, model: "m")
@@ -249,8 +246,8 @@ final class LookupTests: XCTestCase {
         XCTAssertNil(inv.items[0].code?.lookup?.chosen)
     }
 
-    /// Eine bestätigte Kennung wird nicht von einem späteren Foto überschrieben,
-    /// eine fehlende aber ergänzt.
+    /// A confirmed identifier is not overwritten by a later photo, but a missing one
+    /// is filled in.
     func testExistingCodeIsNotOverwritten() {
         var inv = Inventory()
         var first = Proposal(name: "Wandler")
@@ -279,8 +276,8 @@ final class LookupTests: XCTestCase {
         XCTAssertEqual(hits.first?.kind, .code)
     }
 
-    /// Ein Namensanfang bleibt vorn: „Wa“ meint „Wandler“, nicht das Teil mit der
-    /// Nummer WA12345.
+    /// The start of a name stays at the front: "Wa" means "Wandler", not the part with
+    /// the number WA12345.
     func testNamePrefixStillBeatsCode() {
         var numbered = Item(name: "Platine")
         numbered.code = ItemCode(value: "WA12345", kind: .manufacturer)
@@ -292,11 +289,11 @@ final class LookupTests: XCTestCase {
         XCTAssertEqual(hits.last?.kind, .code)
     }
 
-    // MARK: Wenn nichts dasteht, steht der Grund da
+    // MARK: When nothing stands there, the reason does
 
-    /// „Nichts Passendes gefunden“ und „die Suche kam nicht durch“ sahen vorher
-    /// beide aus wie eine leere Zeile. Der Unterschied entscheidet, ob der Nutzer es
-    /// gleich noch einmal versucht oder selbst nachsieht.
+    /// "Nothing suitable found" and "the search did not get through" both used to look
+    /// like an empty line. The difference decides whether the user tries again
+    /// straight away or looks it up themselves.
     func testEmptyReasonDistinguishesNothingFoundFromFailure() {
         XCTAssertEqual(CodeLookup(query: "q").emptyReason, "nichts Passendes gefunden")
         XCTAssertEqual(CodeLookup(query: "q", failed: true).emptyReason,
@@ -317,20 +314,20 @@ final class LookupTests: XCTestCase {
         XCTAssertEqual(back.code?.lookup?.emptyReason, "Nachschlagen fehlgeschlagen")
     }
 
-    /// Ein alter Eintrag kennt `failed` nicht — und darf nicht als Fehlschlag
-    /// dastehen, nur weil das Feld fehlt.
+    /// An old entry knows nothing of `failed` — and must not stand there as a failure
+    /// merely because the field is missing.
     func testOldLookupIsNotAFailure() throws {
         let json = #"{"name":"W","code":{"value":"X1234","lookup":{"query":"q","title":"Etwas"}}}"#
         let item = try JSONDecoder().decode(Item.self, from: Data(json.utf8))
         XCTAssertEqual(item.code?.lookup?.failed, false)
     }
 
-    /// Der Nebenaufruf bekommt dasselbe Budget wie das Lesen des Fotos.
+    /// The side call gets the same budget as reading the photo.
     ///
-    /// Ein Achtel davon — 4 000 Token — reicht einem Modell, das erst nachdenkt,
-    /// nicht bis zum ersten Satz Antwort: `finish_reason: length`, und das
-    /// Nachschlagen schlug fehl, ohne dass man den Grund sah. Gespart wurde dabei
-    /// nichts, die Token werden so oder so abgerechnet.
+    /// An eighth of it — 4,000 tokens — does not carry a model that thinks first as
+    /// far as the first sentence of an answer: `finish_reason: length`, and the lookup
+    /// failed without the reason being visible. Nothing was saved by it; the tokens
+    /// are billed either way.
     func testSideCallGetsTheFullBudget() {
         XCTAssertEqual(ModelClient.sideCallBudget(32_000), 32_000)
         XCTAssertNotEqual(ModelClient.sideCallBudget(32_000), 4_000,
@@ -341,11 +338,11 @@ final class LookupTests: XCTestCase {
 
     // MARK: Die echte Antwort des Modells
 
-    /// Der Fall, an dem die alte Fassung nichts anzeigte: ein Schrittmotor mit einer
-    /// zehnstelligen Typbezeichnung. Die Antwort unten ist wörtlich die, die
-    /// z-ai/glm-5.3-flash auf den neuen Systemprompt und die echten Suchtreffer
-    /// geschrieben hat — kein nachgebauter Idealfall, sondern der Vertrag, an dem
-    /// sich der Parser messen lassen muss.
+    /// The case in which the old version displayed nothing: a stepper motor with a
+    /// ten-character type designation. The answer below is literally the one
+    /// z-ai/glm-5.3-flash wrote in response to the new system prompt and the real
+    /// search hits — not a reconstructed ideal case but the contract the parser has to
+    /// be measured against.
     func testRealModelAnswerBecomesAShortlist() throws {
         let hits = [
             SearchClient.Hit(
@@ -390,7 +387,7 @@ final class LookupTests: XCTestCase {
         XCTAssertNil(lookup.emptyReason)
     }
 
-    // MARK: Antwortformen der Suchdienste
+    // MARK: Response shapes of the search services
 
     func testBraveShape() {
         let hits = SearchClient.hits(in: ["web": ["results": [
@@ -434,8 +431,8 @@ final class LookupTests: XCTestCase {
         XCTAssertFalse(message.contains("entziffert"))
     }
 
-    /// Dem Modell wird gesagt, ob die Nummer belegt oder abgelesen ist — das legt
-    /// fest, wie eng der Vergleich sein muss.
+    /// The model is told whether the number is decoded or read by eye — that
+    /// determines how tight the comparison has to be.
     func testLookupMessageDistinguishesOrigin() {
         let hits = [SearchClient.Hit(title: "t", url: "u", snippet: "s", source: "x")]
         let read = IntakePrompt.lookupMessage(
@@ -452,8 +449,8 @@ final class LookupTests: XCTestCase {
         XCTAssertFalse(scanned.contains("Lesefehler"))
     }
 
-    /// Der Systemprompt muss die Auswahl verlangen und das Auffüllen verbieten —
-    /// beides steht in derselben Antwortform.
+    /// The system prompt has to demand the choice and forbid padding — both live in
+    /// the same response shape.
     func testLookupSystemAsksForAShortlist() {
         XCTAssertTrue(IntakePrompt.lookupSystem.contains("candidates"))
         XCTAssertTrue(IntakePrompt.lookupSystem.contains("drei"))
@@ -483,9 +480,9 @@ final class LookupTests: XCTestCase {
         XCTAssertEqual(back.code?.lookup?.best?.codeSeen, "MP1584EN-2")
     }
 
-    /// Ein Bestand, der vor dieser Änderung angelegt wurde, hat die alte, flache Form
-    /// auf der Platte: ein `title` und ein `confident`. Er muss weiter lesbar sein und
-    /// darf dabei nicht so aussehen, als hätte jemand den Vorschlag bestätigt.
+    /// An inventory created before this change has the old, flat shape on disk: one
+    /// `title` and one `confident`. It has to stay readable and must not look, in the
+    /// process, as if somebody had confirmed the suggestion.
     func testOldFlatLookupDecodesIntoOneCandidate() throws {
         let json = """
         {"name":"Wandler",
@@ -503,8 +500,8 @@ final class LookupTests: XCTestCase {
         XCTAssertNil(lookup.chosen)
     }
 
-    /// Dasselbe ohne `confident`: der Vorschlag war nicht eindeutig und darf nach der
-    /// Migration nicht als Volltreffer dastehen.
+    /// The same without `confident`: the suggestion was not unambiguous and must not
+    /// stand there as a direct hit after the migration.
     func testOldUnconfidentLookupBecomesNear() throws {
         let json = """
         {"name":"W","code":{"value":"X1234","lookup":{"query":"q","title":"Etwas"}}}
@@ -513,9 +510,8 @@ final class LookupTests: XCTestCase {
         XCTAssertEqual(item.code?.lookup?.candidates.first?.match, .near)
     }
 
-    /// Dasselbe im Bestand, und dort wiegt es schwerer: ein einziges unbekanntes
-    /// `kind` aus einer neueren Fassung der App hätte den ganzen Bestand unlesbar
-    /// gemacht.
+    /// The same in the inventory, and there it weighs more: a single unknown `kind`
+    /// from a newer version of the app would have made the whole inventory unreadable.
     func testUnknownEnumInAnItemDoesNotLoseTheItem() throws {
         let json = #"""
         {"name":"Wandler","note":"bleibt",
@@ -533,7 +529,7 @@ final class LookupTests: XCTestCase {
         XCTAssertEqual(item.provenance.origin, .manual)
     }
 
-    /// Ein Bestand aus der Zeit vor dieser Funktion muss weiter lesbar sein.
+    /// An inventory from before this feature has to stay readable.
     func testItemWithoutCodeStillDecodes() throws {
         let item = try JSONDecoder().decode(Item.self, from: Data(#"{"name":"Zange"}"#.utf8))
         XCTAssertNil(item.code)

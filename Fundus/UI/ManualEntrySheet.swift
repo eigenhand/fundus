@@ -1,12 +1,12 @@
 import SwiftUI
 
-/// Von Hand eintragen.
+/// Entering by hand.
 ///
-/// Kein Notausgang, sondern der zweite gleichberechtigte Weg. Das Foto ist schneller
-/// für ein ganzes Regal; für ein einzelnes Ding, das man gerade in der Hand hat, ist
-/// Tippen schneller als Fotografieren, Warten und Abhaken. Deshalb steht das Feld
-/// sofort im Fokus und der Knopf legt nach, ohne das Blatt zu schließen: wer drei
-/// Dinge einträgt, trägt sie hintereinander ein.
+/// Not an emergency exit but the second route, with equal standing. The photo is faster
+/// for a whole shelf; for a single thing you happen to be holding, typing is faster than
+/// photographing, waiting and ticking off. Which is why the field takes focus at once
+/// and the button adds another without closing the sheet: whoever enters three things
+/// enters them one after another.
 struct ManualEntrySheet: View {
     let placeID: UUID?
     @Environment(AppModel.self) private var model

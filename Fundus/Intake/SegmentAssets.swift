@@ -1,16 +1,15 @@
 import Foundation
 
-/// Segment Anything 2.1 Tiny: das Modell fuer den Fingertipp.
+/// Segment Anything 2.1 Tiny: the model for tapping.
 ///
-/// Nicht ins Bundle, und das ist dieselbe Linie wie ueberall in diesen Apps: die IPA
-/// ist 1,7 MB, das Modell ist 80. Wer Fundus laedt, um eine Schublade aufzuschreiben,
-/// soll nicht achtzig Megabyte Gewichte mitziehen, die er vielleicht nie benutzt.
+/// Not in the bundle, and that is the same line as everywhere in these apps: the IPA is
+/// 1.7 MB, the model is 80. Whoever downloads Fundus to write down a drawer should not
+/// have to drag eighty megabytes of weights along that they may never use.
 ///
-/// Apple hat diese Fassung selbst nach Core ML umgesetzt, in float16, unter
-/// Apache-2.0, und HuggingFace hat eine Swift-App dazu, aus der die Ein- und
-/// Ausgabenamen stammen. Die schnelleren Derivate scheitern an etwas anderem als der
-/// Technik: EdgeSAM steht unter einer Lizenz ohne kommerzielle Nutzung, Ultralytics
-/// unter AGPL-3.0.
+/// Apple converted this version to Core ML themselves, in float16, under Apache-2.0,
+/// and HuggingFace has a Swift app to go with it, which is where the input and output
+/// names come from. The faster derivatives fail on something other than the technology:
+/// EdgeSAM is under a licence without commercial use, Ultralytics under AGPL-3.0.
 enum SegmentAssets {
 
     static let model = RemoteModel(

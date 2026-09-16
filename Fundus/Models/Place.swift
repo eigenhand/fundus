@@ -1,11 +1,11 @@
 import Foundation
 
-/// Ein Ort: Keller, Regal 2, Kiste C.
+/// A place: cellar, shelf 2, box C.
 ///
-/// Als Baum und nicht als Zeichenkette, weil die Frage, die eine Inventarapp
-/// beantworten muss, „wo liegt das“ ist und nicht „wie heißt der Ort“. Ein Baum
-/// lässt „alles im Keller“ beantworten, ohne dass irgendwo „Keller / Regal 2“ als
-/// Text steht, der beim Umbenennen des Kellers stehenbleibt.
+/// As a tree and not as a string, because the question an inventory app has to answer
+/// is "where is it" and not "what is the place called". A tree lets "everything in the
+/// cellar" be answered without "cellar / shelf 2" standing anywhere as text that stays
+/// behind when the cellar is renamed.
 struct Place: Identifiable, Codable, Equatable, Hashable {
     var id: UUID = UUID()
     var name: String
@@ -29,25 +29,24 @@ struct Place: Identifiable, Codable, Equatable, Hashable {
     }
 }
 
-/// Die Orte als Baum, mit den Fragen, die die Oberfläche stellt.
+/// The places as a tree, with the questions the interface asks.
 ///
-/// Eigener Typ und nicht ein paar freie Funktionen, weil jede dieser Fragen sonst
-/// die ganze Liste durchläuft: die Kinderlisten werden einmal gebaut und dann
-/// mehrfach benutzt.
+/// Its own type and not a few free functions, because otherwise each of these questions
+/// would walk the whole list: the child lists are built once and then used several
+/// times.
 struct PlaceTree {
     let places: [UUID: Place]
     private let children: [UUID?: [UUID]]
 
     init(_ all: [Place]) {
-        // Lokal und nicht über `self.places`: eine Closure, die `self` anfasst,
-        // während `children` noch nicht steht, lässt der Compiler nicht zu — und zu
-        // Recht.
+        // Local and not via `self.places`: the compiler does not allow a closure that
+        // touches `self` while `children` is not yet in place — and rightly so.
         let byID = Dictionary(all.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
         places = byID
 
         var kids: [UUID?: [UUID]] = [:]
         for p in all { kids[p.parentID, default: []].append(p.id) }
-        // Geschwister alphabetisch, damit dieselbe Liste zweimal gleich aussieht.
+        // Siblings alphabetically, so that the same list looks the same twice.
         children = kids.mapValues { ids in
             ids.sorted {
                 (byID[$0]?.name ?? "").localizedStandardCompare(byID[$1]?.name ?? "")
@@ -59,12 +58,12 @@ struct PlaceTree {
     var roots: [UUID] { children[nil] ?? [] }
     func childIDs(of id: UUID) -> [UUID] { children[id] ?? [] }
 
-    /// Der Pfad von der Wurzel bis hierher, etwa „Keller · Regal 2 · Kiste C“.
+    /// The path from the root down to here, for instance "Keller · Regal 2 · Kiste C".
     ///
-    /// Mit Tiefenbegrenzung: ein Ort, der versehentlich zu seinem eigenen Vorfahren
-    /// wird, würde diese Schleife sonst nicht verlassen. Das kann durch eine
-    /// verschobene Zuordnung entstehen, und ein Aufhänger beim Zeichnen einer Zeile
-    /// wäre der teuerste denkbare Weg, davon zu erfahren.
+    /// With a depth limit: a place that accidentally becomes its own ancestor would
+    /// otherwise never leave this loop. That can come about through a moved assignment,
+    /// and a hang while drawing a row would be the most expensive conceivable way of
+    /// finding out about it.
     func path(of id: UUID, separator: String = " · ") -> String {
         var names: [String] = []
         var current: UUID? = id
@@ -77,7 +76,7 @@ struct PlaceTree {
         return names.reversed().joined(separator: separator)
     }
 
-    /// Dieser Ort und alles darunter — für „alles im Keller“.
+    /// This place and everything under it — for "everything in the cellar".
     func subtree(of id: UUID) -> Set<UUID> {
         var out: Set<UUID> = []
         var stack = [id]
@@ -88,14 +87,14 @@ struct PlaceTree {
         return out
     }
 
-    /// Ob `candidate` unter `id` liegt. Verhindert, dass ein Ort in seinen eigenen
-    /// Unterbaum verschoben wird und den Baum in einen Ring verwandelt.
+    /// Whether `candidate` lies under `id`. Prevents a place being moved into its own
+    /// subtree and turning the tree into a ring.
     func isDescendant(_ candidate: UUID, of id: UUID) -> Bool {
         candidate != id && subtree(of: id).contains(candidate)
     }
 
-    /// Alle Orte in Baumreihenfolge, mit ihrer Tiefe — so wird eine flache Liste
-    /// gezeichnet, die einen Baum zeigt.
+    /// Every place in tree order, with its depth — that is how a flat list gets drawn
+    /// that shows a tree.
     func flattened() -> [(place: Place, depth: Int)] {
         var out: [(Place, Int)] = []
         func walk(_ ids: [UUID], _ depth: Int) {

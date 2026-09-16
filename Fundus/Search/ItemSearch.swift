@@ -1,30 +1,29 @@
 import Foundation
 
-/// Die Suche: erst was sicher ist, dann was wahrscheinlich ist.
+/// The search: first what is certain, then what is likely.
 ///
-/// Zwei Wege, und die Reihenfolge ist die eigentliche Entscheidung. Ein Namenstreffer
-/// ist eine Gewissheit, ein Kosinus eine Vermutung. Wer „Rudi“ tippt, will das Ding,
-/// das Rudi heißt, an erster Stelle — und nicht das, was ein Modell für sinnverwandt
-/// hält. Die Ähnlichkeitssuche verdient ihren Platz auf den Fragen, bei denen die
-/// Wörter nicht übereinstimmen: „das schwarze Kabel mit dem eckigen Stecker“ findet
-/// kein Teilstring. Sie darf nur keinen sicheren Treffer nach unten schieben.
+/// Two routes, and the order is the real decision. A name hit is a certainty, a cosine
+/// a guess. Whoever types "Rudi" wants the thing called Rudi first — and not what a
+/// model considers related in meaning. The similarity search earns its place on the
+/// questions where the words do not match: no substring finds "the black cable with
+/// the square plug". It just must not push a certain hit further down.
 enum ItemSearch {
 
     enum Kind: Int, Comparable {
-        /// Der Name beginnt mit dem Suchwort.
+        /// The name begins with the search term.
         case namePrefix = 0
-        /// Die Kennung am Ding enthält das Suchwort.
+        /// The identifier on the thing contains the search term.
         ///
-        /// Direkt hinter dem Namensanfang, nicht davor: wer „Wa“ tippt, meint
-        /// „Wandler“ und nicht das Teil mit der Nummer WA12345. Wer dagegen
-        /// „MP1584EN“ tippt, meint genau dieses eine Teil — und findet es hier,
-        /// auch wenn der Eintrag „Platine“ heißt.
+        /// Directly behind the name prefix, not in front of it: whoever types "Wa"
+        /// means "Wandler" and not the part with the number WA12345. Whoever types
+        /// "MP1584EN", by contrast, means exactly that one part — and finds it here,
+        /// even when the entry is called "Platine".
         case code = 1
-        /// Das Suchwort steht irgendwo im Namen.
+        /// The search term stands somewhere in the name.
         case nameContains = 2
-        /// Es steht in Notiz oder Schlagwort.
+        /// It stands in the note or in a tag.
         case sideText = 3
-        /// Nur die Bedeutung passt.
+        /// Only the meaning fits.
         case semantic = 4
 
         static func < (a: Kind, b: Kind) -> Bool { a.rawValue < b.rawValue }
@@ -42,15 +41,15 @@ enum ItemSearch {
     struct Hit: Identifiable, Equatable {
         var item: Item
         var kind: Kind
-        /// Nur bei `semantic` gefüllt.
+        /// Only filled in for `semantic`.
         var similarity: Double?
         var id: UUID { item.id }
     }
 
-    /// Teilstringsuche über Name, Kennung, Notiz und Schlagworte.
+    /// Substring search over name, identifier, note and tags.
     ///
-    /// Unempfindlich gegen Groß-/Kleinschreibung und Akzente, weil niemand „Lötzinn“
-    /// mit dem richtigen Umlaut tippt, wenn er es schnell sucht.
+    /// Insensitive to capitalisation and accents, because nobody types "Lötzinn" with
+    /// the right umlaut when they are looking for it in a hurry.
     static func text(_ query: String, in items: [Item]) -> [Hit] {
         let q = Item.normalise(query)
         guard !q.isEmpty else { return [] }
@@ -73,11 +72,11 @@ enum ItemSearch {
         return hits
     }
 
-    /// Ähnlichkeitstreffer aus einem Abfragevektor.
+    /// Similarity hits from a query vector.
     ///
-    /// `centroid` wird von beiden Seiten abgezogen — Abfrage wie Eintrag. Nur eine
-    /// Seite zu zentrieren wäre ein Vergleich zwischen zwei verschiedenen Räumen und
-    /// damit genau der Fehler, gegen den der Herkunftsstempel gebaut ist.
+    /// `centroid` is subtracted from both sides — query as well as entry. Centring only
+    /// one side would be a comparison between two different spaces and therefore
+    /// exactly the error the origin stamp is built against.
     static func semantic(_ queryVector: [Float], in items: [Item], model: String,
                          centroid: [Float]?, minimum: Double, limit: Int) -> [Hit] {
         let dimension = Indexer.dominantDimension(items, model: model)
@@ -97,11 +96,11 @@ enum ItemSearch {
             .map { Hit(item: $0.0, kind: .semantic, similarity: $0.1) }
     }
 
-    /// Legt beide Wege zusammen.
+    /// Puts both routes together.
     ///
-    /// Ein Ding, das auf beiden Wegen kommt, behält den *besseren* Weg — sonst stünde
-    /// ein Namenstreffer unter „Bedeutung“, und der Nutzer würde lesen, die App habe
-    /// geraten, wo sie gewusst hat.
+    /// A thing that arrives by both routes keeps the *better* one — otherwise a name
+    /// hit would stand under "meaning", and the user would read that the app had
+    /// guessed where it knew.
     static func merge(_ groups: [Hit]...) -> [Hit] {
         var best: [UUID: Hit] = [:]
         for group in groups {
@@ -113,9 +112,9 @@ enum ItemSearch {
         return best.values.sorted { a, b in
             if a.kind != b.kind { return a.kind < b.kind }
             if let x = a.similarity, let y = b.similarity, x != y { return x > y }
-            // Gleichrangig: alphabetisch, damit dieselbe Suche zweimal dieselbe
-            // Liste ergibt. Eine Reihenfolge aus einem Dictionary ist zufällig, und
-            // eine Trefferliste, die bei jedem Tastendruck springt, ist unbenutzbar.
+            // Equal rank: alphabetical, so that the same search twice gives the same
+            // list. An order coming out of a dictionary is arbitrary, and a hit list
+            // that jumps on every keystroke is unusable.
             return a.item.name.localizedStandardCompare(b.item.name) == .orderedAscending
         }
     }

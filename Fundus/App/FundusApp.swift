@@ -11,21 +11,19 @@ struct FundusApp: App {
                 .environment(model)
                 .task { await model.load() }
                 .tint(EH.navy)
-                // `apply` leitet das Nachschlagen auf die gewaehlte Sprache um — das
-                // ist die Umstellung selbst. Die Locale darunter macht Zahlen und
-                // Daten passend und ist zugleich der Anstoss, auf den SwiftUI die
-                // Ansichten neu baut.
+                // `apply` redirects the lookup to the chosen language — that is the
+                // switch itself. The locale below it makes numbers and dates fit and is
+                // at the same time the nudge on which SwiftUI rebuilds the views.
                 .onChange(of: model.settings.language, initial: true) { _, language in
                     AppLanguage.apply(language)
                 }
                 .environment(\.locale, model.settings.language.locale ?? .autoupdatingCurrent)
-                // `nil` heisst: das Geraet entscheidet — und wechselt zur Daemmerung
-                // von selbst mit.
+                // `nil` means: the device decides — and switches at dusk by itself.
                 .preferredColorScheme(model.settings.appearance.scheme)
                 .onChange(of: phase) { _, new in
-                    // Beim Verschwinden sofort schreiben, nicht verzögert: die
-                    // verzögerte Speicherung wartet 400 ms, und eine App, die in
-                    // dieser Zeit beendet wird, verliert den letzten Eintrag.
+                    // Write at once when it goes away, not with a delay: the delayed
+                    // save waits 400 ms, and an app killed in that time loses the last
+                    // entry.
                     if new != .active { Task { await model.saveNow() } }
                 }
         }

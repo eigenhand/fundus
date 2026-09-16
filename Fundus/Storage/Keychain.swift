@@ -1,41 +1,38 @@
 import Foundation
 import Security
 
-/// API-Schlüssel liegen hier und nirgends sonst. Die Einstellungen halten nur den
-/// Verweis.
+/// API keys live here and nowhere else. The settings hold only the reference.
 ///
-/// Mit Zugriffsgruppe, anders als in Faden: ein Schlüssel, den der Nutzer für seinen
-/// eigenen Endpoint einträgt, soll nicht dreimal eingetragen werden müssen. Die
-/// Gruppe `dev.eigenhand.shared` steht in den Berechtigungen und ist der Ort, an dem
-/// sich die Apps einen Zugang teilen.
+/// With an access group, unlike in Faden: a key the user enters for their own endpoint
+/// should not have to be entered three times. The group `dev.eigenhand.shared` stands
+/// in the entitlements and is the place where the apps share access.
 ///
-/// Ein Element *ohne* Gruppe landet in der Standardgruppe der App und ist für die
-/// anderen unsichtbar — das ist der richtige Ort für alles, was nur diese App
-/// betrifft. Beides gibt es deshalb, und der Aufrufer entscheidet.
+/// An item *without* a group lands in the app's default group and is invisible to the
+/// others — that is the right place for everything that concerns only this app. Both
+/// exist for that reason, and the caller decides.
 enum Keychain {
     private static let service = "dev.eigenhand.fundus.keys"
 
-    /// Der Kontoname, unter dem der geteilte Endpoint-Schlüssel liegt. Stabil und
-    /// nicht zufällig, denn die anderen Apps müssen ihn kennen, ohne ihn zu erfahren.
+    /// The account name under which the shared endpoint key lives. Stable and not
+    /// random, because the other apps have to know it without being told it.
     static let sharedAccount = "eigenhand.shared.endpoint"
 
-    /// Die Gruppe, in der geteilte Elemente liegen. Der Präfix mit der Team-ID kommt
-    /// vom System; hier steht nur der Rest, denn `kSecAttrAccessGroup` erwartet die
-    /// aufgelöste Form und die Berechtigungsdatei setzt `$(AppIdentifierPrefix)`
-    /// davor. Ohne Team-Präfix schlägt der Zugriff mit `errSecMissingEntitlement`
-    /// fehl — deshalb wird er hier aus dem eigenen Zugriffsrecht gelesen statt
-    /// einkompiliert.
+    /// The group shared items live in. The prefix with the team ID comes from the
+    /// system; only the rest stands here, because `kSecAttrAccessGroup` expects the
+    /// resolved form and the entitlements file puts `$(AppIdentifierPrefix)` in front.
+    /// Without the team prefix, access fails with `errSecMissingEntitlement` — which is
+    /// why it is read here out of the app's own entitlement rather than compiled in.
     private static var sharedGroup: String? {
         guard let prefix = teamPrefix else { return nil }
         return prefix + "dev.eigenhand.shared"
     }
 
-    /// Der Team-Präfix, aus einem Testelement erfragt.
+    /// The team prefix, asked of a probe item.
     ///
-    /// Es gibt keine API, die ihn direkt nennt. Der übliche Weg ist, ein Element ohne
-    /// Gruppe anzulegen und dessen `kSecAttrAccessGroup` zu lesen — das System füllt
-    /// dabei die Standardgruppe ein, und die beginnt mit dem Präfix. Einmal pro
-    /// Programmlauf, danach gemerkt.
+    /// There is no API that states it directly. The usual route is to create an item
+    /// without a group and read its `kSecAttrAccessGroup` — the system fills the default
+    /// group in, and that begins with the prefix. Once per run of the program, then
+    /// remembered.
     private static let teamPrefix: String? = {
         let probeAccount = "fundus.prefix.probe"
         let base: [String: Any] = [
@@ -88,8 +85,8 @@ enum Keychain {
         if status == errSecItemNotFound {
             return SecItemAdd(q.merging(attrs, uniquingKeysWith: { $1 }) as CFDictionary, nil) == errSecSuccess
         }
-        // Fehlt die Gruppe im Profil, schlägt der geteilte Weg fehl. Dann in die
-        // eigene Gruppe, statt den Nutzer ohne Schlüssel dastehen zu lassen.
+        // If the group is missing from the profile, the shared route fails. Then into
+        // the app's own group, rather than leaving the user without a key.
         if shared { return set(value, account: account, shared: false) }
         return false
     }
@@ -103,8 +100,8 @@ enum Keychain {
            let data = out as? Data, let s = String(data: data, encoding: .utf8) {
             return s
         }
-        // Ein Schlüssel, der vor der Freischaltung der Gruppe angelegt wurde, liegt
-        // in der eigenen Gruppe. Dort nachsehen, statt ihn für verloren zu erklären.
+        // A key created before the group was enabled lives in the app's own group. Look
+        // there rather than declaring it lost.
         if shared { return get(account: account, shared: false) }
         return nil
     }

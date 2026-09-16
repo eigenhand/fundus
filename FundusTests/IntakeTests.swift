@@ -1,12 +1,11 @@
 import XCTest
 @testable import Fundus
 
-/// Was aus einer Modellantwort wird.
+/// What becomes of a model's answer.
 ///
-/// Die Antwort kommt von einem beliebigen Modell, und die Abweichungen hier sind
-/// keine erfundenen Fälle: Mengen als Zeichenkette, Kommazahlen, `null`, dasselbe
-/// Ding zweimal genannt, JSON in einem Codeblock. Jede davon hat schon einmal
-/// irgendwo eine Aufnahme gekostet, die bezahlt war.
+/// The answer comes from an arbitrary model, and the deviations here are not invented
+/// cases: quantities as strings, decimals, `null`, the same thing named twice, JSON in
+/// a code block. Each of them has cost a paid shot somewhere at some point.
 final class IntakeTests: XCTestCase {
 
     private func parse(_ json: String) -> IntakeResult {
@@ -32,8 +31,8 @@ final class IntakeTests: XCTestCase {
         XCTAssertEqual(result.unreadable.count, 1)
     }
 
-    /// Modelle halten sich nicht zuverlässig an „antworte nur mit JSON“. Eine
-    /// Aufnahme an einem Codeblock zu verlieren wäre ein bezahlter Aufruf für nichts.
+    /// Models do not reliably keep to "answer with JSON only". Losing a shot to a code
+    /// block would be a paid call for nothing.
     func testJSONInsideCodeFence() {
         let result = parse("""
         Hier ist der Bestand:
@@ -53,8 +52,8 @@ final class IntakeTests: XCTestCase {
         XCTAssertEqual(result.proposals[0].quantity, 8)
     }
 
-    /// Eine Kommazahl als Stückzahl ist ein Missverständnis des Modells. Abgeschnitten
-    /// statt gerundet: aus 2,7 Dosen werden 2 sichere, nicht 3 behauptete.
+    /// A decimal as a piece count is a misunderstanding on the model's part. Truncated
+    /// rather than rounded: 2.7 tins become 2 certain ones, not 3 asserted ones.
     func testFractionalQuantityTruncates() {
         let result = parse(#"{"items": [{"name": "Dose", "quantity": 2.7}]}"#)
         XCTAssertEqual(result.proposals[0].quantity, 2)
@@ -66,8 +65,8 @@ final class IntakeTests: XCTestCase {
         XCTAssertNil(result.proposals[1].quantity)
     }
 
-    /// Zwei Fächer, ein Blick: das Modell nennt dasselbe Ding manchmal zweimal. Im
-    /// Prüfschritt soll der Nutzer Dinge sehen, nicht Zeilen.
+    /// Two compartments, one glance: the model sometimes names the same thing twice. In
+    /// the checking step the user should see things, not rows.
     func testDuplicateNamesInOneResponseAreMerged() {
         let result = parse("""
         {"items": [{"name": "Schraube 4×40", "quantity": 12},
@@ -102,8 +101,8 @@ final class IntakeTests: XCTestCase {
         XCTAssertEqual(result.unreadable, ["drei Fläschchen ohne Etikett"])
     }
 
-    /// Alle Vorschläge kommen angehakt: abnicken ist der Normalfall, streichen die
-    /// Ausnahme. Eine Liste mit vierzig leeren Kästchen benutzt man einmal.
+    /// Every suggestion arrives ticked: nodding through is the normal case, striking
+    /// out the exception. A list with forty empty boxes gets used once.
     func testProposalsArriveAccepted() {
         let result = parse(#"{"items": [{"name": "A"}, {"name": "B"}]}"#)
         XCTAssertTrue(result.proposals.allSatisfy(\.accepted))
@@ -111,8 +110,8 @@ final class IntakeTests: XCTestCase {
 
     // MARK: Der Prompt
 
-    /// Die bestehenden Namen sind begrenzt, weil eine Liste von zweihundert den
-    /// Prompt dominiert und das Modell anfängt, daraus abzuschreiben.
+    /// The existing names are capped, because a list of two hundred dominates the
+    /// prompt and the model starts copying out of it.
     func testPromptCapsExistingNames() {
         let many = (1 ... 120).map { "Ding \($0)" }
         let message = IntakePrompt.message(placePath: "Keller", existingNames: many, hint: "")

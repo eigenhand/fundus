@@ -1,13 +1,13 @@
 import Foundation
 
-/// Die Websuche für Kennungen.
+/// The web search for identifiers.
 ///
-/// Absichtlich klein und ohne Rezeptmaschine: Faden kann beliebige Suchanbieter über
-/// eine Konfigurationssprache ansprechen, weil dort die Suche das Werkzeug ist. Hier
-/// ist sie eine Nachschlagehilfe für Ziffernfolgen, und dafür reicht ein Aufruf mit
-/// drei Feldern. Die Antwortform wird nachsichtig gelesen: Brave legt die Treffer
-/// unter `web.results`, andere unter `results` oder `organic_results` — alle drei
-/// werden probiert, statt den Nutzer ein Pfadfeld ausfüllen zu lassen.
+/// Deliberately small and without a recipe engine: Faden can address arbitrary search
+/// providers through a configuration language, because there the search is the tool.
+/// Here it is a lookup aid for rows of digits, and for that one call with three fields
+/// is enough. The response shape is read leniently: Brave puts the hits under
+/// `web.results`, others under `results` or `organic_results` — all three get tried
+/// rather than making the user fill in a path field.
 struct SearchClient {
     let config: LookupConfig
     let apiKey: String
@@ -18,9 +18,9 @@ struct SearchClient {
         var snippet: String
         var source: String
 
-        /// Was davon ins Modell geht. Kurz gehalten: fünf Treffer mit je einem
-        /// Absatz sind schon ein halber Prompt, und lange Werbetexte verdrängen die
-        /// technischen Angaben, auf die es ankommt.
+        /// What of it goes into the model. Kept short: five hits with a paragraph each
+        /// are already half a prompt, and long marketing copy crowds out the technical
+        /// details that matter.
         var forPrompt: String {
             var s = "- \(title)"
             if !snippet.isEmpty { s += "\n  \(snippet.prefix(320))" }
@@ -44,9 +44,9 @@ struct SearchClient {
         var request = URLRequest(url: url)
         request.timeoutInterval = 20
         request.setValue("application/json", forHTTPHeaderField: "Accept")
-        // Kein Accept-Encoding von Hand: URLSession handelt das aus und packt selbst
-        // aus. Wer es selbst setzt, bekommt rohe gzip-Bytes, die nie als JSON
-        // durchgehen — derselbe Fehler steckte in Faden.
+        // No hand-written Accept-Encoding: URLSession negotiates that and unpacks it
+        // itself. Set it yourself and you get raw gzip bytes that never pass as JSON —
+        // the same bug sat in Faden.
         if !apiKey.isEmpty {
             request.setValue(apiKey, forHTTPHeaderField: config.keyHeader)
         }
@@ -62,7 +62,7 @@ struct SearchClient {
         return Self.hits(in: obj)
     }
 
-    /// Die übliche Handvoll Antwortformen, in der Reihenfolge ihrer Verbreitung.
+    /// The usual handful of response shapes, in order of how common they are.
     static func hits(in object: [String: Any]) -> [Hit] {
         let candidates: [[[String: Any]]] = [
             (object["web"] as? [String: Any])?["results"] as? [[String: Any]],

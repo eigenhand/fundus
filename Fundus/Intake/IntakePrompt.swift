@@ -1,18 +1,16 @@
 import Foundation
 
-/// Was das Modell beim Lesen eines Regalfotos gesagt bekommt.
+/// What the model is told when it reads a photo of a shelf.
 ///
-/// Eigene Datei, weil das Inhalt ist und nicht Code: an diesem Text entscheidet
-/// sich, ob eine Aufnahme brauchbar ist, und er wird häufiger geändert als alles
-/// andere in dieser App.
+/// Its own file, because this is content and not code: this text decides whether a
+/// shot is usable, and it gets changed more often than anything else in this app.
 ///
-/// Die Regeln sind nicht Geschmack, sondern jede eine Gegenmaßnahme. Ein Modell,
-/// dem man ein Regal zeigt, neigt zu vier Dingen: es beschreibt statt zu zählen
-/// („ein schwarzes Kabel liegt links“), es zählt Einzelstücke statt Arten (acht
-/// Zeilen für acht gleiche Dosen), es liest Etiketten, die nicht lesbar sind, und
-/// es füllt Lücken mit Plausiblem. Die ersten drei kosten Aufräumarbeit, das vierte
-/// macht den Bestand falsch — und ein falscher Bestand ist schlechter als keiner,
-/// weil man ihm glaubt.
+/// The rules are not taste; each one is a countermeasure. A model shown a shelf tends
+/// towards four things: it describes instead of counting ("a black cable lies on the
+/// left"), it counts individual pieces instead of kinds (eight rows for eight identical
+/// tins), it reads labels that are not legible, and it fills gaps with what is
+/// plausible. The first three cost tidying-up work, the fourth makes the inventory
+/// wrong — and a wrong inventory is worse than none, because it gets believed.
 enum IntakePrompt {
 
     static let system = """
@@ -88,25 +86,25 @@ enum IntakePrompt {
     Ist nichts Bestandsfähiges im Bild, antworte mit leeren Listen.
     """
 
-    /// Die Nachricht zum Bild.
+    /// The message that goes with the picture.
     ///
     /// - Parameters:
-    ///   - placePath: Wohin die Einträge kommen, etwa „Keller · Regal 2“. Nur zur
-    ///     Orientierung — was für ein Ort das ist, ändert, was plausibel im Bild ist.
-    ///   - existingNames: Namen, die an diesem Ort schon stehen. Der Grund ist die
-    ///     Zusammenführung: „USB-C Kabel“ und „USB-C-Kabel“ sind für einen Menschen
-    ///     dasselbe Ding und für einen Namensvergleich zwei. Kennt das Modell die
-    ///     bestehenden Namen, schreibt es den zweiten Fund auf den ersten Eintrag,
-    ///     statt einen zweiten anzulegen.
-    ///   - hint: Was der Nutzer selbst dazu sagt.
+    ///   - placePath: Where the entries go, for instance "Keller · Regal 2". For
+    ///     orientation only — what kind of place it is changes what is plausible in the
+    ///     picture.
+    ///   - existingNames: Names that already stand in this place. The reason is
+    ///     merging: "USB-C Kabel" and "USB-C-Kabel" are the same thing to a person and
+    ///     two things to a name comparison. If the model knows the existing names, it
+    ///     writes the second find onto the first entry instead of creating a second.
+    ///   - hint: What the user says about it themselves.
     static func message(placePath: String?, existingNames: [String], hint: String,
                         scannedCodes: [ItemCode] = []) -> String {
         var parts: [String] = []
 
         if !scannedCodes.isEmpty {
-            // Diese Codes hat iOS aus den Balken dekodiert, nicht abgelesen. Sie sind
-            // richtig; das Modell soll sie zuordnen, nicht nachprüfen — und schon gar
-            // nicht selbst am Strichcode ablesen, was es ohnehin nur raten könnte.
+            // iOS decoded these codes from the bars, it did not read them by eye. They
+            // are correct; the model is to assign them, not to check them — and
+            // certainly not to read off the barcode itself what it could only guess at.
             parts.append("""
             Das Gerät hat in diesem Bild folgende Strichcodes selbst entziffert. Sie \
             sind zeichengenau richtig. Ordne jeden dem Gegenstand zu, an dem er \
@@ -121,8 +119,8 @@ enum IntakePrompt {
         }
 
         if !existingNames.isEmpty {
-            // Begrenzt, weil eine Liste von zweihundert Namen den Prompt dominiert
-            // und das Modell anfängt, daraus abzuschreiben, statt das Bild zu lesen.
+            // Capped, because a list of two hundred names dominates the prompt and the
+            // model starts copying out of it instead of reading the picture.
             let shown = existingNames.prefix(40)
             parts.append("""
             An diesem Ort stehen schon folgende Einträge. Findest du eines davon im \
@@ -144,20 +142,20 @@ enum IntakePrompt {
         return parts.joined(separator: "\n\n")
     }
 
-    // MARK: Zweiter Durchgang — eine Kennung auflösen
+    // MARK: Second pass — resolving an identifier
 
-    /// Die Anweisung für das Destillieren aus Suchtreffern.
+    /// The instruction for distilling from search hits.
     ///
-    /// Dieser Text stand einmal andersherum: „antworte nicht, wenn die Treffer nicht
-    /// zur Nummer passen“, zweimal gesagt, damit es sitzt. Die Absicht war richtig und
-    /// die Wirkung falsch. Bei einer abgelesenen Nummer passen die Treffer fast nie
-    /// wörtlich — ein Zeichen daneben genügt —, und das Modell hat dann pflichtgemäß
-    /// geschwiegen, während in denselben Treffern das richtige Bauteil stand.
+    /// This text once stood the other way round: "do not answer when the hits do not
+    /// fit the number", said twice so that it would stick. The intention was right and
+    /// the effect wrong. For a number read by eye the hits almost never fit verbatim —
+    /// one character off is enough — and the model then dutifully stayed silent while
+    /// the right component stood among those same hits.
     ///
-    /// Die Strenge bleibt, sie sitzt nur an der richtigen Stelle: das Modell darf
-    /// vorlegen, aber nicht behaupten. Es sagt zu jedem Vorschlag, wie weit er von der
-    /// gelesenen Nummer entfernt ist, und der Nutzer entscheidet — er hat das Ding in
-    /// der Hand, das Modell hat ein unscharfes Foto.
+    /// The strictness stays, it just sits in the right place: the model may present but
+    /// not assert. It says of every suggestion how far it is from the number that was
+    /// read, and the user decides — they have the thing in their hand, the model has a
+    /// blurred photo.
     static var lookupSystem: String { """
     Du bekommst eine Kennung, die an einem Gegenstand steht, und ein paar \
     Suchtreffer dazu. Du sagst **nicht**, was der Gegenstand ist. Du legst bis zu \
@@ -220,9 +218,9 @@ enum IntakePrompt {
         var parts: [String] = []
         parts.append("Kennung: \(code.value)  (\(code.label))")
         if code.origin == .read {
-            // Der Unterschied gehört ins Modell, weil er festlegt, wie eng der
-            // Vergleich sein muss: eine dekodierte EAN ist richtig, eine abgelesene
-            // Nummer kann ein verwechseltes Zeichen enthalten.
+            // The difference belongs in the model, because it settles how tight the
+            // comparison has to be: a decoded EAN is correct, a number read by eye can
+            // hold a confused character.
             parts.append("Diese Nummer wurde von einem Foto abgelesen und kann "
                          + "Lesefehler enthalten. Ein Treffer, der fast so heißt, "
                          + "ist deshalb ausdrücklich ein Vorschlag wert — sag über "
@@ -236,9 +234,9 @@ enum IntakePrompt {
         if !name.isEmpty {
             parts.append("Im Bild sah das Ding aus wie: \(name)")
         }
-        // Eingefasst: Treffertexte schreibt, wer eine Seite auf eine Bauteilnummer
-        // optimiert — und was das Modell daraus macht, wird ein Vorschlag, der nach
-        // einem Häkchen im Bestand steht. Siehe `UntrustedContent`.
+        // Fenced: hit texts are written by whoever optimises a page for a part number —
+        // and what the model makes of them becomes a suggestion that, after one tick,
+        // stands in the inventory. See `UntrustedContent`.
         parts.append("Suchtreffer:\n" + UntrustedContent.wrap(
             hits.prefix(5).map(\.forPrompt).joined(separator: "\n"),
             source: "Websuche nach \(code.value)"))

@@ -1,13 +1,12 @@
 import SwiftUI
 
-/// Der Bestand. Die eine Liste, die diese App ist.
+/// The inventory. The one list this app is.
 ///
-/// Als `List` und nicht als `ScrollView` mit `LazyVStack`, wie es Faden im Chat
-/// macht: Wischgesten gibt es nur in einer Liste, und „Gesehen“ mit einem Wisch ist
-/// die Handlung, von der die Verlässlichkeit dieses Bestands abhängt. Sie hinter ein
-/// langes Drücken zu legen hieße, sie nicht zu benutzen. Der Preis ist, dass die
-/// Liste zurechtgebogen werden muss, damit die Szene hinter ihr durchscheint —
-/// das sind vier Zeilen und lohnt sich.
+/// As a `List` and not as a `ScrollView` with a `LazyVStack`, the way Faden does it in
+/// the chat: swipe actions only exist in a list, and "seen" with one swipe is the act
+/// the reliability of this inventory depends on. Putting it behind a long press would
+/// mean not using it. The price is that the list has to be bent into shape so that the
+/// scene behind it shows through — that is four lines and worth it.
 struct InventoryView: View {
     @Environment(AppModel.self) private var model
 
@@ -17,24 +16,24 @@ struct InventoryView: View {
     @State private var showLibrary = false
     @State private var showManual = false
     @State private var pendingPlace: UUID?
-    /// Der Sucher hat nach den Orten verlangt. Das Blatt geht erst auf, wenn er weg
-    /// ist — zwei Vollbilder gleichzeitig gibt es nicht.
+    /// The viewfinder has asked for the places. The sheet only opens once it is gone —
+    /// there is no such thing as two full screens at once.
     @State private var wantsPlaces = false
 
-    /// Warum die Orte offen sind, und nicht nur dass sie es sind.
+    /// Why the places are open, and not merely that they are.
     ///
-    /// Als `sheet(item:)` und nicht als Schalter mit einem zweiten Merker daneben,
-    /// und das ist gemessen und nicht Geschmack: mit zwei getrennten Zuständen baut
-    /// SwiftUI das Blatt mit dem Stand, den es beim Aufgehen gerade sieht, und das
-    /// war hier der alte — der Ort wurde angelegt und landete nirgends, und die Zeile
-    /// „aus dem Sucher" erschien erst eine Änderung später. Mit `item` reist der
-    /// Grund mit der Anzeige und kann nicht daneben liegen.
+    /// As a `sheet(item:)` and not as a flag with a second marker beside it, and that
+    /// is measured rather than taste: with two separate states SwiftUI builds the sheet
+    /// with whatever it happens to see as it opens, and here that was the old value —
+    /// the place was created and landed nowhere, and the line "from the viewfinder"
+    /// appeared only one change later. With `item` the reason travels along with the
+    /// presentation and cannot be out of step.
     private enum PlacesSheet: Int, Identifiable {
         case list, forCamera
         var id: Int { rawValue }
     }
     @State private var onlyStale = false
-    /// Der Auftrag, den der Nutzer aus der Reihe angetippt hat.
+    /// The job the user tapped in the queue.
     @State private var openJob: IntakeJob?
 
     var body: some View {
@@ -63,10 +62,10 @@ struct InventoryView: View {
             ManualEntrySheet(placeID: pendingPlace)
                 .presentationDetents([.height(280)])
         }
-        // Der Sucher schickt zu den Orten, indem er sich schliesst. Das Blatt geht
-        // erst danach auf und nicht gleichzeitig: ein Blatt, das angefordert wird,
-        // während ein Vollbild noch weggeht, erscheint nicht — es fällt still aus,
-        // und der Nutzer hat auf „Ort anlegen" getippt und steht vor der Liste.
+        // The viewfinder sends you to the places by closing itself. The sheet opens
+        // only afterwards and not at the same time: a sheet requested while a full
+        // screen is still going away does not appear — it silently fails, and the user
+        // has tapped "create place" and finds themselves looking at the list.
         .fullScreenCover(isPresented: $showCamera,
                          onDismiss: {
                              guard wantsPlaces else { return }
@@ -80,21 +79,21 @@ struct InventoryView: View {
                 model.enqueue(images, placeID: pendingPlace)
             }
         }
-        // Der Prüfschritt ist kein Blatt über der Liste, sondern der ganze Bildschirm:
-        // dort lenkt alles dahinter von der einzigen Frage ab, die zählt — stimmt,
-        // was das Modell gelesen hat.
+        // The checking step is not a sheet over the list but the whole screen:
+        // everything behind it distracts from the one question that counts — is what
+        // the model read correct.
         //
-        // Er springt aber nicht mehr von selbst auf. Wer gerade das nächste Regal
-        // fotografiert, will nicht von einer fertigen Aufnahme unterbrochen werden;
-        // die meldet sich über die Zeile oben und wartet als Symbol in der Reihe.
+        // It no longer opens by itself, though. Whoever is photographing the next shelf
+        // does not want to be interrupted by a finished shot; that one announces itself
+        // through the line at the top and waits as a symbol in the queue.
         .fullScreenCover(item: $openJob) { job in
             IntakeView(job: job)
         }
     }
 
-    // `@Environment` liefert keine Bindung, und ein lokales `@Bindable` gilt nur in
-    // dem Gültigkeitsbereich, in dem es steht — `body` reicht damit nicht bis in
-    // `header`. Ausgeschrieben ist es zwei Zeilen länger und an jeder Stelle gültig.
+    // `@Environment` gives no binding, and a local `@Bindable` only applies within the
+    // scope it stands in — so `body` does not reach into `header`. Written out it is
+    // two lines longer and valid everywhere.
     private var queryBinding: Binding<String> {
         Binding(get: { model.query }, set: { model.query = $0 })
     }
@@ -138,11 +137,11 @@ struct InventoryView: View {
         model.inventory.items.filter { Freshness.of($0) == .stale }.count
     }
 
-    /// Der eine Filter, der sich lohnt.
+    /// The one filter that is worth having.
     ///
-    /// Erscheint nur, wenn es etwas zu filtern gibt. Ein Schalter, der auf eine leere
-    /// Liste führt, ist ein Versprechen, das die App nicht halten kann — und in einem
-    /// frischen Bestand gibt es nichts Unbestätigtes.
+    /// Appears only when there is something to filter. A switch that leads to an empty
+    /// list is a promise the app cannot keep — and in a fresh inventory there is
+    /// nothing unconfirmed.
     private var filterRow: some View {
         HStack(spacing: 8) {
             chip("Alles", active: !onlyStale) { onlyStale = false }
@@ -240,11 +239,11 @@ struct InventoryView: View {
         }
     }
 
-    /// Eine Zeile mit ihren beiden Wischgesten.
+    /// A row with its two swipe actions.
     ///
-    /// „Gesehen“ links, weil es die häufige und harmlose ist; „Löschen“ rechts, wo
-    /// iOS destruktive Gesten erwartet, und ohne `allowsFullSwipe`, damit ein
-    /// entschlossener Wisch beim Scrollen keinen Eintrag verliert.
+    /// "Seen" on the left, because it is the frequent and harmless one; "delete" on the
+    /// right, where iOS expects destructive gestures, and without `allowsFullSwipe`, so
+    /// that a decisive swipe while scrolling does not lose an entry.
     private func row(_ item: Item, kind: ItemSearch.Kind? = nil, showPlace: Bool = false) -> some View {
         NavigationLink(value: item.id) {
             ItemRow(item: item, kind: kind,
@@ -273,9 +272,10 @@ struct InventoryView: View {
 
     // MARK: Handlungsleiste
 
-    /// Unten, weil dort der Daumen ist, und mit der Kamera als gefülltem Knopf, weil
-    /// sie der Weg ist, auf dem dieser Bestand entsteht. Von Hand geht auch — aber
-    /// wer vierzig Dinge tippen müsste, tippt sie nicht.
+    /// At the bottom, because that is where the thumb is, and with the camera as the
+    /// filled button, because it is the route by which this inventory comes into being.
+    /// By hand works too — but whoever would have to type forty things does not type
+    /// them.
     private var actionBar: some View {
         HStack(spacing: 12) {
             placePicker
@@ -312,11 +312,11 @@ struct InventoryView: View {
         }
     }
 
-    /// Wohin das Nächste kommt.
+    /// Where the next one goes.
     ///
-    /// Steht in der Handlungsleiste und nicht im Prüfschritt, weil man den Ort weiß,
-    /// bevor man fotografiert — man steht davor. Danach danach zu fragen heißt, den
-    /// Nutzer nach etwas zu fragen, das er der App gerade gezeigt hat.
+    /// It stands in the action bar and not in the checking step, because you know the
+    /// place before you take the photo — you are standing in front of it. Asking
+    /// afterwards means asking the user about something they have just shown the app.
     private var placePicker: some View {
         Menu {
             ForEach(model.inventory.tree.flattened(), id: \.place.id) { entry in
@@ -351,8 +351,8 @@ struct InventoryView: View {
 }
 
 extension View {
-    /// Eine Listenzeile, die keine sein will: ohne Trenner, ohne Untergrund, ohne
-    /// Einrückung. Für Hinweise und leere Zustände.
+    /// A list row that does not want to be one: no separator, no background, no inset.
+    /// For notes and empty states.
     func plainRow() -> some View {
         listRowInsets(EdgeInsets(top: 0, leading: EH.gutter, bottom: 0, trailing: EH.gutter))
             .listRowBackground(Color.clear)

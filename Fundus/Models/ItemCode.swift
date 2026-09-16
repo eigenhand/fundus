@@ -1,19 +1,18 @@
 import Foundation
 
-/// Eine Kennung, die an einem Ding steht: die EAN unter einem Barcode, eine
-/// Herstellernummer auf einer Platine, eine Seriennummer auf einem Typenschild.
+/// An identifier that stands on a thing: the EAN under a barcode, a manufacturer part
+/// number on a board, a serial number on a rating plate.
 ///
-/// Der wichtigste Teil ist `origin`. Eine von iOS aus dem Bild dekodierte EAN ist
-/// exakt — Prüfziffer und alles. Eine Nummer, die ein Modell von einem unscharfen
-/// Aufkleber abgelesen hat, ist eine Vermutung, bei der ein einziges verwechseltes
-/// Zeichen auf ein völlig anderes Bauteil zeigt. Beides in dasselbe Feld zu
-/// schreiben und gleich auszusehen wäre die teuerste Vereinfachung dieser App:
-/// danach sucht man im Netz nach einer erfundenen Nummer und bekommt ein präzises,
-/// falsches Ergebnis.
+/// The most important part is `origin`. An EAN decoded from the image by iOS is exact
+/// — check digit and all. A number a model read off a blurred sticker is a guess in
+/// which a single confused character points at a completely different component.
+/// Writing both into the same field and having them look alike would be the most
+/// expensive simplification in this app: after it you search the web for an invented
+/// number and get a precise, wrong result.
 struct ItemCode: Codable, Equatable, Hashable {
 
     enum Origin: String, Codable {
-        /// Von iOS aus dem Bild dekodiert. Exakt.
+        /// Decoded from the image by iOS. Exact.
         case scanned
         /// Vom Modell abgelesen. Kann falsch sein.
         case read
@@ -30,18 +29,18 @@ struct ItemCode: Codable, Equatable, Hashable {
     var value: String
     var kind: Kind = .unknown
     var origin: Origin = .read
-    /// Was eine Websuche daraus gemacht hat, falls eine lief.
+    /// What a web search made of it, if one ran.
     var lookup: CodeLookup?
 
-    /// Ob diese Kennung überhaupt eine Suche wert ist.
+    /// Whether this identifier is worth a search at all.
     ///
-    /// Zu kurze Zeichenfolgen treffen alles und nichts: „A4“, „12“, „M8“ stehen auf
-    /// tausend Dingen. Eine Suche darauf kostet einen Aufruf und liefert Rauschen,
-    /// das danach wie ein Befund aussieht.
+    /// Strings that are too short hit everything and nothing: "A4", "12", "M8" stand
+    /// on a thousand things. A search on those costs a call and returns noise that
+    /// afterwards looks like a finding.
     var isSearchable: Bool {
         let v = value.trimmingCharacters(in: .whitespacesAndNewlines)
         guard v.count >= 4 else { return false }
-        // Mindestens eine Ziffer: reine Wörter sind Beschriftungen, keine Kennungen.
+        // At least one digit: pure words are labels, not identifiers.
         return v.rangeOfCharacter(from: .decimalDigits) != nil
     }
 
@@ -74,22 +73,22 @@ struct ItemCode: Codable, Equatable, Hashable {
     }
 }
 
-/// Eine Möglichkeit, was das Ding sein könnte.
+/// One possibility of what the thing might be.
 ///
-/// `match` ist der Grund, warum eine Liste besser ist als ein Urteil. Eine abgelesene
-/// Nummer ist selten zeichengenau — eine 0 als O, eine 8 als 9 —, und die Suche findet
-/// das richtige Bauteil trotzdem, nur nicht unter genau dieser Schreibweise. Ob das
-/// dasselbe Ding ist, entscheidet in einer Sekunde, wer es in der Hand hält. Damit er
-/// das kann, muss er sehen, *wie weit* daneben der Vorschlag liegt: wörtlich derselbe
-/// Aufdruck, zwei Zeichen anders, oder nur dieselbe Baureihe.
+/// `match` is the reason a list is better than a verdict. A number read by eye is
+/// rarely exact to the character — a 0 as an O, an 8 as a 9 — and the search finds the
+/// right component all the same, only not under that exact spelling. Whether it is the
+/// same thing is decided in a second by whoever holds it in their hand. For them to be
+/// able to do that, they have to see *how far* off the suggestion lies: literally the
+/// same lettering, two characters different, or only the same series.
 struct CodeCandidate: Codable, Equatable, Hashable {
 
     enum Match: String, Codable {
-        /// Die Kennung steht wörtlich so in einem Treffer.
+        /// The identifier appears verbatim in a hit.
         case exact
         /// Ein, zwei Zeichen anders — siehe `codeSeen`.
         case near
-        /// Dieselbe Baureihe, andere Ausführung.
+        /// The same series, a different variant.
         case family
 
         var label: String {
@@ -101,14 +100,14 @@ struct CodeCandidate: Codable, Equatable, Hashable {
         }
     }
 
-    /// Kurz und sachlich, wie ein Eintrag im Bestand.
+    /// Short and factual, like an entry in the inventory.
     var title: String
     var summary: String = ""
     var sourceURL: String = ""
     var sourceName: String = ""
     var match: Match = .family
-    /// Wie die Nummer im Treffer wirklich lautet, wenn sie von der gelesenen abweicht.
-    /// Das ist die Zeile, an der ein Mensch „ja, das ist meins“ erkennt.
+    /// What the number in the hit actually says, when it differs from the one that was
+    /// read. This is the line at which a person recognises "yes, that is mine".
     var codeSeen: String = ""
 
     init(title: String, summary: String = "", sourceURL: String = "",
@@ -132,53 +131,52 @@ struct CodeCandidate: Codable, Equatable, Hashable {
     }
 }
 
-/// Was eine Websuche zu einer Kennung ergeben hat: eine kurze Auswahlliste.
+/// What a web search produced for an identifier: a short list to choose from.
 ///
-/// Hier stand einmal ein einzelner Titel mit einem `confident`-Haken, und die Regel
-/// war: passt es nicht eindeutig, kommt gar nichts. Das war die falsche Strenge. Bei
-/// einer abgelesenen Nummer ist „nicht eindeutig“ der Normalfall, und die Antwort
-/// darauf war dann regelmäßig eine leere Zeile — obwohl in den Treffern das richtige
-/// Bauteil stand, nur zwei Zeichen anders geschrieben.
+/// A single title with a `confident` tick used to stand here, and the rule was: if it
+/// does not fit unambiguously, nothing comes back. That was the wrong kind of
+/// strictness. For a number read by eye, "not unambiguous" is the normal case, and the
+/// answer to it was then regularly an empty line — even though the right component
+/// stood among the hits, merely spelled two characters differently.
 ///
-/// Jetzt trägt die App vor, statt zu urteilen: bis zu drei Möglichkeiten, die nächste
-/// zuerst, jede mit der Nummer, die im Treffer wirklich stand. Der Nutzer tippt eine
-/// an oder keine. Das Versprechen bleibt dasselbe — nichts wird stillschweigend
-/// ersetzt —, nur trifft die Entscheidung jetzt der, der das Ding in der Hand hat.
+/// Now the app presents rather than judges: up to three possibilities, the nearest
+/// first, each with the number that actually stood in the hit. The user taps one or
+/// none. The promise stays the same — nothing is silently replaced — only the decision
+/// is now made by whoever has the thing in their hand.
 ///
-/// Mit Suchanfrage und Zeitpunkt, und das ist kein Zierrat: ein aufgelöster
-/// Produktname sieht verlässlicher aus als alles andere im Bestand, obwohl er auf der
-/// Kette „Foto → abgelesene Ziffern → Suchmaschine → zusammengefasst“ steht. Wer
-/// später vor dem Regal steht und etwas anderes in der Hand hält, muss die Kette
-/// zurückverfolgen können.
+/// With the search query and the timestamp, and that is not decoration: a resolved
+/// product name looks more reliable than anything else in the inventory, even though
+/// it stands at the end of the chain "photo → digits read by eye → search engine →
+/// summarised". Whoever stands in front of the shelf later holding something else has
+/// to be able to trace that chain back.
 struct CodeLookup: Codable, Equatable, Hashable {
-    /// Wonach gesucht wurde — wörtlich, damit eine falsch gelesene Nummer als solche
-    /// erkennbar bleibt.
+    /// What was searched for — verbatim, so that a misread number stays recognisable
+    /// as one.
     var query: String
-    /// Die Vorschläge, der wahrscheinlichste zuerst. Nie mehr als `maxCandidates`.
+    /// The suggestions, the most likely first. Never more than `maxCandidates`.
     var candidates: [CodeCandidate] = []
-    /// Welchen der Nutzer genommen hat. `nil` heißt: keinen — und das ist eine
-    /// Antwort, keine offene Frage.
+    /// Which one the user took. `nil` means: none — and that is an answer, not an open
+    /// question.
     var chosen: Int?
-    /// Die Suche oder das Modell sind nicht durchgekommen.
+    /// The search or the model did not get through.
     ///
-    /// Der Unterschied zu einer leeren Liste ist für den Nutzer der ganze Punkt:
-    /// „nichts Passendes gefunden“ ist ein Ergebnis, „die Suche kam nicht durch“ ist
-    /// ein Grund, es gleich noch einmal zu versuchen. Vorher sahen beide gleich aus —
-    /// wie eine leere Zeile, an der nichts darauf hinwies, dass überhaupt jemand
-    /// gesucht hatte.
+    /// The difference from an empty list is the whole point for the user: "nothing
+    /// suitable found" is a result, "the search did not get through" is a reason to try
+    /// again straight away. Before, both looked the same — like an empty line with
+    /// nothing to suggest that anybody had searched at all.
     var failed: Bool = false
     var searchedAt: Date = Date()
 
     static let maxCandidates = 3
 
-    /// Der Vorschlag, den man zeigt, wenn man nur einen zeigen kann: der gewählte,
-    /// sonst der erste. Am Bestandseintrag steht daneben, welcher Fall es war.
+    /// The suggestion to show when only one can be shown: the chosen one, otherwise
+    /// the first. The inventory entry says beside it which of the two it was.
     var best: CodeCandidate? {
         if let chosen, candidates.indices.contains(chosen) { return candidates[chosen] }
         return candidates.first
     }
 
-    /// Was in der Oberfläche steht, wenn keine Vorschläge dastehen.
+    /// What the interface says when no suggestions stand there.
     var emptyReason: String? {
         guard candidates.isEmpty else { return nil }
         return failed ? "Nachschlagen fehlgeschlagen" : "nichts Passendes gefunden"
@@ -193,11 +191,11 @@ struct CodeLookup: Codable, Equatable, Hashable {
         self.searchedAt = searchedAt
     }
 
-    /// Liest auch die alte Form: ein flaches `title`/`summary`/`source`/`confident`.
+    /// Reads the old shape too: a flat `title`/`summary`/`source`/`confident`.
     ///
-    /// Ein Bestand, der vor dieser Änderung angelegt wurde, hat genau diese Felder auf
-    /// der Platte. Sie werden zu einem einzelnen Vorschlag — `confident` war die
-    /// Aussage „steht wörtlich in einem Treffer“ und heißt heute `match: .exact`.
+    /// An inventory created before this change has exactly those fields on disk. They
+    /// become one single suggestion — `confident` was the statement "appears verbatim
+    /// in a hit" and today goes by `match: .exact`.
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         query      = try c.decodeIfPresent(String.self, forKey: .query) ?? ""
