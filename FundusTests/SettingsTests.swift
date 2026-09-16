@@ -46,11 +46,20 @@ final class SettingsTests: XCTestCase {
 
     /// Der Unterschied, um den es geht: „leer" schickt den Nutzer auf Fehlersuche,
     /// „abgeschnitten" sagt ihm, welche Zahl er ändern muss.
+    ///
+    /// Geprüft werden die Zahlen und nicht der Wortlaut. Seit die Fehlertexte durch
+    /// den Stringkatalog gehen, hängt der Satz an der Sprache des Geräts — auf
+    /// einem englischen Simulator stand hier „output tokens", und der Test war rot,
+    /// obwohl der Code stimmte. Die Zahlen sind ohnehin das, worum es geht.
     func testTruncatedErrorNamesTheLimit() {
         let text = ModelError.truncated(limit: 4000, reasoningChars: 5200).errorDescription ?? ""
-        XCTAssertTrue(text.contains("4000"))
-        XCTAssertTrue(text.contains("5200"))
-        XCTAssertTrue(text.contains("Ausgabetoken"))
+        // `4000.formatted()` und nicht "4000": Seit die Meldung durch den
+        // Stringkatalog geht, setzt die Interpolation den Tausenderpunkt der
+        // Sprache — im Englischen „4,000", im Deutschen „4.000". Das ist richtige
+        // Prosa und kein Fehler, aber ein Test, der die nackte Ziffernfolge sucht,
+        // findet sie nicht mehr.
+        XCTAssertTrue(text.contains(4000.formatted()), text)
+        XCTAssertTrue(text.contains(5200.formatted()), text)
     }
 
     func testReasoningOnlyErrorIsDistinct() {

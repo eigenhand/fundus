@@ -283,7 +283,7 @@ struct ObjectPicker: View {
     /// Zugewinn, sondern ein Widerspruch.
     private func circle(_ box: CGRect) {
         guard Self.isUsable(box, pixels: pixels) else {
-            trouble = "Der Kasten ist zu klein — daraus liest auch das Modell nichts."
+            trouble = String(localized: "Der Kasten ist zu klein — daraus liest auch das Modell nichts.")
             return
         }
         trouble = nil
@@ -339,7 +339,7 @@ struct ObjectPicker: View {
                 // Stillschweigen waere hier das Schlechteste: der Nutzer hat getippt
                 // und nichts ist passiert, und er weiss nicht, ob die App ihn gehoert
                 // hat oder das Modell nichts gefunden hat.
-                trouble = "Da war keine Kante zu finden. Tippe mitten auf das Ding."
+                trouble = String(localized: "Da war keine Kante zu finden. Tippe mitten auf das Ding.")
                 return
             }
             // Zweimal auf dasselbe zu tippen soll es nicht verdoppeln.

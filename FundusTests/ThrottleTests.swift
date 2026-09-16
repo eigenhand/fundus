@@ -62,10 +62,17 @@ final class ThrottleTests: XCTestCase {
 
     /// Nach den Pausen sagt die Meldung, was los ist — und was man dagegen tun kann.
     /// „HTTP 429" plus JSON waere richtig und nutzlos.
+    ///
+    /// Geprüft wird die Form und nicht der Wortlaut: Der Satz folgt seit der
+    /// Umstellung auf den Stringkatalog der Sprache des Geräts. Was dieser Test
+    /// wirklich behauptet, ist, dass aus einem 429 eine Zeile für Menschen wird und
+    /// nicht das JSON des Anbieters — und dass sie deutlich länger ist als die
+    /// rohe Statusmeldung, weil ein Rat darin steht.
     func testTheMessageSaysWhatToDo() throws {
         let text = try XCTUnwrap(ModelError.http(status: 429, body: "{\"error\":{\"message\":\"rate limit exceeded\"}}").errorDescription)
-        XCTAssertTrue(text.contains("drosselt"), text)
-        XCTAssertTrue(text.contains("gleichzeitig"), "Der Hebel dagegen steht in den Einstellungen.")
+        XCTAssertFalse(text.contains("{"), "Kein rohes JSON in der Zeile: \(text)")
+        XCTAssertFalse(text.contains("rate limit exceeded"), text)
+        XCTAssertGreaterThan(text.count, 80, "Ohne Rat wäre die Zeile kurz: \(text)")
 
         let other = try XCTUnwrap(ModelError.http(status: 404, body: "nope").errorDescription)
         XCTAssertTrue(other.contains("404"), "Alles andere bleibt beim rohen Befund.")

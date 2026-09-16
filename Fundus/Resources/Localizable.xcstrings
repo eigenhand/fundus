@@ -1,17 +1,18 @@
 {
   "sourceLanguage": "de",
   "strings": {
-    "%@": {
+    "": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@"
+            "value": ""
           }
         }
       }
     },
     "%@ · %@ Dimensionen": {
+      "extractionState": "stale",
       "localizations": {
         "de": {
           "stringUnit": {
@@ -23,6 +24,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@ · %@ dimensions"
+          }
+        }
+      }
+    },
+    "%@ · %lld Dimensionen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$@ · %2$lld Dimensionen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · %lld dimensions"
           }
         }
       }
@@ -44,6 +61,7 @@
       }
     },
     "%@× %@": {
+      "extractionState": "stale",
       "localizations": {
         "de": {
           "stringUnit": {
@@ -59,6 +77,62 @@
         }
       }
     },
+    "%lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld"
+          }
+        }
+      }
+    },
+    "%lld %%": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld %%"
+          }
+        }
+      }
+    },
+    "%lld gefunden": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld found"
+          }
+        }
+      }
+    },
+    "%lld× %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$lld× %2$@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld× %@"
+          }
+        }
+      }
+    },
+    "32000": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "32000"
+          }
+        }
+      }
+    },
     "Adresse": {
       "extractionState": "manual",
       "localizations": {
@@ -66,6 +140,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Address"
+          }
+        }
+      }
+    },
+    "Alle abwählen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deselect all"
+          }
+        }
+      }
+    },
+    "Alle wählen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select all"
           }
         }
       }
@@ -87,6 +181,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Added %@"
+          }
+        }
+      }
+    },
+    "Apples Modell, 108 MB, 8 ms je Eintrag. Gröber, aber ohne Netz — und ein Keller hat selten Empfang.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple's model, 108 MB, 8 ms per entry. Coarser, but without a network — and a basement rarely has reception."
+          }
+        }
+      }
+    },
+    "Auf dem Gerät": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On the device"
           }
         }
       }
@@ -122,6 +236,16 @@
         }
       }
     },
+    "Aus der Galerie": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "From the gallery"
+          }
+        }
+      }
+    },
     "Ausgabetoken, hoechstens": {
       "extractionState": "manual",
       "localizations": {
@@ -129,6 +253,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Output tokens, at most"
+          }
+        }
+      }
+    },
+    "Ausgewählt: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Selected: %@"
           }
         }
       }
@@ -143,6 +277,16 @@
         }
       }
     },
+    "BSA…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BSA…"
+          }
+        }
+      }
+    },
     "Bei einem vollen Regal dauert das eine halbe Minute.": {
       "localizations": {
         "en": {
@@ -153,12 +297,72 @@
         }
       }
     },
+    "Beleg": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Evidence"
+          }
+        }
+      }
+    },
+    "Belege": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Evidence"
+          }
+        }
+      }
+    },
+    "Bestand ausgeben": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export the inventory"
+          }
+        }
+      }
+    },
+    "Bilder prüfen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check the images"
+          }
+        }
+      }
+    },
     "Blitz: %@": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Flash: %@"
+          }
+        }
+      }
+    },
+    "Da war keine Kante zu finden. Tippe mitten auf das Ding.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "There was no edge to find. Tap the middle of the thing."
+          }
+        }
+      }
+    },
+    "Das Bild wird vorbereitet.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The picture is being prepared."
           }
         }
       }
@@ -193,6 +397,26 @@
         }
       }
     },
+    "Das Modell hat keinen Text geliefert.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The model delivered no text."
+          }
+        }
+      }
+    },
+    "Das Modell hat nur nachgedacht (%lld Zeichen) und keine Antwort geschrieben. Meist hilft ein höheres Token-Limit.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The model only thought (%lld characters) and wrote no answer. A higher token limit usually helps."
+          }
+        }
+      }
+    },
     "Das Modell liegt auf dem Gerät.": {
       "localizations": {
         "en": {
@@ -203,12 +427,124 @@
         }
       }
     },
+    "Das Modell sieht sich das Bild an.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The model is looking at the picture."
+          }
+        }
+      }
+    },
+    "Das lokale Modell ist noch nicht geladen.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The local model is not downloaded yet."
+          }
+        }
+      }
+    },
+    "Der Anbieter drosselt gerade (HTTP %lld) — auch nach zwei Wartepausen noch. Kurz warten hilft. Kommt es oft vor, in den Einstellungen unter „Aufnahme“ weniger Fotos gleichzeitig lesen lassen.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The provider is throttling right now (HTTP %lld) — still, after two waits. Waiting a moment helps. If it happens often, have fewer photos read at once under “Capture” in the settings."
+          }
+        }
+      }
+    },
+    "Der Kasten ist zu klein — daraus liest auch das Modell nichts.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The box is too small — the model reads nothing out of it either."
+          }
+        }
+      }
+    },
+    "Der Ort und alle Unterorte werden gelöscht.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The place and all its sub-places are deleted."
+          }
+        }
+      }
+    },
+    "Der Ort und alle Unterorte werden gelöscht. %lld %@ danach nirgends — gelöscht wird davon nichts.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Der Ort und alle Unterorte werden gelöscht. %1$lld %2$@ danach nirgends — gelöscht wird davon nichts."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The place and all its sub-places are deleted. %lld %@ nowhere afterwards — none of them is deleted."
+          }
+        }
+      }
+    },
+    "Die Antwort war nicht das erwartete JSON: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The answer was not the expected JSON: %@"
+          }
+        }
+      }
+    },
+    "Die Antwort wurde bei %lld Token abgeschnitten, bevor Text kam. Das Modell hat vorher %lld Zeichen nachgedacht — Reasoning-Modelle brauchen die Token doppelt. In den Einstellungen mehr Ausgabetoken erlauben.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Die Antwort wurde bei %1$lld Token abgeschnitten, bevor Text kam. Das Modell hat vorher %2$lld Zeichen nachgedacht — Reasoning-Modelle brauchen die Token doppelt. In den Einstellungen mehr Ausgabetoken erlauben."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The answer was cut off at %lld tokens before any text came. The model had thought for %lld characters first — reasoning models need the tokens twice. Allow more output tokens in the settings."
+          }
+        }
+      }
+    },
+    "Die Antwort wurde bei %lld Token abgeschnitten, bevor Text kam. In den Einstellungen mehr Ausgabetoken erlauben.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The answer was cut off at %lld tokens before any text came. Allow more output tokens in the settings."
+          }
+        }
+      }
+    },
     "Die Namenssuche läuft immer und braucht nichts. Für die Suche nach Bedeutung — „das Kabel mit dem eckigen Stecker“ — werden Vektoren gebraucht, und die kommen von hier.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "The search by name always runs and needs nothing. Searching by meaning — “the cable with the square plug” — takes vectors, and those come from here."
+          }
+        }
+      }
+    },
+    "Diesen Eintrag löschen?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete this entry?"
           }
         }
       }
@@ -266,6 +602,16 @@
         }
       }
     },
+    "Einbettung fehlgeschlagen: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Embedding failed: %@"
+          }
+        }
+      }
+    },
     "Einbettungsmodell": {
       "extractionState": "manual",
       "localizations": {
@@ -319,6 +665,26 @@
         }
       }
     },
+    "Eintragen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter"
+          }
+        }
+      }
+    },
+    "Entfernen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove"
+          }
+        }
+      }
+    },
     "Erscheinungsbild": {
       "localizations": {
         "en": {
@@ -329,22 +695,62 @@
         }
       }
     },
-    "Es werden %@ Fotos gleichzeitig gelesen. In den Einstellungen änderbar.": {
+    "Es schreibt — %lld Zeichen.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ photos are read at once. Changeable in the settings."
+            "value": "It is writing — %lld characters."
           }
         }
       }
     },
-    "Fotos kommen in eine Reihe und werden nebeneinander gelesen. Mehr gleichzeitig heisst frueher fertig — bis der Anbieter drosselt. Wer 429 oder Zeitablaeufe sieht, stellt es herunter. Die Reihe fasst %@ Aufnahmen.": {
+    "Es werden %lld Fotos gleichzeitig gelesen. In den Einstellungen änderbar.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Photos go into a queue and are read side by side. More at once means finished sooner — until the provider throttles. If you see 429s or timeouts, turn it down. The queue holds %@ photos."
+            "value": "%lld photos are read at once. Changeable in the settings."
+          }
+        }
+      }
+    },
+    "Fertig": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done"
+          }
+        }
+      }
+    },
+    "Fotografiere ein Regal, eine Schublade, eine Kiste. Dein Modell liest, was darauf ist, und du hakst ab, was stimmt.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Photograph a shelf, a drawer, a box. Your model reads what is on it, and you tick off what is right."
+          }
+        }
+      }
+    },
+    "Fotografieren": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Photograph"
+          }
+        }
+      }
+    },
+    "Fotos kommen in eine Reihe und werden nebeneinander gelesen. Mehr gleichzeitig heisst frueher fertig — bis der Anbieter drosselt. Wer 429 oder Zeitablaeufe sieht, stellt es herunter. Die Reihe fasst %lld Aufnahmen.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Photos go into a queue and are read side by side. More at once means finished sooner — until the provider throttles. If you see 429s or timeouts, turn it down. The queue holds %lld photos."
           }
         }
       }
@@ -380,6 +786,16 @@
         }
       }
     },
+    "Gegenstand": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Object"
+          }
+        }
+      }
+    },
     "Gelesen von %@. Was du übernimmst, behält das als Herkunft und dieses Foto als Beleg.": {
       "localizations": {
         "en": {
@@ -390,12 +806,32 @@
         }
       }
     },
+    "Genauer, kostet aber bei jeder Suche eine Anfrage.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "More precise, but costs a request on every search."
+          }
+        }
+      }
+    },
     "Gesehen": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Seen"
+          }
+        }
+      }
+    },
+    "Gewählt": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chosen"
           }
         }
       }
@@ -416,6 +852,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Read at once"
+          }
+        }
+      }
+    },
+    "HTTP %lld\n%@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "new",
+            "value": "HTTP %1$lld\n%2$@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HTTP %lld\n%@"
           }
         }
       }
@@ -452,7 +904,18 @@
         }
       }
     },
+    "Im Objekte-Modus tippst du auf ein Ding, und das Geraet sagt, wo es aufhoert. Liegt auf dem Geraet (%@).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In object mode you tap a thing and the device says where it ends. It lives on the device (%@)."
+          }
+        }
+      }
+    },
     "Im Suchindex: %@, %@ Dimensionen": {
+      "extractionState": "stale",
       "localizations": {
         "de": {
           "stringUnit": {
@@ -464,6 +927,52 @@
           "stringUnit": {
             "state": "translated",
             "value": "In the search index: %@, %@ dimensions"
+          }
+        }
+      }
+    },
+    "Im Suchindex: %@, %lld Dimensionen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Im Suchindex: %1$@, %2$lld Dimensionen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In the search index: %@, %lld dimensions"
+          }
+        }
+      }
+    },
+    "Index löschen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete the index"
+          }
+        }
+      }
+    },
+    "Ist es das?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Is this it?"
+          }
+        }
+      }
+    },
+    "Kante suchen …": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Looking for the edge …"
           }
         }
       }
@@ -496,6 +1005,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "No entry is touched. The search by name still finds everything, the search by meaning no longer does."
+          }
+        }
+      }
+    },
+    "Kein Modell eingerichtet. Endpoint, Schlüssel und Modellname fehlen.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No model set up. The endpoint, the key and the model name are missing."
+          }
+        }
+      }
+    },
+    "Kein Schlüssel im Schlüsselbund hinterlegt.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No key deposited in the keychain."
           }
         }
       }
@@ -553,6 +1082,16 @@
         }
       }
     },
+    "Laden (80 MB)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Download (80 MB)"
+          }
+        }
+      }
+    },
     "Legt Adresse und Modell im gemeinsamen Ordner ab und den Schlüssel in der gemeinsamen Schlüsselbundgruppe. Wer eine der Apps einrichtet, hat alle eingerichtet.": {
       "localizations": {
         "en": {
@@ -569,6 +1108,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Downloading. The system does not say how far along it is."
+          }
+        }
+      }
+    },
+    "Löschen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete"
           }
         }
       }
@@ -645,12 +1194,42 @@
         }
       }
     },
+    "Modell laden (108 MB)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Download the model (108 MB)"
+          }
+        }
+      }
+    },
+    "Modus": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mode"
+          }
+        }
+      }
+    },
     "Nachgeschlagen — %@.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Looked up — %@."
+          }
+        }
+      }
+    },
+    "Nachholen (%lld)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Catch up (%lld)"
           }
         }
       }
@@ -666,12 +1245,42 @@
         }
       }
     },
+    "Neu aufbauen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rebuild"
+          }
+        }
+      }
+    },
     "Neue Einträge automatisch einbetten": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Embed new entries automatically"
+          }
+        }
+      }
+    },
+    "Neuer Ort": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New place"
+          }
+        }
+      }
+    },
+    "Nicht ausgewählt: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not selected: %@"
           }
         }
       }
@@ -740,6 +1349,26 @@
         }
       }
     },
+    "Noch nichts drin": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing in it yet"
+          }
+        }
+      }
+    },
+    "Nochmal versuchen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try again"
+          }
+        }
+      }
+    },
     "Notiz": {
       "extractionState": "manual",
       "localizations": {
@@ -758,6 +1387,32 @@
           "stringUnit": {
             "state": "translated",
             "value": "Look up numbers"
+          }
+        }
+      }
+    },
+    "Nummern werden nachgeschlagen — %lld von %lld.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Nummern werden nachgeschlagen — %1$lld von %2$lld."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Numbers are being looked up — %lld of %lld."
+          }
+        }
+      }
+    },
+    "Nummern werden nachgeschlagen.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Numbers are being looked up."
           }
         }
       }
@@ -783,6 +1438,16 @@
         }
       }
     },
+    "Ohne dieses Modell sucht sich das Geraet im Objekte-Modus selbst aus, was ein Gegenstand ist — das ist fuer Portraits gebaut und liegt an einer Werkbank oft daneben. Mit ihm entscheidet dein Finger. Segment Anything 2.1 von Apple, Apache-2.0, laeuft auf dem Geraet.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Without this model the device picks for itself what counts as an object in object mode — that is built for portraits and often misses at a workbench. With it, your finger decides. Segment Anything 2.1 by Apple, Apache-2.0, runs on the device."
+          }
+        }
+      }
+    },
     "Ort": {
       "extractionState": "manual",
       "localizations": {
@@ -790,6 +1455,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Place"
+          }
+        }
+      }
+    },
+    "Ort anlegen …": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create a place …"
           }
         }
       }
@@ -824,6 +1499,16 @@
         }
       }
     },
+    "Orte verwalten": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manage places"
+          }
+        }
+      }
+    },
     "Pfad": {
       "extractionState": "manual",
       "localizations": {
@@ -831,6 +1516,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Path"
+          }
+        }
+      }
+    },
+    "Prüft …": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checking …"
           }
         }
       }
@@ -877,6 +1572,16 @@
         }
       }
     },
+    "Speichern": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save"
+          }
+        }
+      }
+    },
     "Sprache": {
       "localizations": {
         "en": {
@@ -898,6 +1603,16 @@
         }
       }
     },
+    "Später": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Later"
+          }
+        }
+      }
+    },
     "Steht auf einem Ding eine Herstellernummer, oder entziffert das Geraet einen Strichcode, sucht die App danach und legt bis zu drei Moeglichkeiten vor. Ausgewaehlt ist keine: du tippst die richtige an, oder keine. Die Nummer steht daneben.": {
       "localizations": {
         "en": {
@@ -914,6 +1629,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Waiting in the queue."
+          }
+        }
+      }
+    },
+    "Stück": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Piece"
           }
         }
       }
@@ -960,6 +1685,16 @@
         }
       }
     },
+    "Suchindex löschen?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete the search index?"
+          }
+        }
+      }
+    },
     "Suchschluessel": {
       "extractionState": "manual",
       "localizations": {
@@ -981,6 +1716,46 @@
         }
       }
     },
+    "Verbindungsfehler: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connection error: %@"
+          }
+        }
+      }
+    },
+    "Verwerfen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Discard"
+          }
+        }
+      }
+    },
+    "Vom Geraet aus dem Strichcode entziffert — zeichengenau.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Made out from the barcode by the device — character for character."
+          }
+        }
+      }
+    },
+    "Vom Modell aus dem Foto abgelesen. Kann Lesefehler enthalten.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read off the photo by the model. May contain reading errors."
+          }
+        }
+      }
+    },
     "Von Hand": {
       "localizations": {
         "en": {
@@ -991,12 +1766,12 @@
         }
       }
     },
-    "Voreingestellt auf Brave Search — derselbe Schluessel, den Faden benutzt. Jeder Dienst geht, der JSON mit Titel, Adresse und Beschreibung liefert. Hoechstens %@ Nummern je Aufnahme: ein voller Werkzeugkoffer kostet sonst vierzig Suchen und vierzig Modellaufrufe fuer eine Liste, die vielleicht verworfen wird.": {
+    "Voreingestellt auf Brave Search — derselbe Schluessel, den Faden benutzt. Jeder Dienst geht, der JSON mit Titel, Adresse und Beschreibung liefert. Hoechstens %lld Nummern je Aufnahme: ein voller Werkzeugkoffer kostet sonst vierzig Suchen und vierzig Modellaufrufe fuer eine Liste, die vielleicht verworfen wird.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Preset to Brave Search — the same key Faden uses. Any service works that returns JSON with a title, an address and a description. At most %@ numbers per photo: a full toolbox would otherwise cost forty searches and forty model calls for a list that may be thrown away."
+            "value": "Preset to Brave Search — the same key Faden uses. Any service works that returns JSON with a title, an address and a description. At most %lld numbers per photo: a full toolbox would otherwise cost forty searches and forty model calls for a list that may be thrown away."
           }
         }
       }
@@ -1007,6 +1782,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "What comes out is a suggestion and replaces nothing."
+          }
+        }
+      }
+    },
+    "Was ist es?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What is it?"
+          }
+        }
+      }
+    },
+    "Welches ist es?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Which one is it?"
           }
         }
       }
@@ -1053,12 +1848,88 @@
         }
       }
     },
+    "abgelesen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "read off"
+          }
+        }
+      }
+    },
     "eigenhand.dev": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "eigenhand.dev"
+          }
+        }
+      }
+    },
+    "entziffert": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "made out"
+          }
+        }
+      }
+    },
+    "hinterlegt": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "deposited"
+          }
+        }
+      }
+    },
+    "laedt …": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "loading …"
+          }
+        }
+      }
+    },
+    "sk-…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "sk-…"
+          }
+        }
+      }
+    },
+    "steht schon da (%lld%@) — wird erhöht": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "new",
+            "value": "steht schon da (%1$lld%2$@) — wird erhöht"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "already there (%lld%@) — will be increased"
+          }
+        }
+      }
+    },
+    "steht schon da — wird zusammengelegt": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "already there — will be merged"
           }
         }
       }
@@ -1073,12 +1944,32 @@
         }
       }
     },
+    "Über den Endpoint": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Through the endpoint"
+          }
+        }
+      }
+    },
     "—": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "—"
+          }
+        }
+      }
+    },
+    "„%@“ löschen?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete “%@”?"
           }
         }
       }

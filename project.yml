@@ -30,6 +30,9 @@ targets:
         ENABLE_USER_SCRIPT_SANDBOXING: NO
         SWIFT_STRICT_CONCURRENCY: minimal
         TARGETED_DEVICE_FAMILY: "1"
+        # Ohne das gibt der Compiler keine .stringsdata aus, und
+        # `-exportLocalizations` findet nichts, was nicht schon im Katalog steht.
+        SWIFT_EMIT_LOC_STRINGS: YES
         GENERATE_INFOPLIST_FILE: NO
         CODE_SIGN_ENTITLEMENTS: Fundus/Fundus.entitlements
       # Wie bei Faden: nur das Archiv signiert von Hand, weil auf diesem Rechner kein

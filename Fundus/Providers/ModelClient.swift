@@ -14,30 +14,27 @@ enum ModelError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .notConfigured: return "Kein Modell eingerichtet. Endpoint, Schlüssel und Modellname fehlen."
-        case .missingKey:    return "Kein Schlüssel im Schlüsselbund hinterlegt."
+        case .notConfigured: return String(localized: "Kein Modell eingerichtet. Endpoint, Schlüssel und Modellname fehlen.")
+        case .missingKey:    return String(localized: "Kein Schlüssel im Schlüsselbund hinterlegt.")
         case .http(let s, _) where ModelClient.isBusy(s):
             // Nach drei Versuchen mit Wartepausen. „HTTP 429" plus JSON waere hier
             // richtig und nutzlos: der Leser kann nichts damit anfangen, ausser dem,
             // was in diesem Satz steht.
-            return "Der Anbieter drosselt gerade (HTTP \(s)) — auch nach zwei "
-                + "Wartepausen noch. Kurz warten hilft. Kommt es oft vor, in den "
-                + "Einstellungen unter „Aufnahme“ weniger Fotos gleichzeitig lesen lassen."
+            return String(localized: "Der Anbieter drosselt gerade (HTTP \(s)) — auch nach zwei Wartepausen noch. Kurz warten hilft. Kommt es oft vor, in den Einstellungen unter „Aufnahme“ weniger Fotos gleichzeitig lesen lassen.")
         case .http(let s, let b):
-            return "HTTP \(s)\n\(Self.readable(b))"
-        case .transport(let m): return "Verbindungsfehler: \(m)"
-        case .emptyAnswer:   return "Das Modell hat keinen Text geliefert."
+            return String(localized: "HTTP \(s)\n\(Self.readable(b))")
+        case .transport(let m): return String(localized: "Verbindungsfehler: \(m)")
+        case .emptyAnswer:   return String(localized: "Das Modell hat keinen Text geliefert.")
         case .truncated(let limit, let thinking):
-            var m = "Die Antwort wurde bei \(limit) Token abgeschnitten, bevor Text kam."
+            // Zwei ganze Saetze statt eines zusammengesetzten: Ein Katalog kennt nur
+            // ganze Schluessel, und im Englischen steht der Einschub woanders.
             if thinking > 0 {
-                m += " Das Modell hat vorher \(thinking) Zeichen nachgedacht — "
-                m += "Reasoning-Modelle brauchen die Token doppelt."
+                return String(localized: "Die Antwort wurde bei \(limit) Token abgeschnitten, bevor Text kam. Das Modell hat vorher \(thinking) Zeichen nachgedacht — Reasoning-Modelle brauchen die Token doppelt. In den Einstellungen mehr Ausgabetoken erlauben.")
             }
-            return m + " In den Einstellungen mehr Ausgabetoken erlauben."
+            return String(localized: "Die Antwort wurde bei \(limit) Token abgeschnitten, bevor Text kam. In den Einstellungen mehr Ausgabetoken erlauben.")
         case .reasoningOnly(let chars):
-            return "Das Modell hat nur nachgedacht (\(chars) Zeichen) und keine Antwort "
-                + "geschrieben. Meist hilft ein höheres Token-Limit."
-        case .notJSON(let m): return "Die Antwort war nicht das erwartete JSON: \(m)"
+            return String(localized: "Das Modell hat nur nachgedacht (\(chars) Zeichen) und keine Antwort geschrieben. Meist hilft ein höheres Token-Limit.")
+        case .notJSON(let m): return String(localized: "Die Antwort war nicht das erwartete JSON: \(m)")
         }
     }
 

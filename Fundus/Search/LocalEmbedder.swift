@@ -8,9 +8,9 @@ enum EmbeddingError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .unsupported: return "Dieses Gerät kennt das lokale Modell nicht."
-        case .notLoaded:   return "Das lokale Modell ist noch nicht geladen."
-        case .failed(let m): return "Einbettung fehlgeschlagen: \(m)"
+        case .unsupported: return String(localized: "Dieses Gerät kennt das lokale Modell nicht.")
+        case .notLoaded:   return String(localized: "Das lokale Modell ist noch nicht geladen.")
+        case .failed(let m): return String(localized: "Einbettung fehlgeschlagen: \(m)")
         }
     }
 }
