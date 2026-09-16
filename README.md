@@ -12,6 +12,7 @@ Design after [eigenhand.dev](https://eigenhand.dev). Sister to
 [Faden](https://github.com/eigenhand/faden) (AI chat) and Spind (files).
 
 What the app protects and what it expressly does not: [SECURITY.md](SECURITY.md).
+How it is put together: [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## What is in it
 

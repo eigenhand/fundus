@@ -12,6 +12,7 @@ Design nach [eigenhand.dev](https://eigenhand.dev). Schwester von
 [Faden](https://github.com/eigenhand/faden) (KI-Chat) und Spind (Dateien).
 
 Was die App schützt und was ausdrücklich nicht: [SECURITY.de.md](SECURITY.de.md).
+Wie sie gebaut ist: [ARCHITECTURE.de.md](ARCHITECTURE.de.md).
 
 ## Was drin ist
 
