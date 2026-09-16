@@ -136,7 +136,7 @@ struct IntakeQueueStrip: View {
             Text(text)
                 .font(.eh(11, .caption2, weight: .semibold))
                 .monospacedDigit()
-                .foregroundStyle(.white)
+                .foregroundStyle(EH.onAccent)
                 .padding(.horizontal, 5)
                 .frame(minWidth: 18, minHeight: 18)
                 .background(Capsule().fill(badgeTint(job.phase)))

@@ -234,6 +234,17 @@
         }
       }
     },
+    "Dunkel": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dark"
+          }
+        }
+      }
+    },
     "Ein Lagerbestand fürs iPhone, der nichts mitbringt außer der Oberfläche. Modell, Endpoint und Schlüssel kommen von dir. Kein Konto, kein Zwischenserver, keine Telemetrie.": {
       "localizations": {
         "en": {
@@ -304,6 +315,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Entry"
+          }
+        }
+      }
+    },
+    "Erscheinungsbild": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Appearance"
           }
         }
       }
@@ -395,6 +416,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Read at once"
+          }
+        }
+      }
+    },
+    "Hell": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Light"
           }
         }
       }
@@ -975,6 +1007,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "What comes out is a suggestion and replaces nothing."
+          }
+        }
+      }
+    },
+    "Wie das Gerät": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Match the device"
           }
         }
       }

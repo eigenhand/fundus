@@ -225,6 +225,9 @@ struct AppSettings: Codable, Equatable {
     /// Die Sprache der Oberflaeche.
     var language: AppLanguage = .system
 
+    /// Hell oder dunkel.
+    var appearance: AppAppearance = .system
+
     init() {}
 
     init(from decoder: Decoder) throws {
@@ -239,5 +242,6 @@ struct AppSettings: Codable, Equatable {
             .clamped(to: IntakeSchedule.concurrencyRange)
         captureMode = c.decodeLenient(CaptureMode.self, forKey: .captureMode) ?? .single
         language = c.decodeLenient(AppLanguage.self, forKey: .language) ?? .system
+        appearance = c.decodeLenient(AppAppearance.self, forKey: .appearance) ?? .system
     }
 }

@@ -298,7 +298,7 @@ struct InventoryView: View {
             } label: {
                 Image(systemName: "camera.fill")
                     .font(.system(size: 20, weight: .medium))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(EH.onAccent)
                     .frame(width: 54, height: 54)
                     .background(Circle().fill(EH.navy))
             }

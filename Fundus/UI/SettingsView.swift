@@ -610,6 +610,24 @@ struct SettingsView: View {
             .accessibilityIdentifier("language-picker")
         }
         .padding(.vertical, 4)
+        HStack {
+            Text("Erscheinungsbild")
+                .font(EH.body)
+                .foregroundStyle(EH.navy)
+            Spacer()
+            Picker("Erscheinungsbild", selection: Binding(
+                get: { model.settings.appearance },
+                set: { model.settings.appearance = $0; model.save() })) {
+                ForEach(AppAppearance.allCases) { appearance in
+                    Text(appearance.label).tag(appearance)
+                }
+            }
+            .labelsHidden()
+            .pickerStyle(.menu)
+            .tint(EH.navy)
+            .accessibilityIdentifier("appearance-picker")
+        }
+        .padding(.vertical, 4)
         // Ein Literal und keine Verkettung: Xcode traegt nur ganze Zeichenketten in
         // den Katalog ein. Ein mit + zusammengesetzter Satz laesst sich nie
         // uebersetzen, und niemand merkt es — er steht einfach weiter auf Deutsch.

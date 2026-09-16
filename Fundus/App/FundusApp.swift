@@ -19,6 +19,9 @@ struct FundusApp: App {
                     AppLanguage.apply(language)
                 }
                 .environment(\.locale, model.settings.language.locale ?? .autoupdatingCurrent)
+                // `nil` heisst: das Geraet entscheidet — und wechselt zur Daemmerung
+                // von selbst mit.
+                .preferredColorScheme(model.settings.appearance.scheme)
                 .onChange(of: phase) { _, new in
                     // Beim Verschwinden sofort schreiben, nicht verzögert: die
                     // verzögerte Speicherung wartet 400 ms, und eine App, die in

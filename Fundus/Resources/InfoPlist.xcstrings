@@ -1,76 +1,74 @@
 {
-  "sourceLanguage": "de",
-  "strings": {
-    "CFBundleDisplayName": {
-      "comment": "Bundle display name",
-      "extractionState": "extracted_with_value",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Fundus"
+  "sourceLanguage" : "de",
+  "strings" : {
+    "CFBundleDisplayName" : {
+      "comment" : "Bundle display name",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fundus"
           }
         },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Fundus"
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fundus"
           }
         }
       }
     },
-    "CFBundleName": {
-      "comment": "Bundle name",
-      "extractionState": "extracted_with_value",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Fundus"
+    "CFBundleName" : {
+      "comment" : "Bundle name",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fundus"
           }
         },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Fundus"
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fundus"
           }
         }
       }
     },
-    "NSCameraUsageDescription": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zum Fotografieren eines Regals oder einer Kiste. Das Bild bleibt auf dem Gerät und geht nur an den Endpoint, den du selbst einträgst."
+    "NSCameraUsageDescription" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zum Fotografieren eines Regals oder einer Kiste. Das Bild bleibt auf dem Gerät und geht nur an den Endpoint, den du selbst einträgst."
           }
         },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "To photograph a shelf or a box. The picture stays on the device and goes only to the endpoint you enter yourself."
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To photograph a shelf or a box. The picture stays on the device and goes only to the endpoint you enter yourself."
           }
         }
       }
     },
-    "NSPhotoLibraryUsageDescription": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Um ein bereits aufgenommenes Foto als Vorlage für Einträge zu nehmen."
+    "NSPhotoLibraryUsageDescription" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Um ein bereits aufgenommenes Foto als Vorlage für Einträge zu nehmen."
           }
         },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "To use a photo you already took as the source for entries."
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To use a photo you already took as the source for entries."
           }
         }
       }
     }
   },
-  "version": "1.0"
+  "version" : "1.0"
 }
