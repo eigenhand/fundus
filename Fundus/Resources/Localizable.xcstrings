@@ -1,0 +1,385 @@
+{
+  "sourceLanguage": "de",
+  "strings": {
+    "%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@"
+          }
+        }
+      }
+    },
+    "%@ · %@ Dimensionen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$@ · %2$@ Dimensionen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · %@ dimensions"
+          }
+        }
+      }
+    },
+    "%@× %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$@× %2$@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@× %@"
+          }
+        }
+      }
+    },
+    "Angelegt %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Added %@"
+          }
+        }
+      }
+    },
+    "Aufnahme": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Capture"
+          }
+        }
+      }
+    },
+    "Bei einem vollen Regal dauert das eine halbe Minute.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "With a full shelf that takes half a minute."
+          }
+        }
+      }
+    },
+    "Das Foto bleibt erhalten.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The photo is kept."
+          }
+        }
+      }
+    },
+    "Das Modell liegt auf dem Gerät.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The model is on the device."
+          }
+        }
+      }
+    },
+    "Dieses Gerät kennt das lokale Modell nicht.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This device does not know the local model."
+          }
+        }
+      }
+    },
+    "Einige Treffer kommen aus der Bedeutung, nicht aus dem Namen.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Some results come from meaning, not from the name."
+          }
+        }
+      }
+    },
+    "Einstellungen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings"
+          }
+        }
+      }
+    },
+    "Fotos: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Photos: %@"
+          }
+        }
+      }
+    },
+    "Gegenstaende erkennen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detect objects"
+          }
+        }
+      }
+    },
+    "Gesehen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seen"
+          }
+        }
+      }
+    },
+    "Gilt für die Oberfläche. Systemdialoge — etwa die Frage nach der Kamera — folgen weiterhin der Spracheinstellung des Geräts.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Applies to the interface. System dialogs — the camera prompt, for instance — still follow the device's language setting."
+          }
+        }
+      }
+    },
+    "Gleichzeitig lesen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read at once"
+          }
+        }
+      }
+    },
+    "Im Index liegen:": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In the index:"
+          }
+        }
+      }
+    },
+    "Im Suchindex: %@, %@ Dimensionen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Im Suchindex: %1$@, %2$@ Dimensionen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In the search index: %@, %@ dimensions"
+          }
+        }
+      }
+    },
+    "Kennungen im Netz aufloesen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Look up identifiers online"
+          }
+        }
+      }
+    },
+    "Klartext-JSON. Der Bestand gehört dir, nicht dieser App.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plain JSON. The inventory is yours, not this app's."
+          }
+        }
+      }
+    },
+    "Lädt. Das System sagt nicht, wie weit es ist.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Downloading. The system does not say how far along it is."
+          }
+        }
+      }
+    },
+    "Mit Spind und Faden teilen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share with Spind and Faden"
+          }
+        }
+      }
+    },
+    "Nachgeschlagen — %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Looked up — %@."
+          }
+        }
+      }
+    },
+    "Neue Einträge automatisch einbetten": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Embed new entries automatically"
+          }
+        }
+      }
+    },
+    "Nicht im Suchindex — über den Namen findbar, nicht über die Bedeutung.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not in the search index — findable by name, not by meaning."
+          }
+        }
+      }
+    },
+    "Ohne Ort": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No place"
+          }
+        }
+      }
+    },
+    "Orte": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Places"
+          }
+        }
+      }
+    },
+    "Sprache": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Language"
+          }
+        }
+      }
+    },
+    "Sprache des Geräts": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Device language"
+          }
+        }
+      }
+    },
+    "Steht in der Reihe.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting in the queue."
+          }
+        }
+      }
+    },
+    "Von Hand": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "By hand"
+          }
+        }
+      }
+    },
+    "Was dabei herauskommt, ist ein Vorschlag und ersetzt nichts.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What comes out is a suggestion and replaces nothing."
+          }
+        }
+      }
+    },
+    "Zuletzt gesehen %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last seen %@"
+          }
+        }
+      }
+    },
+    "eigenhand.dev": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "eigenhand.dev"
+          }
+        }
+      }
+    },
+    "unter %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "in %@"
+          }
+        }
+      }
+    },
+    "—": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "—"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

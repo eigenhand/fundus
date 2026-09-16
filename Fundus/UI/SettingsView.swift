@@ -29,6 +29,7 @@ struct SettingsView: View {
                     searchSection
                     indexSection
                     storageSection
+                    interfaceSection
                     aboutSection
                 }
                 .padding(.horizontal, EH.gutter)
@@ -601,6 +602,43 @@ struct SettingsView: View {
         }
         .buttonStyle(EHButtonStyle())
         .padding(.top, 10)
+    }
+
+    // MARK: Oberfläche
+
+    // Steht weit unten: wer die App zum ersten Mal oeffnet, muss ein Modell
+    // einrichten. Die Sprache sucht man, wenn man sie sucht.
+    @ViewBuilder
+    private var interfaceSection: some View {
+        SectionLabel(text: "Oberfläche")
+        HStack {
+            Text("Sprache")
+                .font(EH.body)
+                .foregroundStyle(EH.navy)
+            Spacer()
+            Picker("Sprache", selection: Binding(
+                get: { model.settings.language },
+                set: { model.settings.language = $0; model.save() })) {
+                ForEach(AppLanguage.allCases) { language in
+                    Text(language.label).tag(language)
+                }
+            }
+            .labelsHidden()
+            .pickerStyle(.menu)
+            .tint(EH.navy)
+            // Eine Kennung und kein Text: Der Beschriftung dieses Waehlers steht
+            // seine eigene Auswahl an, und ein Test, der sie sucht, suchte nach dem
+            // Wechsel etwas anderes als vorher.
+            .accessibilityIdentifier("language-picker")
+        }
+        .padding(.vertical, 4)
+        // Ein Literal und keine Verkettung: Xcode traegt nur ganze Zeichenketten in
+        // den Katalog ein. Ein mit + zusammengesetzter Satz laesst sich nie
+        // uebersetzen, und niemand merkt es — er steht einfach weiter auf Deutsch.
+        Text("Gilt für die Oberfläche. Systemdialoge — etwa die Frage nach der Kamera — folgen weiterhin der Spracheinstellung des Geräts.")
+            .font(EH.meta)
+            .foregroundStyle(EH.muted)
+            .lineSpacing(3)
     }
 
     // MARK: Über

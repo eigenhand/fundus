@@ -222,6 +222,9 @@ struct AppSettings: Codable, Equatable {
     /// die Vorgabe, weil es das gewohnte Verhalten ist.
     var captureMode: CaptureMode = .single
 
+    /// Die Sprache der Oberflaeche.
+    var language: AppLanguage = .system
+
     init() {}
 
     init(from decoder: Decoder) throws {
@@ -235,5 +238,6 @@ struct AppSettings: Codable, Equatable {
         intakeConcurrency = (try c.decodeIfPresent(Int.self, forKey: .intakeConcurrency) ?? 2)
             .clamped(to: IntakeSchedule.concurrencyRange)
         captureMode = c.decodeLenient(CaptureMode.self, forKey: .captureMode) ?? .single
+        language = c.decodeLenient(AppLanguage.self, forKey: .language) ?? .system
     }
 }

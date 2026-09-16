@@ -11,6 +11,14 @@ struct FundusApp: App {
                 .environment(model)
                 .task { await model.load() }
                 .tint(EH.navy)
+                // `apply` leitet das Nachschlagen auf die gewaehlte Sprache um — das
+                // ist die Umstellung selbst. Die Locale darunter macht Zahlen und
+                // Daten passend und ist zugleich der Anstoss, auf den SwiftUI die
+                // Ansichten neu baut.
+                .onChange(of: model.settings.language, initial: true) { _, language in
+                    AppLanguage.apply(language)
+                }
+                .environment(\.locale, model.settings.language.locale ?? .autoupdatingCurrent)
                 .onChange(of: phase) { _, new in
                     // Beim Verschwinden sofort schreiben, nicht verzögert: die
                     // verzögerte Speicherung wartet 400 ms, und eine App, die in

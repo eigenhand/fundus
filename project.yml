@@ -1,6 +1,10 @@
 name: Fundus
 options:
   bundleIdPrefix: dev.eigenhand
+  # Die Quellsprache ist Deutsch: die Schluessel in den Stringkatalogen sind die
+  # deutschen Saetze selbst. Das haelt den Quelltext lesbar — der Preis ist, dass
+  # eine Aenderung am deutschen Satz den Schluessel aendert.
+  developmentLanguage: de
   deploymentTarget:
     iOS: "17.0"
   createIntermediateGroups: true
