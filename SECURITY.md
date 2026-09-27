@@ -35,10 +35,10 @@ three apps see the same key. Switched off, your key stays in Fundus. In the othe
 direction, if Fundus has no endpoint yet and a sibling app has shared one, Fundus adopts
 it on launch and says so.
 
-Until September 2026 the TestFlight builds carried a key in the binary. That was a
-deliberate trade-off and is no longer one — a key in a shipped binary is readable by
-anyone who has the binary. A versioned `pre-commit` hook fires when something that
-looks like a key finds its way into a commit.
+Fundus ships no key of its own: every build starts without one, and the only key it uses
+is the one you enter. A versioned `pre-commit` hook (`.githooks/pre-commit`, enabled with
+`git config core.hooksPath .githooks`) refuses a commit that contains something that
+looks like an API key.
 
 ## The architecture this is about
 

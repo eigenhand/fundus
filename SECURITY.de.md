@@ -37,10 +37,11 @@ Ausgeschaltet bleibt dein Schlüssel in Fundus. Umgekehrt gilt: Hat Fundus noch 
 Endpoint und hat eine Geschwister-App einen geteilt, übernimmt Fundus ihn beim Start
 und sagt das an.
 
-Bis September 2026 trugen die TestFlight-Builds einen Schlüssel im Binary. Das war
-eine bewusste Abwägung und ist keine mehr – ein Schlüssel im ausgelieferten Binary
-ist für jeden lesbar, der das Binary hat. Ein versionierter `pre-commit`-Hook schlägt
-an, wenn etwas, das nach einem Schlüssel aussieht, in einen Commit gerät.
+Fundus bringt keinen eigenen Schlüssel mit: Jeder Build startet ohne, und der einzige
+Schlüssel, den die App verwendet, ist der, den du einträgst. Ein versionierter
+`pre-commit`-Hook (`.githooks/pre-commit`, aktiviert mit
+`git config core.hooksPath .githooks`) lehnt einen Commit ab, der etwas enthält, das
+nach einem API-Schlüssel aussieht.
 
 ## Die Bauart, um die es geht
 
