@@ -201,6 +201,24 @@ that names both colors means it can.
 `python3 Tools/make-icon.py` rewrites the three variants (light, dark, tinted)
 byte for byte; the corrections from three attempts are recorded in the script.
 
+**Why the camera comes first.** Nobody types forty things into an inventory by hand,
+so photographing is the most prominent button. A model reading a shelf miscounts, lumps
+things together and misreads labels; an inventory that silently absorbs that output is
+worse than none, because people believe it — hence the review step.
+
+**Why cut-outs.** A single part on its own gets its lettering read; a whole shelf gets
+half-read. That is why tapped things and drawn boxes go to the model one by one.
+
+**No estimated quantities.** An estimated number is worse than none, because it looks
+like a count. Uncounted is shown as “—”.
+
+**Places as a tree.** Basement → shelf 2 → box C keeps “everything in the basement”
+answerable, and renaming the basement does not leave thirty stale entries.
+
+**The license.** Permissive rather than copyleft, because an inventory app on a phone is
+not something anyone could take over as a service — the risk copyleft protects against
+does not exist here. Apache-2.0 rather than MIT because of the express patent license.
+
 ## For maintainers
 
 **Releasing.** `./release.sh` archives the app, uploads it to TestFlight and assigns the

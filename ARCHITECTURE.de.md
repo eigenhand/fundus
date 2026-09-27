@@ -210,6 +210,27 @@ Farben nennt, heißt, es kann.
 `python3 Tools/make-icon.py` schreibt die drei Fassungen (hell, dunkel, getönt)
 byte-genau neu; die Korrekturen aus drei Anläufen stehen im Skript.
 
+**Warum die Kamera vorn ist.** Niemand tippt vierzig Dinge von Hand in einen Bestand,
+deshalb ist das Fotografieren der auffälligste Knopf. Ein Modell, das ein Regal liest,
+verzählt sich, fasst zusammen und liest Etiketten falsch; ein Bestand, der diese Ausgabe
+stillschweigend aufnimmt, ist schlechter als keiner, weil du ihm glaubst — daher der
+Prüfschritt.
+
+**Warum Ausschnitte.** Bei einem einzelnen Teil liest das Modell die Aufschrift, bei
+einem ganzen Regal liest es alles nur halb. Deshalb gehen angetippte Dinge und gezogene
+Rahmen einzeln an das Modell.
+
+**Keine geschätzten Mengen.** Eine geschätzte Zahl ist schlimmer als keine, weil sie
+wie eine Zählung aussieht. Ungezählt steht als „—“ da.
+
+**Orte als Baum.** Keller → Regal 2 → Kiste C hält „alles im Keller“ beantwortbar, und
+ein umbenannter Keller bleibt nicht in dreißig Einträgen stehen.
+
+**Die Lizenz.** Permissiv und nicht Copyleft, weil eine Inventar-App auf einem Telefon
+nichts ist, was jemand als Dienst übernehmen könnte — das Risiko, gegen das ein
+Copyleft schützt, gibt es hier nicht. Apache-2.0 statt MIT wegen der ausdrücklichen
+Patentlizenz.
+
 ## Für Maintainer
 
 **Veröffentlichen.** `./release.sh` archiviert die App, lädt sie zu TestFlight hoch und
