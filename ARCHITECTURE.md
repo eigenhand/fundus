@@ -185,12 +185,10 @@ and may be read off, but stay marked as *read off*.
 one; the stages are there to say so. The two thresholds are set, not measured, and the
 source says so.
 
-**On-device embeddings, in numbers.** `NLContextualEmbedding`: 512 dimensions, 108 MB of
-model files, measured at 8 ms per entry and 13.5 MB of memory. Coarser than a network
-model — on nine questions against fourteen sentences, `qwen3-embedding-8b` put the right
-answer first seven times, this one five. The default nonetheless, because an inventory
-is searched in the basement with one bar of reception or none: five out of nine without
-a network beat seven out of nine with.
+**On-device embeddings.** `NLContextualEmbedding` (512 dimensions) runs on the phone. It is
+coarser than a large embedding model on a server, and still the default: an inventory gets
+searched in the basement with one bar of reception or none, and a slightly worse answer
+without a network beats a better one that needs it.
 
 **Endpoints and the token budget.** Tested with `z-ai/glm-5.3-flash` through TensorX.
 Reasoning models spend the token budget twice — first thinking, then writing — which is

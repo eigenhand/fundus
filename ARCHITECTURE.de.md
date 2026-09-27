@@ -193,12 +193,10 @@ markiert.
 aussieht wie am ersten Tag; die Stufen sagen das. Die beiden Grenzen sind gesetzt,
 nicht gemessen, und der Quelltext sagt das auch.
 
-**Einbettungen auf dem Gerät, in Zahlen.** `NLContextualEmbedding`: 512 Dimensionen,
-108 MB Modelldateien, gemessen 8 ms je Eintrag und 13,5 MB Arbeitsspeicher. Gröber als
-ein Netzmodell — auf neun Fragen gegen vierzehn Sätze setzte `qwen3-embedding-8b`
-siebenmal die richtige Antwort auf Platz eins, dieses hier fünfmal. Trotzdem die
-Voreinstellung, weil ein Bestand im Keller durchsucht wird, mit einem Balken Empfang
-oder keinem: Fünf von neun ohne Netz schlagen sieben von neun mit.
+**Einbettungen auf dem Gerät.** `NLContextualEmbedding` (512 Dimensionen) läuft auf dem
+iPhone. Es ist gröber als ein großes Einbettungsmodell auf einem Server und trotzdem die
+Voreinstellung: Ein Bestand wird im Keller durchsucht, mit einem Balken Empfang oder
+keinem, und eine etwas schlechtere Antwort ohne Netz schlägt eine bessere, die eins braucht.
 
 **Endpoints und Token-Vorrat.** Getestet mit `z-ai/glm-5.3-flash` über TensorX.
 Reasoning-Modelle brauchen den Token-Vorrat doppelt — erst zum Nachdenken, dann zum
