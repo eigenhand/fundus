@@ -138,7 +138,7 @@ struct CameraScreen: View {
     }
 
     private var placeLabel: String {
-        placeID.map { model.inventory.tree.path(of: $0) } ?? "Ohne Ort"
+        placeID.map { model.inventory.tree.path(of: $0) } ?? String(localized: "Ohne Ort")
     }
 
     /// Where the next shot goes — in the viewfinder and not behind it.
@@ -418,10 +418,10 @@ private extension AVCaptureDevice.FlashMode {
 
     var label: String {
         switch self {
-        case .off:  return "aus"
-        case .auto: return "automatisch"
-        case .on:   return "an"
-        @unknown default: return "automatisch"
+        case .off:  return String(localized: "aus")
+        case .auto: return String(localized: "automatisch")
+        case .on:   return String(localized: "an")
+        @unknown default: return String(localized: "automatisch")
         }
     }
 }

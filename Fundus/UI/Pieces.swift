@@ -13,7 +13,6 @@ enum Ago {
     /// a sighting the distance is the whole statement.
     private static let formatter: RelativeDateTimeFormatter = {
         let f = RelativeDateTimeFormatter()
-        f.locale = Locale(identifier: "de_DE")
         f.unitsStyle = .full
         return f
     }()
@@ -21,7 +20,9 @@ enum Ago {
     static func string(_ date: Date, now: Date = Date()) -> String {
         // Under an hour the formatter says "0 hours ago" — for a sighting you have just
         // made yourself, that reads like a bug.
-        if now.timeIntervalSince(date) < 3_600 { return "gerade" }
+        if now.timeIntervalSince(date) < 3_600 { return String(localized: "gerade") }
+        // Set on every call: the language can change while the app runs.
+        formatter.locale = AppLanguage.interfaceLocale
         return formatter.localizedString(for: date, relativeTo: now)
     }
 }
@@ -148,7 +149,7 @@ struct SectionLabel: View {
 /// different app but a worse one.
 struct SearchField: View {
     @Binding var text: String
-    var placeholder = "Was suchst du?"
+    var placeholder: LocalizedStringKey = "Was suchst du?"
     var onChange: () -> Void
 
     @FocusState private var focused: Bool
@@ -255,7 +256,7 @@ struct AppHeader<Trailing: View>: View {
 /// A round symbol to tap — the shape the header buttons have in Faden.
 struct RoundIconButton: View {
     let systemName: String
-    let label: String
+    let label: LocalizedStringKey
     var prominent = false
     var size: CGFloat = 38
     let action: () -> Void
@@ -271,7 +272,7 @@ struct RoundIconButton: View {
                                          lineWidth: EH.hairWidth))
         }
         .buttonStyle(EHTap())
-        .accessibilityLabel(label)
+        .accessibilityLabel(Text(label))
     }
 }
 

@@ -27,7 +27,7 @@ struct ManualEntrySheet: View {
                         Text("Von Hand")
                             .font(.brand(19))
                             .foregroundStyle(EH.navy)
-                        Text(placeID.map { model.inventory.tree.path(of: $0) } ?? "Ohne Ort")
+                        Text(placeID.map { model.inventory.tree.path(of: $0) } ?? String(localized: "Ohne Ort"))
                             .font(EH.meta)
                             .foregroundStyle(EH.muted)
                     }
@@ -80,7 +80,7 @@ struct ManualEntrySheet: View {
                     .padding(.top, 14)
 
                 if !added.isEmpty {
-                    Text("Eingetragen: " + added.reversed().joined(separator: ", "))
+                    Text("Eingetragen: \(added.reversed().joined(separator: ", "))")
                         .font(EH.meta)
                         .foregroundStyle(EH.muted)
                         .lineLimit(2)

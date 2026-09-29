@@ -31,7 +31,7 @@ struct PhotoIntake {
     func read(image: UIImage, placePath: String?, existingNames: [String],
               hint: String, onDelta: (@Sendable (String) -> Void)? = nil) async throws -> IntakeResult {
         guard let attachment = ImageAttachment.make(from: image) else {
-            throw ModelError.transport("Das Bild ließ sich nicht aufbereiten.")
+            throw ModelError.transport(String(localized: "Das Bild ließ sich nicht aufbereiten."))
         }
 
         // Before the paid call: the device deciphers the barcodes itself. Costs

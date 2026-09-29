@@ -21,6 +21,12 @@ targets:
     platform: iOS
     sources:
       - path: Fundus
+        excludes:
+          - PrivacyInfo.xcprivacy
+      # The privacy manifest has to land in the bundle root. Named explicitly instead of
+      # relying on XcodeGen to recognise the extension as a resource.
+      - path: Fundus/PrivacyInfo.xcprivacy
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: dev.eigenhand.fundus.ios
@@ -43,7 +49,7 @@ targets:
         Release:
           CODE_SIGN_STYLE: Manual
           CODE_SIGN_IDENTITY: "Apple Distribution"
-          PROVISIONING_PROFILE_SPECIFIER: "Fundus App Store (API)"
+          PROVISIONING_PROFILE_SPECIFIER: "Fundus App Store - (API)"
   FundusTests:
     type: bundle.unit-test
     platform: iOS

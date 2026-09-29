@@ -9,9 +9,8 @@ API-Schlüssel kommen von dir. Du fotografierst ein Regal, dein eigenes Modell s
 die Einträge vor — und du entscheidest, welche in den Bestand kommen.
 
 Ihre beiden Geschwister: [Faden](https://github.com/eigenhand/faden), eine
-KI-Chat-App, und [Spind](https://github.com/eigenhand/spind), eine Datei-App, die auch
-den Bestand synchronisieren kann. Was die App schützt und was nicht:
-[SECURITY.de.md](SECURITY.de.md). Wie sie gebaut ist:
+KI-Chat-App, und [Spind](https://github.com/eigenhand/spind), eine Datei-App. Was die
+App schützt und was nicht: [SECURITY.de.md](SECURITY.de.md). Wie sie gebaut ist:
 [ARCHITECTURE.de.md](ARCHITECTURE.de.md).
 
 ## Stand und Voraussetzungen
@@ -75,10 +74,10 @@ deinen Endpoint.
 **Orte als Baum.** Keller → Regal 2 → Kiste C. Einen Ort zu löschen löscht keinen
 Bestand.
 
-**Wahlweise geteilt mit Spind und Faden.** Der Bestand liegt als Klartext-JSON in der
-gemeinsamen App Group, damit Spind ihn synchronisieren kann. Endpoint und API-Schlüssel
-zu teilen, ist eine eigene Einstellung, **„Mit Spind und Faden teilen“**, standardmäßig
-aus.
+**Lesbar für Faden.** Der Bestand liegt als Klartext-JSON in der gemeinsamen App Group,
+damit Faden ihn lesen kann. Endpoint und API-Schlüssel ebenfalls dort abzulegen, ist
+eine eigene Einstellung, **„Modellzugang gemeinsam ablegen“**, standardmäßig aus; noch
+liest sie keine andere App.
 
 ## Bauen
 

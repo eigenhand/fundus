@@ -21,19 +21,20 @@ no account.
 | `huggingface.co` | A download request, nothing of yours | Only when you download the optional SAM 2.1 model |
 
 The inventory itself, the photos and the places stay on the device — in the shared app
-group container, if the build has one, where Spind can sync them. Looking up can be
-switched off, and the settings say what goes out when it is on. The on-device embedding
+group container, if the build has one, where Faden can read the inventory. Looking up
+can be switched off, and the settings say what goes out when it is on. The on-device embedding
 model is downloaded by iOS itself when you request it in the settings.
 
 ## Keys
 
-API keys live in the **device's keychain**. The setting “Share with Spind and Faden” is
-off by default. Switching it on puts the address and the model name into the shared
-folder of the app group and the key into the shared keychain group — one app that is set
-up then sets up the others. That is the purpose and at the same time the price: the
-three apps see the same key. Switched off, your key stays in Fundus. In the other
-direction, if Fundus has no endpoint yet and a sibling app has shared one, Fundus adopts
-it on launch and says so.
+API keys live in the **device's keychain**. The setting “Store model access in the shared
+area” is off by default. Switching it on puts the address and the model name into the
+shared folder of the app group and the key into the shared keychain group, where any
+eigenhand app with that group could read them. Today neither Faden nor Spind reads them;
+the setting only prepares for that, and its price is that the key no longer lies in
+Fundus alone. Switched off, your key stays in Fundus. In the other direction, if Fundus
+has no endpoint yet and finds one in the shared folder, Fundus adopts it on launch and
+says so.
 
 Fundus ships no key of its own: every build starts without one, and the only key it uses
 is the one you enter. A versioned `pre-commit` hook (`.githooks/pre-commit`, enabled with

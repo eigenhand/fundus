@@ -101,11 +101,11 @@ actor Segmenter {
     func encode(_ image: UIImage) throws {
         try load()
         guard let encoder, let cg = image.scaledDown(maxEdge: 1_400).cgImage else {
-            throw Failure.broken("Kein Bild.")
+            throw Failure.broken(String(localized: "Kein Bild."))
         }
         guard let constraint = encoder.modelDescription
             .inputDescriptionsByName["image"]?.imageConstraint else {
-            throw Failure.broken("Der Bildkodierer nennt keine Bildgroesse.")
+            throw Failure.broken(String(localized: "Der Bildkodierer nennt keine Bildgroesse."))
         }
 
         // Stretched rather than cropped: otherwise the tap would land somewhere else
@@ -119,7 +119,7 @@ actor Segmenter {
         guard let embedded = output.featureValue(for: "image_embedding")?.multiArrayValue,
               let s0 = output.featureValue(for: "feats_s0")?.multiArrayValue,
               let s1 = output.featureValue(for: "feats_s1")?.multiArrayValue else {
-            throw Failure.broken("Der Bildkodierer lieferte keine Einbettung.")
+            throw Failure.broken(String(localized: "Der Bildkodierer lieferte keine Einbettung."))
         }
         embedding = (embedded, s0, s1)
     }
@@ -142,7 +142,7 @@ actor Segmenter {
     /// `ObjectPicker.circle`.
     private func predict(_ prompts: [(point: CGPoint, label: Int32)]) throws -> SegmentedObject? {
         guard let promptEncoder, let decoder, let embedding else {
-            throw Failure.broken("Es ist kein Foto kodiert.")
+            throw Failure.broken(String(localized: "Es ist kein Foto kodiert."))
         }
         guard !prompts.isEmpty else { return nil }
 
@@ -160,7 +160,7 @@ actor Segmenter {
             dictionary: ["points": points, "labels": labels]))
         guard let sparse = prompted.featureValue(for: "sparse_embeddings")?.multiArrayValue,
               let dense = prompted.featureValue(for: "dense_embeddings")?.multiArrayValue else {
-            throw Failure.broken("Der Prompt-Kodierer lieferte nichts.")
+            throw Failure.broken(String(localized: "Der Prompt-Kodierer lieferte nichts."))
         }
 
         let decoded = try decoder.prediction(from: MLDictionaryFeatureProvider(dictionary: [
@@ -172,7 +172,7 @@ actor Segmenter {
         ]))
         guard let masks = decoded.featureValue(for: "low_res_masks")?.multiArrayValue,
               let scores = decoded.featureValue(for: "scores")?.multiArrayValue else {
-            throw Failure.broken("Der Maskendekodierer lieferte nichts.")
+            throw Failure.broken(String(localized: "Der Maskendekodierer lieferte nichts."))
         }
 
         // Three proposals per tap — the whole thing, part of it, part of the part. The

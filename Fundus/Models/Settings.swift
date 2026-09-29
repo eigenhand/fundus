@@ -180,17 +180,17 @@ enum CaptureMode: String, Codable, CaseIterable, Identifiable, Sendable {
 
     var label: String {
         switch self {
-        case .single:  return "Einzelfoto"
-        case .doku:    return "Doku"
-        case .objects: return "Objekte"
+        case .single:  return String(localized: "Einzelfoto")
+        case .doku:    return String(localized: "Doku")
+        case .objects: return String(localized: "Objekte")
         }
     }
 
     var hint: String {
         switch self {
-        case .single:  return "Ein Bild, dann zurück."
-        case .doku:    return "Der Sucher bleibt offen — durchfotografieren."
-        case .objects: return "Nach dem Auslösen antippen, was aufgenommen wird."
+        case .single:  return String(localized: "Ein Bild, dann zurück.")
+        case .doku:    return String(localized: "Der Sucher bleibt offen — durchfotografieren.")
+        case .objects: return String(localized: "Nach dem Auslösen antippen, was aufgenommen wird.")
         }
     }
 }

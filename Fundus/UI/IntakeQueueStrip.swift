@@ -55,11 +55,11 @@ struct IntakeQueueStrip: View {
         let failed = model.jobs.filter { if case .failed = $0.phase { return true } else { return false } }.count
 
         var parts: [String] = []
-        if busy > 0 { parts.append("\(busy) in Arbeit") }
-        if waiting > 0 { parts.append("\(waiting) wartet") }
-        if ready > 0 { parts.append("\(ready) zu prüfen") }
-        if empty > 0 { parts.append("\(empty) ohne Bestand") }
-        if failed > 0 { parts.append("\(failed) fehlgeschlagen") }
+        if busy > 0 { parts.append(String(localized: "\(busy) in Arbeit")) }
+        if waiting > 0 { parts.append(String(localized: "\(waiting) wartet")) }
+        if ready > 0 { parts.append(String(localized: "\(ready) zu prüfen")) }
+        if empty > 0 { parts.append(String(localized: "\(empty) ohne Bestand")) }
+        if failed > 0 { parts.append(String(localized: "\(failed) fehlgeschlagen")) }
         return parts.joined(separator: " · ")
     }
 
@@ -157,12 +157,12 @@ struct IntakeQueueStrip: View {
 
     private func spoken(_ job: IntakeJob) -> String {
         switch job.phase {
-        case .waiting:  return "Aufnahme, wartet in der Reihe"
-        case .reading:  return "Aufnahme, wird gelesen"
-        case .looking:  return "Aufnahme, Nummern werden nachgeschlagen"
-        case .review:   return "Aufnahme, \(job.result.proposals.count) Vorschläge zum Prüfen"
-        case .empty:    return "Aufnahme gelesen, kein Bestand auf dem Foto"
-        case .failed:   return "Aufnahme fehlgeschlagen"
+        case .waiting:  return String(localized: "Aufnahme, wartet in der Reihe")
+        case .reading:  return String(localized: "Aufnahme, wird gelesen")
+        case .looking:  return String(localized: "Aufnahme, Nummern werden nachgeschlagen")
+        case .review:   return String(localized: "Aufnahme, \(job.result.proposals.count) Vorschläge zum Prüfen")
+        case .empty:    return String(localized: "Aufnahme gelesen, kein Bestand auf dem Foto")
+        case .failed:   return String(localized: "Aufnahme fehlgeschlagen")
         }
     }
 }

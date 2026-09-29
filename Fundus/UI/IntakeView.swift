@@ -64,7 +64,7 @@ struct IntakeView: View {
     }
 
     private var placeLabel: String {
-        job.placeID.map { model.inventory.tree.path(of: $0) } ?? "Ohne Ort"
+        job.placeID.map { model.inventory.tree.path(of: $0) } ?? String(localized: "Ohne Ort")
     }
 
     // MARK: Nachschlagen
@@ -485,7 +485,8 @@ private struct ProposalRow: View {
             }
         }
         .buttonStyle(EHTap())
-        .accessibilityLabel((picked ? "Gewählt: " : "Vorschlag: ") + candidate.title)
+        .accessibilityLabel(picked ? String(localized: "Gewählt: \(candidate.title)")
+                                    : String(localized: "Vorschlag: \(candidate.title)"))
         .accessibilityHint(candidateCaption(candidate))
     }
 
@@ -500,7 +501,7 @@ private struct ProposalRow: View {
     private func candidateCaption(_ candidate: CodeCandidate) -> String {
         var parts: [String] = []
         if candidate.match == .near, !candidate.codeSeen.isEmpty {
-            parts.append("dort: \(candidate.codeSeen)")
+            parts.append(String(localized: "dort: \(candidate.codeSeen)"))
         } else {
             parts.append(candidate.match.label)
         }

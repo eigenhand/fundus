@@ -9,9 +9,9 @@ and API key. Photograph a shelf, and your own model suggests the entries — you
 which ones go in.
 
 Its two siblings: [Faden](https://github.com/eigenhand/faden), an AI chat app, and
-[Spind](https://github.com/eigenhand/spind), a file app that can also sync the
-inventory. What the app protects, and what it does not: [SECURITY.md](SECURITY.md).
-How it is built: [ARCHITECTURE.md](ARCHITECTURE.md).
+[Spind](https://github.com/eigenhand/spind), a file app. What the app protects, and
+what it does not: [SECURITY.md](SECURITY.md). How it is built:
+[ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Status and requirements
 
@@ -67,9 +67,9 @@ with vectors computed on the device by default or by your endpoint.
 
 **Places as a tree.** Basement → shelf 2 → box C. Deleting a place deletes no inventory.
 
-**Optional sharing with Spind and Faden.** The inventory is plain JSON in the shared app
-group, so Spind can sync it. Sharing your endpoint and API key is a separate setting,
-**“Share with Spind and Faden”**, off by default.
+**Readable by Faden.** The inventory is plain JSON in the shared app group, so Faden can
+read it. Placing your endpoint and API key there too is a separate setting, **“Store
+model access in the shared area”**, off by default; no other app reads them yet.
 
 ## Building
 

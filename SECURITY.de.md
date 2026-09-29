@@ -21,21 +21,21 @@ Telemetrie und kein Konto.
 | `huggingface.co` | Eine Download-Anfrage, nichts von dir | Nur wenn du das optionale Modell SAM 2.1 lädst |
 
 Der Bestand selbst, die Fotos und die Orte bleiben auf dem Gerät — im gemeinsamen
-App-Group-Container, sofern der Build einen hat, wo Spind sie synchronisieren kann. Das
+App-Group-Container, sofern der Build einen hat, wo Faden den Bestand lesen kann. Das
 Nachschlagen ist ausschaltbar, und in den Einstellungen steht, was dabei hinausgeht.
 Das Einbettungsmodell für die Suche auf dem Gerät lädt iOS selbst, wenn du es in den
 Einstellungen anforderst.
 
 ## Schlüssel
 
-API-Schlüssel liegen im **Schlüsselbund des Geräts**. Die Einstellung „Mit Spind und
-Faden teilen“ ist standardmäßig aus. Schaltest du sie ein, legt Fundus Adresse und
+API-Schlüssel liegen im **Schlüsselbund des Geräts**. Die Einstellung „Modellzugang
+gemeinsam ablegen“ ist standardmäßig aus. Schaltest du sie ein, legt Fundus Adresse und
 Modellname in den gemeinsamen Ordner der App Group und den Schlüssel in die gemeinsame
-Schlüsselbundgruppe – dann richtet eine eingerichtete App die anderen mit ein. Das ist
-der Zweck und zugleich der Preis: Die drei Apps sehen denselben Schlüssel.
-Ausgeschaltet bleibt dein Schlüssel in Fundus. Umgekehrt gilt: Hat Fundus noch keinen
-Endpoint und hat eine Geschwister-App einen geteilt, übernimmt Fundus ihn beim Start
-und sagt das an.
+Schlüsselbundgruppe, wo jede eigenhand-App mit dieser Gruppe sie lesen könnte. Heute
+liest sie weder Faden noch Spind; die Einstellung bereitet das nur vor, und ihr Preis
+ist, dass der Schlüssel nicht mehr allein in Fundus liegt. Ausgeschaltet bleibt dein
+Schlüssel in Fundus. Umgekehrt gilt: Hat Fundus noch keinen Endpoint und findet einen im
+gemeinsamen Ordner, übernimmt Fundus ihn beim Start und sagt das an.
 
 Fundus bringt keinen eigenen Schlüssel mit: Jeder Build startet ohne, und der einzige
 Schlüssel, den die App verwendet, ist der, den du einträgst. Ein versionierter

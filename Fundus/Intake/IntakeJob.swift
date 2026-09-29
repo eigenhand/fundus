@@ -93,8 +93,8 @@ final class IntakeJob: Identifiable {
 
         var label: String {
             switch self {
-            case .take(let n): return "\(n) übernehmen"
-            case .discard:     return "Aufnahme verwerfen"
+            case .take(let n): return String(localized: "\(n) übernehmen")
+            case .discard:     return String(localized: "Aufnahme verwerfen")
             }
         }
     }

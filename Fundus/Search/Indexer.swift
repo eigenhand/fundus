@@ -58,7 +58,7 @@ enum Indexer {
                 }
             } else {
                 // Vector without a stamp: from a version predating this marking.
-                status.byModel["unbekannt", default: 0] += 1
+                status.byModel[String(localized: "unbekannt"), default: 0] += 1
                 status.foreign += 1
             }
         }

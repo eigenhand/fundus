@@ -3,9 +3,8 @@ import Foundation
 /// Where the data lives: in the shared container of the eigenhand apps, when there is
 /// one.
 ///
-/// `group.dev.eigenhand.shared` is the place where Spind, Faden and Fundus meet. For
-/// Spind that means it can synchronise this inventory along with everything else
-/// without knowing Fundus; for Faden, that it could read it without copying it.
+/// `group.dev.eigenhand.shared` is the place where the eigenhand apps meet. For Faden
+/// that means it can read this inventory without copying it.
 ///
 /// The fallback is not cosmetic. An App Group only applies when the provisioning
 /// profile contains it — in the simulator with automatic signing, in a fork with
@@ -14,7 +13,7 @@ import Foundation
 /// a fallback the app would then start with no storage, and silently at that.
 ///
 /// That is why `isShared` stands here and in the settings: which of the two places is
-/// used decides whether Spind sees this inventory at all. That is not a small thing to
+/// used decides whether Faden sees this inventory at all. That is not a small thing to
 /// be left to guesswork.
 enum SharedContainer {
     static let groupIdentifier = "group.dev.eigenhand.shared"
@@ -44,8 +43,8 @@ enum SharedContainer {
     /// What the settings should say — no guesswork, with the real path.
     static var describe: String {
         isShared
-            ? "Gemeinsamer Ordner der eigenhand-Apps (\(groupIdentifier))"
-            : "Nur in dieser App — die App Group ist in diesem Build nicht freigeschaltet."
+            ? String(localized: "Gemeinsamer Ordner der eigenhand-Apps (\(groupIdentifier))")
+            : String(localized: "Nur in dieser App — die App Group ist in diesem Build nicht freigeschaltet.")
     }
 }
 
@@ -53,14 +52,14 @@ enum SharedContainer {
 ///
 /// The smallest honest version of a connector: a file in the shared folder with
 /// address, path and model name, and the key beside it in the shared keychain group.
-/// Whoever sets up one of the three apps has thereby set up all three.
+/// Meant so that setting up one app sets up the others — once they read it.
 ///
 /// No exchange of data, only of access. That is the line this file deliberately draws:
 /// the apps share the inventory through the container, and who may see which inventory
 /// is not something this file decides.
 ///
-/// Faden does not write it yet — today Fundus is the app that creates it. As soon as
-/// Faden does the same, setting up works in both directions.
+/// Neither Faden nor Spind reads or writes it yet — today Fundus is the only app that
+/// touches it. Until that changes, the setting says only what is stored where.
 struct SharedEndpoint: Codable, Equatable {
     var baseURL: String
     var path: String

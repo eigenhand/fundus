@@ -121,7 +121,7 @@ unprotected app.
 ## Where state lives
 
 **In the shared container.** The inventory is stored as plain JSON in
-`group.dev.eigenhand.shared`, so that Spind can sync it without knowing Fundus. If the
+`group.dev.eigenhand.shared`, so that Faden can read it without copying it. If the
 app group is not enabled in a build, `SharedContainer` falls back to the app's own folder
 — and the settings say which of the two applies. An app that silently writes somewhere
 else is an app that silently loses data.
@@ -130,9 +130,9 @@ else is an app that silently loses data.
 queue. Fundus has no per-conversation state like Faden; there is one inventory and one
 queue.
 
-**In the keychain.** Keys, referenced from the settings by name. When “Share with Spind
-and Faden” is on (it is off by default), the model key goes into the shared keychain
-group — that is the purpose and at the same time the price, and it is written down in
+**In the keychain.** Keys, referenced from the settings by name. When “Store model access
+in the shared area” is on (it is off by default), the model key goes into the shared
+keychain group. No other app reads it there yet; what that costs is written down in
 `SECURITY.md`.
 
 ## Model weights are not in the bundle

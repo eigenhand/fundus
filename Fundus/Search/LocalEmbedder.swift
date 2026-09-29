@@ -93,12 +93,11 @@ actor LocalEmbedder {
         }
 
         guard let result else {
-            throw EmbeddingError.failed(
-                "Das System hat noch nicht geantwortet. Der Download läuft unter Umständen "
-                + "weiter — beim nächsten Öffnen steht hier, ob er angekommen ist.")
+            throw EmbeddingError.failed(String(localized:
+                "Das System hat noch nicht geantwortet. Der Download läuft unter Umständen weiter — beim nächsten Öffnen steht hier, ob er angekommen ist."))
         }
         guard result == .available else {
-            throw EmbeddingError.failed("Das Modell konnte nicht geladen werden (\(result.rawValue)).")
+            throw EmbeddingError.failed(String(localized: "Das Modell konnte nicht geladen werden (\(result.rawValue))."))
         }
     }
 
@@ -133,20 +132,20 @@ actor LocalEmbedder {
         // out, whose cosine to everything is 0 — that is, a hit that looks like a
         // non-hit.
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { throw EmbeddingError.failed("Leerer Text.") }
+        guard !trimmed.isEmpty else { throw EmbeddingError.failed(String(localized: "Leerer Text.")) }
 
         guard let result = try? model.embeddingResult(for: trimmed, language: nil) else {
-            throw EmbeddingError.failed("Der Text konnte nicht eingebettet werden.")
+            throw EmbeddingError.failed(String(localized: "Der Text konnte nicht eingebettet werden."))
         }
         var first: [Double] = []
         result.enumerateTokenVectors(in: trimmed.startIndex ..< trimmed.endIndex) { v, _ in
             first = v
             return false
         }
-        guard !first.isEmpty else { throw EmbeddingError.failed("Keine Tokenvektoren.") }
+        guard !first.isEmpty else { throw EmbeddingError.failed(String(localized: "Keine Tokenvektoren.")) }
 
         let norm = sqrt(first.reduce(0) { $0 + $1 * $1 })
-        guard norm > 0 else { throw EmbeddingError.failed("Nullvektor.") }
+        guard norm > 0 else { throw EmbeddingError.failed(String(localized: "Nullvektor.")) }
         return first.map { Float($0 / norm) }
     }
 }

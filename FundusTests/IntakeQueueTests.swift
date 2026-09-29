@@ -131,7 +131,7 @@ final class IntakeQueueTests: XCTestCase {
         j.result.proposals[1].accepted = false
         XCTAssertEqual(j.commitAction, .discard,
                        "Nichts anhaken heisst nicht: keine Handlung. Es heisst: weg damit.")
-        XCTAssertEqual(j.commitAction.label, "Aufnahme verwerfen",
+        XCTAssertEqual(j.commitAction.label, String(localized: "Aufnahme verwerfen"),
                        "Die Beschriftung muss sagen, was der Knopf tut.")
     }
 

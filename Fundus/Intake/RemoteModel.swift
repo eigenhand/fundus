@@ -81,14 +81,14 @@ struct RemoteModel: Sendable {
         var sizes: [String: Int64] = [:]
         for file in files {
             guard let size = await remoteSize(file) else {
-                onProgress(.failed("Die Modelldateien sind gerade nicht erreichbar."))
+                onProgress(.failed(String(localized: "Die Modelldateien sind gerade nicht erreichbar.")))
                 return
             }
             sizes[file] = size
         }
         let total = sizes.values.reduce(0, +)
         guard total > 0 else {
-            onProgress(.failed("Die Modelldateien sind gerade nicht erreichbar."))
+            onProgress(.failed(String(localized: "Die Modelldateien sind gerade nicht erreichbar.")))
             return
         }
 
@@ -119,7 +119,7 @@ struct RemoteModel: Sendable {
             }
         }
         onProgress(isComplete(sizes) ? .finished
-                                     : .failed("Der Download ist unvollstaendig geblieben."))
+                                     : .failed(String(localized: "Der Download ist unvollstaendig geblieben.")))
     }
 
     private func remoteSize(_ file: String) async -> Int64? {

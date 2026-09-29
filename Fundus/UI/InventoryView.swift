@@ -130,7 +130,7 @@ struct InventoryView: View {
     private var subtitle: String? {
         guard !model.inventory.items.isEmpty else { return nil }
         let n = model.inventory.items.count
-        return "\(n) \(n == 1 ? "Ding" : "Dinge")"
+        return n == 1 ? String(localized: "1 Ding") : String(localized: "\(n) Dinge")
     }
 
     private var staleCount: Int {
@@ -150,7 +150,7 @@ struct InventoryView: View {
         }
     }
 
-    private func chip(_ text: String, active: Bool, action: @escaping () -> Void) -> some View {
+    private func chip(_ text: LocalizedStringKey, active: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(text)
                 .font(.eh(13, .footnote, weight: active ? .medium : .regular))
@@ -176,6 +176,9 @@ struct InventoryView: View {
                     .listRowInsets(EdgeInsets())
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
+                if model.client == nil {
+                    modelHint.plainRow()
+                }
             } else {
                 grouped
             }
@@ -184,6 +187,23 @@ struct InventoryView: View {
         .scrollContentBackground(.hidden)
         .environment(\.defaultMinListRowHeight, 1)
         .scrollDismissesKeyboard(.interactively)
+    }
+
+    /// Without a model the camera leads nowhere, and nothing on this screen said where
+    /// one is set up. One line and the way there — only while it is missing.
+    private var modelHint: some View {
+        VStack(spacing: 12) {
+            Text("Dafür braucht Fundus zuerst dein Modell: Endpoint, Schlüssel und Modellname, unter Einstellungen → Modell.")
+                .font(EH.bodySmall)
+                .foregroundStyle(EH.muted)
+                .lineSpacing(EH.prose)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 300)
+            Button("Modell einrichten") { showSettings = true }
+                .buttonStyle(EHButtonStyle())
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.bottom, 40)
     }
 
     @ViewBuilder
@@ -346,7 +366,7 @@ struct InventoryView: View {
     }
 
     private var currentPlaceLabel: String {
-        pendingPlace.map { model.inventory.tree.path(of: $0) } ?? "Ohne Ort"
+        pendingPlace.map { model.inventory.tree.path(of: $0) } ?? String(localized: "Ohne Ort")
     }
 }
 

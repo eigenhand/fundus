@@ -57,7 +57,7 @@ struct SearchClient {
             throw ModelError.http(status: status, body: String(data: data, encoding: .utf8) ?? "")
         }
         guard let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            throw ModelError.notJSON("Die Suche hat kein JSON-Objekt geliefert.")
+            throw ModelError.notJSON(String(localized: "Die Suche hat kein JSON-Objekt geliefert."))
         }
         return Self.hits(in: obj)
     }

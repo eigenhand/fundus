@@ -72,7 +72,7 @@ struct SettingsView: View {
             field("Adresse", text: Binding(
                 get: { model.settings.model.baseURL },
                 set: { model.settings.model.baseURL = $0 }),
-                  placeholder: "https://api.beispiel.ai")
+                  placeholder: String(localized: "https://api.beispiel.ai"))
             Divider().overlay(EH.hair)
             field("Pfad", text: Binding(
                 get: { model.settings.model.path },
@@ -82,7 +82,7 @@ struct SettingsView: View {
             field("Modell", text: Binding(
                 get: { model.settings.model.model },
                 set: { model.settings.model.model = $0 }),
-                  placeholder: "anbieter/modellname", mono: true)
+                  placeholder: String(localized: "anbieter/modellname"), mono: true)
             Divider().overlay(EH.hair)
             keyField
             Divider().overlay(EH.hair)
@@ -92,10 +92,10 @@ struct SettingsView: View {
 
         Toggle(isOn: $shareKey) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("Mit Spind und Faden teilen")
+                Text("Modellzugang gemeinsam ablegen")
                     .font(EH.bodySmall)
                     .foregroundStyle(EH.navy)
-                Text("Legt Adresse und Modell im gemeinsamen Ordner ab und den Schlüssel in der gemeinsamen Schlüsselbundgruppe. Wer eine der Apps einrichtet, hat alle eingerichtet.")
+                Text("Legt Adresse und Modell im gemeinsamen Ordner der eigenhand-Apps ab und den Schlüssel in der gemeinsamen Schlüsselbundgruppe. Andere eigenhand-Apps könnten beides dort lesen – heute tut das noch keine.")
                     .font(EH.meta)
                     .foregroundStyle(EH.muted)
             }
@@ -376,7 +376,7 @@ struct SettingsView: View {
                 field("Einbettungsmodell", text: Binding(
                     get: { model.settings.search.embeddingModel },
                     set: { model.settings.search.embeddingModel = $0; model.save() }),
-                      placeholder: "anbieter/embedding-modell", mono: true)
+                      placeholder: String(localized: "anbieter/embedding-modell"), mono: true)
             }
         }
     }
@@ -537,7 +537,7 @@ struct SettingsView: View {
         }
     }
 
-    private func count(_ label: String, _ n: Int, _ color: Color) -> some View {
+    private func count(_ label: LocalizedStringKey, _ n: Int, _ color: Color) -> some View {
         VStack(alignment: .leading, spacing: 1) {
             Text("\(n)")
                 .font(.eh(20, .title3, weight: .medium))

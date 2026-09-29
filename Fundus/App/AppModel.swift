@@ -80,7 +80,7 @@ final class AppModel {
         settings.model.model = shared.model
         settings.model.keychainAccount = shared.keychainAccount
         save()
-        banner = Banner(text: "Endpoint von \(shared.writtenBy) übernommen.")
+        banner = Banner(text: String(localized: "Endpoint von \(shared.writtenBy) übernommen."))
     }
 
     /// Saves with a delay. Twenty keystrokes in a name field should not be twenty
@@ -175,7 +175,9 @@ final class AppModel {
         inventory.removePlace(id)
         save()
         if affected > 0 {
-            banner = Banner(text: "\(affected) \(affected == 1 ? "Ding liegt" : "Dinge liegen") jetzt nirgends.")
+            banner = Banner(text: affected == 1
+                ? String(localized: "1 Ding liegt jetzt nirgends.")
+                : String(localized: "\(affected) Dinge liegen jetzt nirgends."))
         }
     }
 
@@ -231,7 +233,7 @@ final class AppModel {
 
     private func embedOne(_ text: String) async throws -> [Float] {
         let vectors = try await embed([text])
-        guard let first = vectors.first else { throw EmbeddingError.failed("Kein Vektor erhalten.") }
+        guard let first = vectors.first else { throw EmbeddingError.failed(String(localized: "Kein Vektor erhalten.")) }
         return first
     }
 
@@ -266,17 +268,17 @@ final class AppModel {
         while true {
             let pending = Indexer.needingEmbedding(inventory.items, model: model, limit: batchSize)
             guard !pending.isEmpty else { break }
-            indexNote = "\(Indexer.status(inventory.items, model: model).needsWork) offen"
+            indexNote = String(localized: "\(Indexer.status(inventory.items, model: model).needsWork) offen")
 
             let vectors: [[Float]]
             do {
                 vectors = try await embed(pending.map(\.embeddableText))
             } catch {
-                banner = Banner(text: "Index: \(error.localizedDescription)", tone: .bad)
+                banner = Banner(text: String(localized: "Index: \(error.localizedDescription)"), tone: .bad)
                 return
             }
             guard vectors.count == pending.count else {
-                banner = Banner(text: "Index: unerwartete Anzahl Vektoren.", tone: .bad)
+                banner = Banner(text: String(localized: "Index: unerwartete Anzahl Vektoren."), tone: .bad)
                 return
             }
 
@@ -313,7 +315,7 @@ final class AppModel {
         }
         save()
         refreshIndexStatus()
-        banner = Banner(text: "Index gelöscht. Die Namenssuche findet weiter alles.")
+        banner = Banner(text: String(localized: "Index gelöscht. Die Namenssuche findet weiter alles."))
     }
 
     // MARK: Aufnahme
@@ -330,7 +332,7 @@ final class AppModel {
     /// you can try again without walking down to the cellar a second time.
     func enqueue(_ images: [UIImage], placeID: UUID?, hint: String = "") {
         guard client != nil else {
-            banner = Banner(text: "Kein Modell eingerichtet — ohne Endpoint kann niemand das Foto lesen.",
+            banner = Banner(text: String(localized: "Kein Modell eingerichtet — ohne Endpoint kann niemand das Foto lesen. Einrichten unter Einstellungen → Modell."),
                             tone: .bad)
             return
         }
@@ -340,8 +342,10 @@ final class AppModel {
             jobs.append(IntakeJob(image: image, placeID: placeID, hint: hint))
         }
         if rejected > 0 {
-            banner = Banner(text: "\(rejected) Foto\(rejected == 1 ? "" : "s") nicht eingereiht — "
-                            + "die Reihe fasst \(IntakeSchedule.maxQueued).", tone: .bad)
+            banner = Banner(text: rejected == 1
+                ? String(localized: "1 Foto nicht eingereiht — die Reihe fasst \(IntakeSchedule.maxQueued).")
+                : String(localized: "\(rejected) Fotos nicht eingereiht — die Reihe fasst \(IntakeSchedule.maxQueued)."),
+                            tone: .bad)
         }
         pump()
     }
@@ -421,9 +425,11 @@ final class AppModel {
         switch job.phase {
         case .review:
             let n = job.result.proposals.count
-            banner = Banner(text: "Aufnahme gelesen — \(n) Vorschlag\(n == 1 ? "" : "e") zum Prüfen.")
+            banner = Banner(text: n == 1
+                ? String(localized: "Aufnahme gelesen — 1 Vorschlag zum Prüfen.")
+                : String(localized: "Aufnahme gelesen — \(n) Vorschläge zum Prüfen."))
         case .empty:
-            banner = Banner(text: "Aufnahme gelesen — auf dem Foto war kein Bestand.")
+            banner = Banner(text: String(localized: "Aufnahme gelesen — auf dem Foto war kein Bestand."))
         case .failed(let message):
             banner = Banner(text: message, tone: .bad)
         default:
@@ -455,8 +461,8 @@ final class AppModel {
 
         if added + increased > 0 {
             var parts: [String] = []
-            if added > 0 { parts.append("\(added) neu") }
-            if increased > 0 { parts.append("\(increased) erhöht") }
+            if added > 0 { parts.append(String(localized: "\(added) neu")) }
+            if increased > 0 { parts.append(String(localized: "\(increased) erhöht")) }
             banner = Banner(text: parts.joined(separator: ", ") + ".")
         }
         return (added, increased)
@@ -507,7 +513,7 @@ final class AppModel {
             guard let self else { return }
             switch self.segmentDownload {
             case .finished:
-                self.banner = Banner(text: "Erkennungsmodell ist da.")
+                self.banner = Banner(text: String(localized: "Erkennungsmodell ist da."))
             case .failed(let why):
                 self.banner = Banner(text: why, tone: .bad)
             default:
@@ -520,7 +526,7 @@ final class AppModel {
     func removeSegmenter() {
         SegmentAssets.model.remove()
         segmentDownload = nil
-        banner = Banner(text: "Erkennungsmodell entfernt.")
+        banner = Banner(text: String(localized: "Erkennungsmodell entfernt."))
     }
 
     // MARK: Einstellungen
@@ -539,7 +545,8 @@ final class AppModel {
 
     func setSearchKey(_ key: String) {
         Keychain.set(key, account: settings.lookup.keychainAccount, shared: false)
-        banner = Banner(text: key.isEmpty ? "Suchschlüssel gelöscht." : "Suchschlüssel gespeichert.")
+        banner = Banner(text: key.isEmpty ? String(localized: "Suchschlüssel gelöscht.")
+                                           : String(localized: "Suchschlüssel gespeichert."))
     }
 
     func setKey(_ key: String, shared: Bool) {

@@ -108,7 +108,9 @@ struct ItemDetailView: View {
                         .foregroundStyle(EH.navy)
                         .textSelection(.enabled)
                     Spacer(minLength: 0)
-                    Text(code.label)
+                    // The kind of code, translated here and not in `ItemCode`: the same label
+                    // also goes into the (German) prompt.
+                    Text(LocalizedStringKey(code.label))
                         .font(EH.meta)
                         .foregroundStyle(EH.muted)
                 }
@@ -121,8 +123,8 @@ struct ItemDetailView: View {
 
                 if let lookup = code.lookup, let reason = lookup.emptyReason {
                     Divider().overlay(EH.hair)
-                    Text("Nachgeschlagen nach \(lookup.query) — \(reason). "
-                         + Ago.string(lookup.searchedAt))
+                    Text(String(localized: "Nachgeschlagen nach \(lookup.query) — \(reason).")
+                         + " " + Ago.string(lookup.searchedAt))
                         .font(EH.meta)
                         .foregroundStyle(lookup.failed ? EH.warn : EH.muted)
                 } else if let lookup = code.lookup, let best = lookup.best, !best.title.isEmpty {
@@ -159,16 +161,16 @@ struct ItemDetailView: View {
     /// nobody tapped otherwise looks exactly like one somebody checked — and that
     /// difference is the only thing that makes this line worth having.
     private func lookupTrail(_ lookup: CodeLookup, best: CodeCandidate) -> String {
-        var parts = ["gesucht nach \(lookup.query)"]
+        var parts = [String(localized: "gesucht nach \(lookup.query)")]
         if !best.codeSeen.isEmpty {
-            parts.append("gefunden als \(best.codeSeen)")
+            parts.append(String(localized: "gefunden als \(best.codeSeen)"))
         } else if best.match != .exact {
             parts.append(best.match.label)
         }
         if lookup.chosen == nil {
             parts.append(lookup.candidates.count > 1
-                         ? "einer von \(lookup.candidates.count), nicht übernommen"
-                         : "nicht übernommen")
+                         ? String(localized: "einer von \(lookup.candidates.count), nicht übernommen")
+                         : String(localized: "nicht übernommen"))
         }
         parts.append(Ago.string(lookup.searchedAt))
         return parts.joined(separator: " · ")
@@ -243,7 +245,7 @@ struct ItemDetailView: View {
     }
 
     private func labelledField(_ label: LocalizedStringKey, text: Binding<String>,
-                               placeholder: String = "", axis: Axis = .horizontal) -> some View {
+                               placeholder: LocalizedStringKey = "", axis: Axis = .horizontal) -> some View {
         VStack(alignment: .leading, spacing: 3) {
             EH.label(label)
             TextField(placeholder, text: text, axis: axis)
@@ -270,7 +272,7 @@ struct ItemDetailView: View {
             }
         } label: {
             HStack {
-                Text(draft?.placeID.map { model.inventory.tree.path(of: $0) } ?? "Ohne Ort")
+                Text(draft?.placeID.map { model.inventory.tree.path(of: $0) } ?? String(localized: "Ohne Ort"))
                     .font(EH.body)
                     .foregroundStyle(EH.navy)
                 Spacer()

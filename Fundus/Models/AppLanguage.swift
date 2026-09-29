@@ -80,9 +80,18 @@ enum AppLanguage: String, Codable, CaseIterable, Identifiable, Sendable {
         SwitchableBundle.chosen = language.code.flatMap {
             Bundle.main.path(forResource: $0, ofType: "lproj").flatMap(Bundle.init(path:))
         }
+        chosenCode = language.code
+    }
+
+    /// The language the interface is shown in: the chosen one, or else whichever of the
+    /// bundle's languages the device picked. For formatters that produce words, such as
+    /// "2 days ago" — they should not speak German in an English interface.
+    @MainActor static var interfaceLocale: Locale {
+        Locale(identifier: chosenCode ?? Bundle.main.preferredLocalizations.first ?? "de")
     }
 
     @MainActor private static var swapped = false
+    @MainActor private static var chosenCode: String?
 }
 
 /// The class slipped underneath. It answers exactly one question differently from the

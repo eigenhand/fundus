@@ -27,10 +27,9 @@ final class CameraSession: NSObject, @unchecked Sendable {
         var message: String {
             switch self {
             case .denied:
-                return "Fundus darf nicht auf die Kamera. Das lässt sich in den "
-                     + "Einstellungen des Geräts unter Fundus ändern."
+                return String(localized: "Fundus darf nicht auf die Kamera. Das lässt sich in den Einstellungen des Geräts unter Fundus ändern.")
             case .unavailable:
-                return "Dieses Gerät hat keine benutzbare Kamera. Aus der Galerie geht es."
+                return String(localized: "Dieses Gerät hat keine benutzbare Kamera. Aus der Galerie geht es.")
             case .broken(let why):
                 return why
             }
@@ -133,7 +132,7 @@ final class CameraSession: NSObject, @unchecked Sendable {
         return await withCheckedContinuation { continuation in
             queue.async { [weak self] in
                 guard let self else {
-                    continuation.resume(returning: .broken("Die Kamera wurde zwischendurch abgeräumt."))
+                    continuation.resume(returning: .broken(String(localized: "Die Kamera wurde zwischendurch abgeräumt.")))
                     return
                 }
                 let failure = self.configureIfNeeded()
@@ -188,7 +187,7 @@ final class CameraSession: NSObject, @unchecked Sendable {
         do {
             let input = try AVCaptureDeviceInput(device: device)
             guard session.canAddInput(input) else {
-                return .broken("Die Kamera liess sich nicht anschliessen.")
+                return .broken(String(localized: "Die Kamera liess sich nicht anschliessen."))
             }
             session.addInput(input)
         } catch {
@@ -196,7 +195,7 @@ final class CameraSession: NSObject, @unchecked Sendable {
         }
 
         guard session.canAddOutput(output) else {
-            return .broken("Die Kamera nimmt keine Fotoausgabe an.")
+            return .broken(String(localized: "Die Kamera nimmt keine Fotoausgabe an."))
         }
         session.addOutput(output)
 

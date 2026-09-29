@@ -93,9 +93,9 @@ struct CodeCandidate: Codable, Equatable, Hashable {
 
         var label: String {
             switch self {
-            case .exact:  return "steht so im Treffer"
-            case .near:   return "fast dieselbe Nummer"
-            case .family: return "gleiche Baureihe"
+            case .exact:  return String(localized: "steht so im Treffer")
+            case .near:   return String(localized: "fast dieselbe Nummer")
+            case .family: return String(localized: "gleiche Baureihe")
             }
         }
     }
@@ -179,7 +179,8 @@ struct CodeLookup: Codable, Equatable, Hashable {
     /// What the interface says when no suggestions stand there.
     var emptyReason: String? {
         guard candidates.isEmpty else { return nil }
-        return failed ? "Nachschlagen fehlgeschlagen" : "nichts Passendes gefunden"
+        return failed ? String(localized: "Nachschlagen fehlgeschlagen")
+                      : String(localized: "nichts Passendes gefunden")
     }
 
     init(query: String, candidates: [CodeCandidate] = [], chosen: Int? = nil,

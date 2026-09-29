@@ -127,8 +127,8 @@ besser als eine ungeschützte App.
 ## Wo der Zustand liegt
 
 **Im gemeinsamen Container.** Der Bestand liegt als Klartext-JSON in
-`group.dev.eigenhand.shared`, damit Spind ihn synchronisieren kann, ohne Fundus zu
-kennen. Ist die App Group in einem Build nicht freigeschaltet, fällt `SharedContainer` auf
+`group.dev.eigenhand.shared`, damit Faden ihn lesen kann, ohne ihn zu kopieren. Ist
+die App Group in einem Build nicht freigeschaltet, fällt `SharedContainer` auf
 den eigenen Ordner der App zurück — und die Einstellungen sagen, welcher der beiden gilt.
 Eine App, die still woanders hinschreibt, ist eine App, die still Daten verliert.
 
@@ -137,9 +137,9 @@ Warteschlange. Fundus hat keinen Zustand je Unterhaltung wie Faden; es gibt eine
 und eine Reihe.
 
 **Im Schlüsselbund.** Schlüssel, aus den Einstellungen über einen Namen angesprochen. Ist
-„Mit Spind und Faden teilen“ an (standardmäßig ist es aus), liegt der Modellschlüssel in
-der gemeinsamen Schlüsselbundgruppe — das ist der Zweck und zugleich der Preis, und es
-steht in `SECURITY.de.md`.
+„Modellzugang gemeinsam ablegen“ an (standardmäßig ist es aus), liegt der
+Modellschlüssel in der gemeinsamen Schlüsselbundgruppe. Noch liest ihn dort keine andere
+App; was das kostet, steht in `SECURITY.de.md`.
 
 ## Modellgewichte liegen nicht im Bundle
 

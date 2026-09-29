@@ -150,9 +150,10 @@ struct Provenance: Codable, Equatable, Hashable {
 
     var label: String {
         switch origin {
-        case .manual:   return "von Hand"
-        case .photo:    return model.map { "aus einem Foto, gelesen von \($0)" } ?? "aus einem Foto"
-        case .imported: return "eingelesen"
+        case .manual:   return String(localized: "von Hand")
+        case .photo:    return model.map { String(localized: "aus einem Foto, gelesen von \($0)") }
+                            ?? String(localized: "aus einem Foto")
+        case .imported: return String(localized: "eingelesen")
         }
     }
 }
@@ -182,9 +183,9 @@ enum Freshness: String {
 
     var label: String {
         switch self {
-        case .seen:    return "gesehen"
-        case .assumed: return "vermutet"
-        case .stale:   return "unbestätigt"
+        case .seen:    return String(localized: "gesehen")
+        case .assumed: return String(localized: "vermutet")
+        case .stale:   return String(localized: "unbestätigt")
         }
     }
 }

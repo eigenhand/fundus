@@ -31,9 +31,9 @@ enum VisionProbe {
         var text: String {
             switch self {
             case .supported:
-                return "Das Modell liest Bilder — Farben richtig benannt."
+                return String(localized: "Das Modell liest Bilder — Farben richtig benannt.")
             case .acceptedButUnconfirmed(let reply):
-                return "Das Bild wurde angenommen, die Antwort war aber nicht eindeutig: „\(reply)“"
+                return String(localized: "Das Bild wurde angenommen, die Antwort war aber nicht eindeutig: „\(reply)“")
             case .notSupported(let message):
                 return message
             case .inconclusive(let message):
@@ -66,7 +66,7 @@ enum VisionProbe {
 
     static func run(client: ModelClient) async -> Outcome {
         guard let jpeg = probeImage() else {
-            return .inconclusive("Das Testbild ließ sich nicht erzeugen.")
+            return .inconclusive(String(localized: "Das Testbild ließ sich nicht erzeugen."))
         }
         let reply: String
         do {
@@ -77,12 +77,12 @@ enum VisionProbe {
                 // 4xx here means: the endpoint cannot accept images. 5xx and the rest
                 // say nothing about images.
                 if (400 ... 499).contains(status) {
-                    return .notSupported("Der Endpoint hat das Bild abgelehnt (HTTP \(status)). "
-                                         + ModelError.readable(body))
+                    return .notSupported(String(localized: "Der Endpoint hat das Bild abgelehnt (HTTP \(status)).")
+                                         + " " + ModelError.readable(body))
                 }
-                return .inconclusive("HTTP \(status) — das sagt nichts über Bilder aus.")
+                return .inconclusive(String(localized: "HTTP \(status) — das sagt nichts über Bilder aus."))
             }
-            return .inconclusive(error.errorDescription ?? "Unklar.")
+            return .inconclusive(error.errorDescription ?? String(localized: "Unklar."))
         } catch {
             return .inconclusive(error.localizedDescription)
         }

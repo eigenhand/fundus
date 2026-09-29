@@ -30,10 +30,10 @@ enum ItemSearch {
 
         var label: String {
             switch self {
-            case .namePrefix, .nameContains: return "Name"
-            case .code:                      return "Nummer"
-            case .sideText:                  return "Notiz"
-            case .semantic:                  return "Bedeutung"
+            case .namePrefix, .nameContains: return String(localized: "Name")
+            case .code:                      return String(localized: "Nummer")
+            case .sideText:                  return String(localized: "Notiz")
+            case .semantic:                  return String(localized: "Bedeutung")
             }
         }
     }

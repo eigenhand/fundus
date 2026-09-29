@@ -95,7 +95,7 @@ struct ObjectPicker: View {
 
     private static func reason(_ failure: Segmenter.Failure) -> String {
         switch failure {
-        case .notInstalled: return "Das Erkennungsmodell liegt nicht auf dem Gerät."
+        case .notInstalled: return String(localized: "Das Erkennungsmodell liegt nicht auf dem Gerät.")
         case .broken(let why): return why
         }
     }
@@ -425,9 +425,9 @@ struct ObjectPicker: View {
 
     private var takeLabel: String {
         switch count {
-        case 0: return "Ganzes Bild"
-        case 1: return "1 Ausschnitt"
-        case let n: return "\(n) Ausschnitte"
+        case 0: return String(localized: "Ganzes Bild")
+        case 1: return String(localized: "1 Ausschnitt")
+        case let n: return String(localized: "\(n) Ausschnitte")
         }
     }
 
@@ -436,22 +436,23 @@ struct ObjectPicker: View {
     /// Every cut-out is its own shot and therefore its own paid call. That belongs
     /// visibly beside it and not in a bill afterwards.
     private var note: String {
-        if preparing { return "Das Gerät sieht sich das Bild an." }
+        if preparing { return String(localized: "Das Gerät sieht sich das Bild an.") }
         if let trouble { return trouble }
         if usingSam {
             if picked.isEmpty {
-                return "Tippe an, was du meinst — oder zieh einen Kasten darum."
+                return String(localized: "Tippe an, was du meinst — oder zieh einen Kasten darum.")
             }
             return picked.count == 1
-                ? "Ein Ausschnitt, eine Aufnahme. Weitere antippen geht."
-                : "\(picked.count) Ausschnitte, \(picked.count) Aufnahmen."
+                ? String(localized: "Ein Ausschnitt, eine Aufnahme. Weitere antippen geht.")
+                : String(localized: "\(picked.count) Ausschnitte, \(picked.count) Aufnahmen.")
         }
         if offered.isEmpty {
-            return "Keine einzelnen Gegenstände erkannt — das ganze Bild geht als eine Aufnahme. Mit dem Erkennungsmodell aus den Einstellungen ginge das besser."
+            return String(localized: "Keine einzelnen Gegenstände erkannt — das ganze Bild geht als eine Aufnahme. Mit dem Erkennungsmodell aus den Einstellungen ginge das besser.")
         }
         return chosenOffers.isEmpty && picked.isEmpty
-            ? "Nichts gewählt: das ganze Bild geht als eine Aufnahme. Einen Kasten ziehen geht auch."
-            : "\(count) Ausschnitt\(count == 1 ? "" : "e") — so viele Aufnahmen."
+            ? String(localized: "Nichts gewählt: das ganze Bild geht als eine Aufnahme. Einen Kasten ziehen geht auch.")
+            : count == 1 ? String(localized: "1 Ausschnitt — eine Aufnahme.")
+                         : String(localized: "\(count) Ausschnitte — so viele Aufnahmen.")
     }
 
     private func take() {

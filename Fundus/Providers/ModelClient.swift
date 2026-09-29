@@ -184,7 +184,7 @@ struct ModelClient {
 
         let (bytes, response) = try await Net.session.bytes(for: request)
         guard let http = response as? HTTPURLResponse else {
-            throw ModelError.transport("Keine HTTP-Antwort.")
+            throw ModelError.transport(String(localized: "Keine HTTP-Antwort."))
         }
         guard (200 ... 299).contains(http.statusCode) else {
             var errorBody = ""
@@ -219,7 +219,7 @@ struct ModelClient {
                   let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
             else { continue }
             if let error = obj["error"] as? [String: Any] {
-                throw ModelError.transport(error["message"] as? String ?? "Unbekannter Fehler.")
+                throw ModelError.transport(error["message"] as? String ?? String(localized: "Unbekannter Fehler."))
             }
             guard let choice = (obj["choices"] as? [[String: Any]])?.first else { continue }
             if let reason = choice["finish_reason"] as? String { finishReason = reason }
@@ -277,17 +277,17 @@ struct ModelClient {
             }
             guard let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                   let items = obj["data"] as? [[String: Any]]
-            else { throw ModelError.notJSON("Feld `data` fehlt.") }
+            else { throw ModelError.notJSON(String(localized: "Feld `data` fehlt.")) }
 
             for item in items {
                 guard let raw = item["embedding"] as? [Double] else {
-                    throw ModelError.notJSON("Feld `embedding` fehlt oder ist keine Zahlenreihe.")
+                    throw ModelError.notJSON(String(localized: "Feld `embedding` fehlt oder ist keine Zahlenreihe."))
                 }
                 out.append(raw.map(Float.init))
             }
         }
         guard out.count == texts.count else {
-            throw ModelError.notJSON("Es kamen \(out.count) Vektoren für \(texts.count) Texte zurück.")
+            throw ModelError.notJSON(String(localized: "Es kamen \(out.count) Vektoren für \(texts.count) Texte zurück."))
         }
         return out
     }
